@@ -17,4 +17,4 @@ What changed and why?
 
 ## Screenshots
 
-Add before/after screenshots for UI changes when useful.
+Add before/after screenshots for UI changes when useful. For README-ready assets, follow `docs/DEMO.md` and avoid private clipboard content.

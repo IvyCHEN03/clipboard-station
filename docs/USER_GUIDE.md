@@ -2,6 +2,8 @@
 
 Linggan Floating Ball is built for one daily workflow: collect useful fragments while working across many AI chats, then assemble them into a cleaner prompt or answer.
 
+For a quick visual walkthrough plan, see [DEMO.md](DEMO.md).
+
 ## First Run
 
 1. Install the app:
