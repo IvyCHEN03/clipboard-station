@@ -1,65 +1,134 @@
-# AI Clipboard Station
+# Linggan Floating Ball
 
-一个本地运行的 macOS 菜单栏剪贴板中转站，用来在并行多个 AI 工具时快速收集、搜索、复制和自动粘贴文本片段。
+> A local-first macOS clipboard station for people working with many AI chats at once.
 
-## 功能
+![App icon](BundleResources/InspirationBubble.iconset/icon_128x128.png)
 
-- 菜单栏浮窗中转站
-- `Cmd+Shift+C` 拉取当前选中文本
-- 屏幕边缘浅蓝小泡泡打开/关闭中转站浮窗
-- 监听普通文本复制并自动收集
-- 搜索、删除、清空、编辑片段标题
-- 可选 AI 生成标题和标签，支持 OpenAI-compatible Chat Completions 接口
-- 拖拽整张片段卡片调整排序
-- 每条片段左侧可用上下键或数字序号快速排序
-- 底部组合框：把片段拖成彩色数字积木块，按顺序复制组合后的全文
-- 点击粘贴图标后写入剪贴板并模拟 `Cmd+V`
-- 本地 Keychain 密钥 + AES-GCM 加密持久化
-- 默认不接入云端；只有开启 AI 生成并配置 API Key 后，才会把新片段发给你填写的模型接口
+Linggan Floating Ball, formerly AI Clipboard Station, is a tiny macOS menu bar app for collecting useful text, screenshots, and table snippets while you work across ChatGPT, Claude, Codex, browsers, notes, and spreadsheets.
 
-## 运行
+It is designed for one very specific workflow: grab many fragments fast, keep them visible, tag them, reorder them like blocks, and paste a composed answer back into any AI input box.
 
-开发运行：
+## Why It Exists
+
+When you are comparing ideas across multiple AI tools, the default clipboard is too small:
+
+- `Cmd+C` overwrites the last useful thing you copied.
+- Screenshots and table snippets get lost in Finder or Downloads.
+- You need to combine scattered fragments into one prompt, but the order keeps changing.
+- Cloud clipboard tools feel risky when the content is private.
+
+Linggan Floating Ball keeps that work local and gives it a small, always-available place to land.
+
+## Highlights
+
+- Local macOS menu bar utility with a small blue floating bubble.
+- Collect plain text from normal copy events.
+- Import screenshots and show them directly in the list.
+- Capture spreadsheet-like copied text as table snippets.
+- Search by title, source, body, tag, or time window.
+- Use AI-generated titles and tags with any OpenAI-compatible chat completions API.
+- Select multiple snippets and delete them in one action.
+- Reorder snippets with up/down buttons or a numeric position field.
+- Compose a prompt in the bottom block editor with colored snippet blocks and custom text between blocks.
+- Copy or paste a snippet into the current input box.
+- Store data locally with Keychain-backed AES-GCM encryption.
+- No cloud sync and no uploads unless you explicitly enable AI tagging.
+
+## Product Shape
+
+The app has three surfaces:
+
+- Floating bubble: the fastest way to open or hide the station without fighting global shortcuts.
+- Menu bar icon: a stable fallback entry point.
+- Station window: searchable snippet list, AI tags, sorting controls, and the composition box.
+
+Global shortcuts are intentionally secondary. Some apps, including developer tools, reserve common shortcuts. The floating bubble is the recommended daily entry point.
+
+## Install
+
+This project is currently source-first. A signed release is on the roadmap.
+
+Requirements:
+
+- macOS 13+
+- Xcode command line tools
+- Swift 6 compatible toolchain
+
+Build and run:
 
 ```bash
+git clone https://github.com/IvyCHEN03/clipboard-station.git
+cd clipboard-station
 swift run
 ```
 
-打包为 `.app`：
+Package a local `.app`:
 
 ```bash
 ./Scripts/package-app.sh
 open .build/ClipboardStation.app
 ```
 
-首次使用“拉取选中文本”和“自动粘贴”时，macOS 会要求开启辅助功能权限。打开/关闭浮窗可以使用屏幕边缘的浅蓝小泡泡或菜单栏图标，不依赖全局双击键。
+The packaged app is not notarized yet. macOS may ask you to approve opening it from Privacy & Security.
 
-## AI 标题和标签
+## Permissions
 
-设置里打开“AI 生成标题和标签”，填写：
+The app can work without full permissions, but these unlock the smooth workflow:
 
-- `AI Base URL`：OpenAI-compatible `/chat/completions` 地址
-- `模型名`：默认 `gpt-4o-mini`，也可换成你的兼容模型名
-- `API Key`
+- Accessibility: required for automatic paste and simulated copy/paste actions.
+- Screen capture flow: screenshots are collected only when you copy/import them.
+- Launch at login: optional; keeps the floating bubble available after restart.
 
-API Key 保存在 macOS Keychain。AI 生成默认关闭。
+The app shows permission status in Settings so users can tell whether a feature is unavailable because of macOS permissions or because the app is not running.
 
-## 默认设置
+## AI Tagging
 
-- 监听普通复制：开启
-- 点击粘贴图标后自动粘贴：开启
-- 屏幕边缘浅蓝小泡泡：开启
-- AI 生成标题和标签：关闭
-- 本地加密持久化：开启
-- 全局快捷键：`Cmd+Shift+C`
-- 开机启动：关闭
+AI tagging is off by default.
 
-## 数据位置
+To enable it, open Settings and fill:
 
-片段数据保存在：
+- AI Base URL: an OpenAI-compatible `/chat/completions` endpoint.
+- Model name: for example `gpt-4o-mini` or a compatible model from your provider.
+- API Key: saved in macOS Keychain.
 
-```text
-~/Library/Application Support/ClipboardStation/state.enc
-```
+Only snippets that need tags are sent. Existing tags are preserved. Failed tagging attempts are marked per snippet and can be retried.
 
-加密密钥保存在 macOS Keychain 中，service 为 `com.local.clipboard-station`。
+## Privacy
+
+Linggan Floating Ball is local-first:
+
+- Snippets are saved under `~/Library/Application Support/ClipboardStation/state.enc`.
+- The encryption key is stored in macOS Keychain.
+- Clipboard content is not uploaded by default.
+- AI providers receive snippet text only if you enable AI tagging and configure an API key.
+
+Read [PRIVACY.md](PRIVACY.md) for the full data flow.
+
+## Roadmap
+
+The next product priorities are:
+
+- Signed and notarized releases.
+- A polished onboarding flow for permissions and launch at login.
+- A clearer first-run empty state with a short demo workflow.
+- Import/export for local backup.
+- Better OCR controls for screenshots.
+- Optional release builds with Sparkle or a simple updater.
+
+See [ROADMAP.md](ROADMAP.md) for more detail.
+
+## Contributing
+
+The project is early but usable. Good first contributions:
+
+- Fix macOS permission edge cases.
+- Improve onboarding copy and empty states.
+- Add tests for persistence, AI parsing, and snippet import behavior.
+- Improve accessibility labels and keyboard navigation.
+- Create installation docs for non-developers.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
