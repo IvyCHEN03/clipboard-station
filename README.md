@@ -71,6 +71,8 @@ Install a local app into `~/Applications` and start the launch agent:
 
 The floating bubble should appear after installation. The app will also start on login through a user LaunchAgent.
 
+New users can follow the short [User Guide](docs/USER_GUIDE.md) for the first-run workflow, snippet collection, block composition, and AI tagging setup.
+
 For development, run directly from source:
 
 ```bash

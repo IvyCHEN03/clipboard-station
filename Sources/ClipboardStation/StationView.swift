@@ -255,18 +255,41 @@ struct StationView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "text.badge.plus")
-                .font(.system(size: 34))
-                .foregroundStyle(.secondary)
-            Text("暂无片段")
-                .font(.system(size: 15, weight: .semibold))
-            Text("按 Cmd+Shift+C 打开，或直接复制文本自动收集。")
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                BubbleLogo()
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("开始收集灵感")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("复制文字、截图或表格后，它们会出现在这里。")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                QuickStartStep(number: "1", title: "复制内容", detail: "在任意 App 里复制文字、截图或表格。")
+                QuickStartStep(number: "2", title: "打开悬浮球", detail: "点击屏幕边缘的小泡泡，或使用菜单栏图标。")
+                QuickStartStep(number: "3", title: "组合输出", detail: "把片段拖到组合框，加入补充文字后复制。")
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    store.importCurrentPasteboard()
+                } label: {
+                    Label("导入当前剪贴板", systemImage: "square.and.arrow.down")
+                }
+
+                Button {
+                    showSettings = true
+                } label: {
+                    Label("检查设置", systemImage: "gearshape")
+                }
+            }
+            .buttonStyle(.bordered)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .padding(24)
     }
 
     private func toggleSelection(_ id: UUID) {
@@ -542,6 +565,24 @@ private struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("首次使用") {
+                OnboardingLine(
+                    title: "入口",
+                    detail: "优先使用屏幕边缘的小泡泡；快捷键只在 App 运行时生效。",
+                    systemImage: "circle.grid.2x2"
+                )
+                OnboardingLine(
+                    title: "收集",
+                    detail: store.settings.monitorClipboard ? "普通复制会自动进入列表。" : "已关闭监听，可用底部 + 手动导入。",
+                    systemImage: store.settings.monitorClipboard ? "doc.on.doc" : "plus.square"
+                )
+                OnboardingLine(
+                    title: "输出",
+                    detail: "把片段拖入组合框，可在积木之间补充文字。",
+                    systemImage: "text.cursor"
+                )
+            }
+
             Section("运行状态") {
                 StatusLine(
                     title: "App",
@@ -605,6 +646,53 @@ private struct SettingsView: View {
         .formStyle(.grouped)
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
+    }
+}
+
+private struct QuickStartStep: View {
+    let number: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(number)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(width: 22, height: 22)
+                .background(Color(red: 0.38, green: 0.72, blue: 1.0), in: Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+private struct OnboardingLine: View {
+    let title: String
+    let detail: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: systemImage)
+                .foregroundStyle(Color(red: 0.38, green: 0.72, blue: 1.0))
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }
 
