@@ -1,0 +1,61 @@
+name: Bug report
+description: Report something broken or confusing.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Linggan Floating Ball. Please remove private clipboard contents before posting.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the behavior and what you expected instead.
+      placeholder: The floating bubble disappeared after...
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: macOS 15.5
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: App version or commit
+      placeholder: v0.1.0 or commit SHA
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Floating bubble / menu bar
+        - Clipboard capture
+        - Screenshot or OCR
+        - Spreadsheet capture
+        - AI tags
+        - Sorting or composer
+        - Permissions
+        - Packaging or install
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the app
+        2. Copy text from...
+        3. Click...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshots or logs
+      description: Optional. Please redact private content.

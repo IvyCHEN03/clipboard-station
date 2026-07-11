@@ -1,0 +1,40 @@
+# Release Checklist
+
+This project is not ready for a broad non-developer release until signing and notarization are in place. Use this checklist when preparing any public release.
+
+## Preflight
+
+- [ ] `swift build` passes locally.
+- [ ] GitHub Actions CI passes on `main`.
+- [ ] README install instructions match the current build path.
+- [ ] `CHANGELOG.md` has an entry for the release.
+- [ ] No `.build/`, local app data, API keys, or private screenshots are committed.
+- [ ] Privacy-impacting changes are reflected in `PRIVACY.md`.
+
+## Manual Product Smoke Test
+
+- [ ] Launch packaged app.
+- [ ] Floating bubble appears and opens/closes the station.
+- [ ] Menu bar icon opens/closes the station.
+- [ ] Copy plain text and confirm it appears once.
+- [ ] Import or copy a screenshot and confirm image preview renders.
+- [ ] Copy spreadsheet-like text and confirm it is treated as a table snippet.
+- [ ] Reorder snippets with up/down controls.
+- [ ] Add snippets to the composer and copy composed text.
+- [ ] Disable Accessibility permission and confirm the app gives a clear paste warning.
+- [ ] Re-enable Accessibility permission and confirm paste works.
+
+## Packaging
+
+- [ ] Run `./Scripts/package-app.sh`.
+- [ ] Confirm `.build/ClipboardStation.app` launches.
+- [ ] Confirm the app icon appears.
+- [ ] Confirm the app does not create duplicate instances.
+
+## Future Signed Release
+
+- [ ] Sign app with Developer ID.
+- [ ] Notarize app.
+- [ ] Staple notarization ticket.
+- [ ] Provide checksum for release asset.
+- [ ] Add install instructions for non-developers.
