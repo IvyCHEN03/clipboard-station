@@ -40,6 +40,8 @@ final class FloatingTriggerController {
             }
         )
         let host = NSHostingController(rootView: triggerView)
+        host.view.wantsLayer = true
+        host.view.layer?.backgroundColor = NSColor.clear.cgColor
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: Self.triggerSize),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -47,6 +49,8 @@ final class FloatingTriggerController {
             defer: false
         )
         panel.contentViewController = host
+        panel.contentView?.wantsLayer = true
+        panel.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = false

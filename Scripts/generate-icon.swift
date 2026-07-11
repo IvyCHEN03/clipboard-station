@@ -17,8 +17,8 @@ func drawIcon(size: CGFloat) -> NSImage {
     NSRect(x: 0, y: 0, width: size, height: size).fill()
 
     let scale = size / 1024
-    let rect = NSRect(x: 112 * scale, y: 134 * scale, width: 800 * scale, height: 706 * scale)
-    let bubble = NSBezierPath(roundedRect: rect, xRadius: 250 * scale, yRadius: 250 * scale)
+    let rect = NSRect(x: 118 * scale, y: 118 * scale, width: 788 * scale, height: 788 * scale)
+    let bubble = NSBezierPath(ovalIn: rect)
 
     let gradient = NSGradient(colors: [
         NSColor(calibratedRed: 0.76, green: 0.93, blue: 1.0, alpha: 1),
@@ -29,22 +29,6 @@ func drawIcon(size: CGFloat) -> NSImage {
     NSColor.white.withAlphaComponent(0.42).setStroke()
     bubble.lineWidth = 34 * scale
     bubble.stroke()
-
-    let tail = NSBezierPath()
-    tail.move(to: NSPoint(x: 346 * scale, y: 188 * scale))
-    tail.curve(
-        to: NSPoint(x: 224 * scale, y: 82 * scale),
-        controlPoint1: NSPoint(x: 316 * scale, y: 126 * scale),
-        controlPoint2: NSPoint(x: 266 * scale, y: 94 * scale)
-    )
-    tail.curve(
-        to: NSPoint(x: 404 * scale, y: 136 * scale),
-        controlPoint1: NSPoint(x: 288 * scale, y: 66 * scale),
-        controlPoint2: NSPoint(x: 358 * scale, y: 90 * scale)
-    )
-    tail.close()
-    NSColor(calibratedRed: 0.34, green: 0.72, blue: 1.0, alpha: 1).setFill()
-    tail.fill()
 
     let spark = NSBezierPath()
     spark.move(to: NSPoint(x: 514 * scale, y: 664 * scale))
