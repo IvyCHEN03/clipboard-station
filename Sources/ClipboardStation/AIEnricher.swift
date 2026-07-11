@@ -18,13 +18,13 @@ struct AIEnrichment: Decodable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
-        if let tags = try container.decodeIfPresent([String].self, forKey: .tags) {
+        if let tags = try? container.decodeIfPresent([String].self, forKey: .tags) {
             self.tags = tags
-        } else if let keywords = try container.decodeIfPresent([String].self, forKey: .keywords) {
+        } else if let keywords = try? container.decodeIfPresent([String].self, forKey: .keywords) {
             self.tags = keywords
-        } else if let tagString = try container.decodeIfPresent(String.self, forKey: .tags) {
+        } else if let tagString = try? container.decodeIfPresent(String.self, forKey: .tags) {
             self.tags = Self.splitTags(tagString)
-        } else if let keywordString = try container.decodeIfPresent(String.self, forKey: .keywords) {
+        } else if let keywordString = try? container.decodeIfPresent(String.self, forKey: .keywords) {
             self.tags = Self.splitTags(keywordString)
         } else {
             self.tags = []

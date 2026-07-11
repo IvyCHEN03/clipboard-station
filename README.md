@@ -48,6 +48,8 @@ Global shortcuts are intentionally secondary. Some apps, including developer too
 
 This project is currently source-first. A signed release is on the roadmap.
 
+If a GitHub Release is available, download `Linggan-Floating-Ball-<version>.zip`, unzip it, and open `ClipboardStation.app`. Release builds are currently unsigned and may require approval in macOS Privacy & Security.
+
 Requirements:
 
 - macOS 13+
@@ -80,6 +82,12 @@ Package a local `.app`:
 ```bash
 ./Scripts/package-app.sh
 open .build/ClipboardStation.app
+```
+
+Create a local release zip:
+
+```bash
+./Scripts/make-release-zip.sh local
 ```
 
 The packaged app is not notarized yet. macOS may ask you to approve opening it from Privacy & Security.
@@ -160,6 +168,15 @@ The project is early but usable. Good first contributions:
 - Create installation docs for non-developers.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+
+Quality gates:
+
+```bash
+swift build
+swift test
+```
+
+CI runs the same build and test checks on GitHub Actions. Tagged releases matching `v*` build a zip artifact automatically.
 
 ## License
 

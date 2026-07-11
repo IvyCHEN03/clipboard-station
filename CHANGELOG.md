@@ -9,3 +9,6 @@
 - Added a composition box that combines colored snippet blocks with custom text.
 - Added queue status and per-snippet retry for AI tagging failures.
 - Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.
+- Added local install, uninstall, doctor, and release zip scripts.
+- Added GitHub Actions CI and release workflows.
+- Added initial tests for AI enrichment response decoding.

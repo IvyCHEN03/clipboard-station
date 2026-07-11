@@ -22,6 +22,10 @@ let package = Package(
                 .linkedFramework("SwiftUI"),
                 .linkedFramework("Vision")
             ]
+        ),
+        .testTarget(
+            name: "ClipboardStationTests",
+            dependencies: ["ClipboardStation"]
         )
     ]
 )

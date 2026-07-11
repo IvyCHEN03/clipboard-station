@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    name: Build release zip
+    runs-on: macos-15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Test
+        run: swift test
+
+      - name: Build zip
+        id: build_zip
+        run: |
+          ZIP_PATH="$(./Scripts/make-release-zip.sh "${GITHUB_REF_NAME}")"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.build_zip.outputs.zip_path }}
+          generate_release_notes: true
+          prerelease: true

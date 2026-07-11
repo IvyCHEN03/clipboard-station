@@ -5,6 +5,7 @@ This project is not ready for a broad non-developer release until signing and no
 ## Preflight
 
 - [ ] `swift build` passes locally.
+- [ ] `swift test` passes locally.
 - [ ] GitHub Actions CI passes on `main`.
 - [ ] README install instructions match the current build path.
 - [ ] `CHANGELOG.md` has an entry for the release.
@@ -30,7 +31,9 @@ This project is not ready for a broad non-developer release until signing and no
 ## Packaging
 
 - [ ] Run `./Scripts/package-app.sh`.
+- [ ] Run `./Scripts/make-release-zip.sh vX.Y.Z`.
 - [ ] Confirm `.build/ClipboardStation.app` launches.
+- [ ] Confirm `.build/dist/Linggan-Floating-Ball-vX.Y.Z.zip` exists and unzips to `ClipboardStation.app`.
 - [ ] Confirm `./Scripts/install-local.sh` installs into `~/Applications`.
 - [ ] Confirm `./Scripts/uninstall-local.sh` removes the app and launch agent without deleting user data.
 - [ ] Confirm the app icon appears.

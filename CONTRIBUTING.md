@@ -25,6 +25,13 @@ Package locally:
 open .build/ClipboardStation.app
 ```
 
+Run checks:
+
+```bash
+swift build
+swift test
+```
+
 ## Product Principles
 
 - Local-first by default.
@@ -49,6 +56,7 @@ open .build/ClipboardStation.app
 - Avoid committing build artifacts from `.build/`.
 - Do not include API keys, local data, screenshots with private content, or Keychain material.
 - Run `swift build`.
+- Run `swift test`.
 - If UI behavior changes, include before/after screenshots when possible.
 
 ## Security and Privacy
