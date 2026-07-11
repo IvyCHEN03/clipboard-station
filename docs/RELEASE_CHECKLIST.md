@@ -13,6 +13,9 @@ This project is not ready for a broad non-developer release until signing and no
 
 ## Manual Product Smoke Test
 
+- [ ] Run `./Scripts/install-local.sh`.
+- [ ] Confirm the app exists in `~/Applications/ClipboardStation.app`.
+- [ ] Run `./Scripts/doctor.sh` and confirm the launch agent is loaded.
 - [ ] Launch packaged app.
 - [ ] Floating bubble appears and opens/closes the station.
 - [ ] Menu bar icon opens/closes the station.
@@ -28,6 +31,8 @@ This project is not ready for a broad non-developer release until signing and no
 
 - [ ] Run `./Scripts/package-app.sh`.
 - [ ] Confirm `.build/ClipboardStation.app` launches.
+- [ ] Confirm `./Scripts/install-local.sh` installs into `~/Applications`.
+- [ ] Confirm `./Scripts/uninstall-local.sh` removes the app and launch agent without deleting user data.
 - [ ] Confirm the app icon appears.
 - [ ] Confirm the app does not create duplicate instances.
 

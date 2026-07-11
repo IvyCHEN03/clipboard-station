@@ -54,11 +54,24 @@ Requirements:
 - Xcode command line tools
 - Swift 6 compatible toolchain
 
-Build and run:
+Clone the project:
 
 ```bash
 git clone https://github.com/IvyCHEN03/clipboard-station.git
 cd clipboard-station
+```
+
+Install a local app into `~/Applications` and start the launch agent:
+
+```bash
+./Scripts/install-local.sh
+```
+
+The floating bubble should appear after installation. The app will also start on login through a user LaunchAgent.
+
+For development, run directly from source:
+
+```bash
 swift run
 ```
 
@@ -71,6 +84,18 @@ open .build/ClipboardStation.app
 
 The packaged app is not notarized yet. macOS may ask you to approve opening it from Privacy & Security.
 
+Uninstall the local app and launch agent:
+
+```bash
+./Scripts/uninstall-local.sh
+```
+
+Run a local health check:
+
+```bash
+./Scripts/doctor.sh
+```
+
 ## Permissions
 
 The app can work without full permissions, but these unlock the smooth workflow:
@@ -80,6 +105,13 @@ The app can work without full permissions, but these unlock the smooth workflow:
 - Launch at login: optional; keeps the floating bubble available after restart.
 
 The app shows permission status in Settings so users can tell whether a feature is unavailable because of macOS permissions or because the app is not running.
+
+## Troubleshooting
+
+- Floating bubble missing: run `./Scripts/doctor.sh`, then `./Scripts/install-local.sh`.
+- Automatic paste fails: grant Accessibility permission to ClipboardStation in macOS Settings.
+- AI tags fail: check Base URL, model name, API key, and provider quota.
+- Duplicate app instances: run `./Scripts/uninstall-local.sh`, then `./Scripts/install-local.sh`.
 
 ## AI Tagging
 

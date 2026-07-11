@@ -25,6 +25,22 @@ Please check:
 swift --version
 swift build
 ./Scripts/package-app.sh
+./Scripts/install-local.sh
+./Scripts/doctor.sh
+```
+
+## Install Repair
+
+If the floating bubble or menu bar icon disappears:
+
+```bash
+./Scripts/install-local.sh
+```
+
+If you want to remove the local app and launch agent:
+
+```bash
+./Scripts/uninstall-local.sh
 ```
 
 ## Data Reset
