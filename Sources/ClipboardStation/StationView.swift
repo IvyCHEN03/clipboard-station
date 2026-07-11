@@ -48,7 +48,7 @@ struct StationView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("灵感悬浮球")
                     .font(.system(size: 16, weight: .semibold))
-                Text("v0.4 积木组合版 · \(store.filteredSnippets.count)/\(store.snippets.count) 个片段")
+                Text("\(AppMetadata.displayVersion) 积木组合版 · \(store.filteredSnippets.count)/\(store.snippets.count) 个片段")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }

@@ -2,6 +2,12 @@
 
 > A local-first macOS clipboard station for people working with many AI chats at once.
 
+[![CI](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/ci.yml/badge.svg)](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/ci.yml)
+[![Release](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/release.yml/badge.svg)](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/release.yml)
+![macOS](https://img.shields.io/badge/macOS-13%2B-68bdfd)
+![Swift](https://img.shields.io/badge/Swift-6-compatible-f05138)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 ![App icon](BundleResources/InspirationBubble.iconset/icon_128x128.png)
 
 Linggan Floating Ball, formerly AI Clipboard Station, is a tiny macOS menu bar app for collecting useful text, screenshots, and table snippets while you work across ChatGPT, Claude, Codex, browsers, notes, and spreadsheets.
@@ -89,7 +95,7 @@ open .build/ClipboardStation.app
 Create a local release zip:
 
 ```bash
-./Scripts/make-release-zip.sh local
+./Scripts/make-release-zip.sh
 ```
 
 The packaged app is not notarized yet. macOS may ask you to approve opening it from Privacy & Security.
@@ -179,6 +185,15 @@ swift test
 ```
 
 CI runs the same build and test checks on GitHub Actions. Tagged releases matching `v*` build a zip artifact automatically.
+
+Maintainers can cut a prerelease with:
+
+```bash
+git tag v0.4.0
+git push origin v0.4.0
+```
+
+The release workflow uses [VERSION](VERSION) for local zips and the Git tag for GitHub release zips.
 
 ## License
 

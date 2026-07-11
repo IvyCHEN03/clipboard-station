@@ -8,6 +8,7 @@ This project is not ready for a broad non-developer release until signing and no
 - [ ] `swift test` passes locally.
 - [ ] GitHub Actions CI passes on `main`.
 - [ ] README install instructions match the current build path.
+- [ ] `VERSION`, `BundleResources/Info.plist`, README release command, and the intended Git tag refer to the same version.
 - [ ] `CHANGELOG.md` has an entry for the release.
 - [ ] No `.build/`, local app data, API keys, or private screenshots are committed.
 - [ ] Privacy-impacting changes are reflected in `PRIVACY.md`.

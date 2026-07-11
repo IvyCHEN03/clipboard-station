@@ -13,3 +13,4 @@
 - Added local install, uninstall, doctor, and release zip scripts.
 - Added GitHub Actions CI and release workflows.
 - Added initial tests for AI enrichment response decoding.
+- Standardized the project version metadata around v0.4.0.
