@@ -67,6 +67,7 @@ Suggested channels:
 - [ ] Ask users to paste copied diagnostics for bug reports.
 - [ ] Convert repeated questions into [FAQ.md](FAQ.md) updates.
 - [ ] Convert repeated setup issues into [INSTALL.md](INSTALL.md) updates.
+- [ ] Review Dependabot PRs for GitHub Actions updates.
 - [ ] Tag approachable fixes as good first issues.
 - [ ] Keep scope tight: reliability and onboarding before large new features.
 

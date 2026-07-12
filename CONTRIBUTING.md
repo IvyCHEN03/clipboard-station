@@ -58,6 +58,7 @@ See [Good First Issues](docs/GOOD_FIRST_ISSUES.md) for scoped starter tasks acro
 - If UI behavior changes, include before/after screenshots when possible.
 
 Code ownership is tracked in [.github/CODEOWNERS](.github/CODEOWNERS).
+GitHub Actions dependency updates are managed by [.github/dependabot.yml](.github/dependabot.yml).
 
 ## Security and Privacy
 
