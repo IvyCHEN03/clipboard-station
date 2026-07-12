@@ -11,6 +11,7 @@ For repository profile, social launch, and first-week maintenance tasks, see [LA
 - [ ] README install instructions match the current build path.
 - [ ] `VERSION`, `BundleResources/Info.plist`, README release command, and the intended Git tag refer to the same version.
 - [ ] `CHANGELOG.md` has an entry for the release.
+- [ ] GitHub Release copy follows [RELEASE_NOTES_TEMPLATE.md](RELEASE_NOTES_TEMPLATE.md).
 - [ ] No `.build/`, local app data, API keys, or private screenshots are committed.
 - [ ] Privacy-impacting changes are reflected in `PRIVACY.md`.
 

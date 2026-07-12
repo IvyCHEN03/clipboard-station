@@ -114,6 +114,8 @@ Create a local release zip:
 ./Scripts/make-release-zip.sh
 ```
 
+Release notes should follow [Release Notes Template](docs/RELEASE_NOTES_TEMPLATE.md) so users see install limits, checksum steps, privacy notes, and known issues before downloading.
+
 The packaged app is not notarized yet. macOS may ask you to approve opening it from Privacy & Security.
 
 Uninstall the local app and launch agent:

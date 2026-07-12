@@ -20,6 +20,7 @@
 - Added a five-minute getting-started guide for first-time users.
 - Added an issue triage playbook for launch-week support and documentation feedback loops.
 - Added a guided usage-question issue template and security contact link for safer GitHub reports.
+- Added a release notes template focused on install trust, checksums, privacy, and known limitations.
 - Added Dependabot configuration for GitHub Actions maintenance.
 - Added architecture documentation and model-level tests for search, filters, and legacy decoding.
 - Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.
