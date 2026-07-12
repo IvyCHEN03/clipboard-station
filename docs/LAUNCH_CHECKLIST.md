@@ -65,6 +65,7 @@ Suggested channels:
 ## First Week Maintenance
 
 - [ ] Watch new issues daily.
+- [ ] Triage feedback with [TRIAGE.md](TRIAGE.md).
 - [ ] Ask users to paste copied diagnostics for bug reports.
 - [ ] Convert repeated questions into [FAQ.md](FAQ.md) updates.
 - [ ] Convert repeated setup issues into [INSTALL.md](INSTALL.md) updates.

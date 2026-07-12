@@ -59,6 +59,7 @@ See [Good First Issues](docs/GOOD_FIRST_ISSUES.md) for scoped starter tasks acro
 
 Code ownership is tracked in [.github/CODEOWNERS](.github/CODEOWNERS).
 GitHub Actions dependency updates are managed by [.github/dependabot.yml](.github/dependabot.yml).
+Issue response and prioritization guidance lives in [Triage Playbook](docs/TRIAGE.md).
 
 ## Security and Privacy
 

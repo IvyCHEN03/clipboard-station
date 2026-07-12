@@ -21,6 +21,8 @@ Please check:
 - General questions: read `docs/FAQ.md` first.
 - Build or install problems: include macOS version, Swift version, and the command output.
 
+Maintainers can use `docs/TRIAGE.md` to prioritize and respond to issues.
+
 ## Useful Commands
 
 ```bash
