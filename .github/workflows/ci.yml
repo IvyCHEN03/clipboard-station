@@ -18,8 +18,5 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
-      - name: Build
-        run: swift build
-
-      - name: Test
-        run: swift test
+      - name: Check project
+        run: ./Scripts/check-project.sh

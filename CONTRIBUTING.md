@@ -28,8 +28,7 @@ open .build/ClipboardStation.app
 Run checks:
 
 ```bash
-swift build
-swift test
+./Scripts/check-project.sh
 ```
 
 Before changing capture, persistence, AI tagging, or permissions, read [Architecture](docs/ARCHITECTURE.md).

@@ -188,11 +188,10 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
 Quality gates:
 
 ```bash
-swift build
-swift test
+./Scripts/check-project.sh
 ```
 
-CI runs the same build and test checks on GitHub Actions. Tagged releases matching `v*` build a zip artifact automatically.
+CI runs the same project checks on GitHub Actions. Tagged releases matching `v*` build a zip artifact automatically.
 
 Maintainers can cut a prerelease with:
 

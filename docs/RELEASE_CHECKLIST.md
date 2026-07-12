@@ -4,8 +4,7 @@ This project is not ready for a broad non-developer release until signing and no
 
 ## Preflight
 
-- [ ] `swift build` passes locally.
-- [ ] `swift test` passes locally.
+- [ ] `./Scripts/check-project.sh` passes locally.
 - [ ] GitHub Actions CI passes on `main`.
 - [ ] README install instructions match the current build path.
 - [ ] `VERSION`, `BundleResources/Info.plist`, README release command, and the intended Git tag refer to the same version.
