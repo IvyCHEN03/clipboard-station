@@ -47,11 +47,11 @@ Run:
 
 The doctor should report:
 
-- packaged app exists, if you built locally
-- installed app exists
-- launch agent exists
-- launch agent target exists
-- process is running, if the app is active
+- `OK` for healthy install checks
+- `WARN` for anything that needs attention
+- a final summary with suggested repair commands
+
+The doctor does not print clipboard contents, snippets, API keys, or encrypted local state. If you paste the output into a GitHub issue, quickly check whether local file paths reveal anything you want to redact.
 
 ## Permissions
 

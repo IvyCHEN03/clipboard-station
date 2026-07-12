@@ -5,78 +5,113 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_SUPPORT="$HOME/Library/Application Support/ClipboardStation"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.local.clipboard-station.agent.plist"
 INSTALLED_APP="$HOME/Applications/ClipboardStation.app"
+WARNINGS=0
+
+ok() {
+  echo "  OK   $1"
+}
+
+warn() {
+  WARNINGS=$((WARNINGS + 1))
+  echo "  WARN $1"
+}
+
+info() {
+  echo "  INFO $1"
+}
 
 echo "Linggan Floating Ball doctor"
+echo "Privacy note: this script does not print clipboard contents, snippets, API keys, or encrypted local state."
 echo
 
 echo "Swift:"
 if command -v swift >/dev/null 2>&1; then
-  swift --version | head -n 1
+  SWIFT_VERSION="$(swift --version 2>&1 | head -n 1)"
+  ok "$SWIFT_VERSION"
 else
-  echo "  missing"
+  warn "Swift is missing. Install Xcode command line tools before building from source."
 fi
 
 echo
 echo "Repository:"
-echo "  $ROOT_DIR"
+info "$ROOT_DIR"
 
 echo
 echo "Build:"
 if [[ -d "$ROOT_DIR/.build/ClipboardStation.app" ]]; then
-  echo "  packaged app exists: $ROOT_DIR/.build/ClipboardStation.app"
+  ok "packaged app exists: $ROOT_DIR/.build/ClipboardStation.app"
 else
-  echo "  packaged app missing; run ./Scripts/package-app.sh"
+  warn "packaged app missing. Run ./Scripts/package-app.sh if you want a local .app bundle."
 fi
 
 echo
 echo "Install:"
 if [[ -d "$INSTALLED_APP" ]]; then
-  echo "  installed app exists: $INSTALLED_APP"
+  ok "installed app exists: $INSTALLED_APP"
 else
-  echo "  installed app missing; run ./Scripts/install-local.sh"
+  warn "installed app missing. Run ./Scripts/install-local.sh."
 fi
 
 echo
 echo "Launch agent:"
 if [[ -f "$LAUNCH_AGENT" ]]; then
-  echo "  exists: $LAUNCH_AGENT"
+  ok "exists: $LAUNCH_AGENT"
   AGENT_TARGET="$(/usr/libexec/PlistBuddy -c 'Print :ProgramArguments:0' "$LAUNCH_AGENT" 2>/dev/null || true)"
   if [[ -n "$AGENT_TARGET" ]]; then
-    echo "  target: $AGENT_TARGET"
+    info "target: $AGENT_TARGET"
     if [[ -x "$AGENT_TARGET" ]]; then
-      echo "  target exists: yes"
+      ok "target executable exists"
     else
-      echo "  target exists: no"
-      echo "  repair: run ./Scripts/install-local.sh"
+      warn "target executable is missing. Run ./Scripts/install-local.sh."
     fi
+  else
+    warn "could not read launch agent target. Reinstall with ./Scripts/install-local.sh."
   fi
   if launchctl print "gui/$(id -u)/com.local.clipboard-station.agent" >/dev/null 2>&1; then
-    echo "  loaded: yes"
+    ok "loaded in launchctl"
   else
-    echo "  loaded: no"
+    warn "not loaded in launchctl. Run ./Scripts/install-local.sh."
   fi
 else
-  echo "  missing"
+  warn "missing. Run ./Scripts/install-local.sh."
 fi
 
 echo
 echo "Process:"
 if pgrep -fl "ClipboardStation" >/dev/null 2>&1; then
-  pgrep -fl "ClipboardStation"
+  ok "running process found"
+  pgrep -fl "ClipboardStation" | sed 's/^/  INFO /'
 else
-  echo "  not running"
+  warn "not running. Open $INSTALLED_APP or run ./Scripts/install-local.sh."
 fi
 
 echo
 echo "Local data:"
 if [[ -d "$APP_SUPPORT" ]]; then
-  echo "  exists: $APP_SUPPORT"
+  ok "exists: $APP_SUPPORT"
+  if [[ -f "$APP_SUPPORT/state.enc" ]]; then
+    ok "encrypted snippet state exists"
+  else
+    info "encrypted snippet state has not been created yet"
+  fi
+  if [[ -d "$APP_SUPPORT/Attachments" ]]; then
+    info "attachments folder exists"
+  fi
 else
-  echo "  not created yet"
+  info "not created yet"
 fi
 
 echo
-echo "If the floating bubble is not visible:"
-echo "  1. Run ./Scripts/install-local.sh"
-echo "  2. Check macOS Accessibility permission if paste automation fails"
-echo "  3. Open the menu bar icon or relaunch $INSTALLED_APP"
+echo "Summary:"
+if [[ "$WARNINGS" -eq 0 ]]; then
+  echo "  OK   No install problems detected."
+else
+  echo "  WARN $WARNINGS potential issue(s) detected."
+fi
+
+echo
+echo "Next steps:"
+echo "  - If the floating bubble is missing, run ./Scripts/install-local.sh."
+echo "  - If paste automation fails, grant Accessibility permission to ClipboardStation in macOS Settings."
+echo "  - If macOS blocks the app, approve it in System Settings > Privacy & Security."
+echo "  - If reports are needed, paste this doctor output into a GitHub issue after checking it contains no private paths you want to hide."

@@ -22,6 +22,7 @@
 - Added a guided usage-question issue template and security contact link for safer GitHub reports.
 - Added a release notes template focused on install trust, checksums, privacy, and known limitations.
 - Added README quick-start and project-map sections for faster first-time evaluation.
+- Improved the doctor script with privacy notes, OK/WARN status lines, summaries, and repair hints.
 - Added Dependabot configuration for GitHub Actions maintenance.
 - Added architecture documentation and model-level tests for search, filters, and legacy decoding.
 - Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.

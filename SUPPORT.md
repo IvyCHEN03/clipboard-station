@@ -20,6 +20,7 @@ Please check:
 - Privacy questions: read `PRIVACY.md` first, then open an issue if something is unclear.
 - General questions: read `docs/FAQ.md` first.
 - Build or install problems: include macOS version, Swift version, and the command output.
+- Install or launch problems: paste `./Scripts/doctor.sh` output after redacting private local paths if needed.
 
 Maintainers can use `docs/TRIAGE.md` to prioritize and respond to issues.
 
