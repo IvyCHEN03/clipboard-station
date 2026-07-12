@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: FAQ
+    url: https://github.com/IvyCHEN03/clipboard-station/blob/main/docs/FAQ.md
+    about: Read common answers about privacy, install, shortcuts, AI tagging, and diagnostics.
   - name: Privacy notes
     url: https://github.com/IvyCHEN03/clipboard-station/blob/main/PRIVACY.md
     about: Read how local data and optional AI tagging work.

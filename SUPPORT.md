@@ -10,6 +10,7 @@ Please check:
 - macOS Accessibility permission is granted if automatic paste or simulated copy/paste is not working.
 - Clipboard monitoring is enabled in Settings.
 - AI tagging is enabled only if you configured Base URL, model, and API key.
+- Common questions in `docs/FAQ.md`.
 - Private content has been removed from screenshots or logs.
 
 ## Where To Ask
@@ -17,6 +18,7 @@ Please check:
 - Bugs: open a bug report issue.
 - Feature ideas: open a feature request issue.
 - Privacy questions: read `PRIVACY.md` first, then open an issue if something is unclear.
+- General questions: read `docs/FAQ.md` first.
 - Build or install problems: include macOS version, Swift version, and the command output.
 
 ## Useful Commands

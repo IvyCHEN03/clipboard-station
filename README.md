@@ -89,6 +89,8 @@ New users can follow the short [User Guide](docs/USER_GUIDE.md) for the first-ru
 
 Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipeline, data model, persistence flow, and testing map.
 
+Common privacy, install, shortcut, AI, and contribution questions are answered in [FAQ](docs/FAQ.md).
+
 For development, run directly from source:
 
 ```bash
