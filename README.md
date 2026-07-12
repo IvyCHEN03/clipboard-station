@@ -85,6 +85,8 @@ The floating bubble should appear after installation. The app will also start on
 
 New users can follow the short [User Guide](docs/USER_GUIDE.md) for the first-run workflow, snippet collection, block composition, and AI tagging setup.
 
+Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipeline, data model, persistence flow, and testing map.
+
 For development, run directly from source:
 
 ```bash

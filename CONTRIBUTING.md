@@ -32,6 +32,8 @@ swift build
 swift test
 ```
 
+Before changing capture, persistence, AI tagging, or permissions, read [Architecture](docs/ARCHITECTURE.md).
+
 ## Product Principles
 
 - Local-first by default.
@@ -45,6 +47,7 @@ swift test
 - Improve onboarding and permission copy.
 - Add screenshots or a demo GIF.
 - Add tests for `AIEnricher` parsing behavior.
+- Add tests for snippet search, filters, and decoding compatibility.
 - Add tests for persistence and import type detection.
 - Improve accessibility labels and keyboard navigation.
 - Improve README installation steps for non-developers.

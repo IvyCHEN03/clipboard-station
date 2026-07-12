@@ -10,6 +10,7 @@
 - Added queue status and per-snippet retry for AI tagging failures.
 - Added first-run onboarding and a user guide for new open-source users.
 - Added a demo script and screenshot checklist for README and release assets.
+- Added architecture documentation and model-level tests for search, filters, and legacy decoding.
 - Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.
 - Added local install, uninstall, doctor, and release zip scripts.
 - Added GitHub Actions CI and release workflows.
