@@ -15,6 +15,7 @@
 - Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.
 - Added local install, uninstall, doctor, and release zip scripts.
 - Added a project check script for build, tests, shell syntax, plist, and version metadata.
+- Added release checksums and a non-developer install guide.
 - Added GitHub Actions CI and release workflows.
 - Added initial tests for AI enrichment response decoding.
 - Standardized the project version metadata around v0.4.0.

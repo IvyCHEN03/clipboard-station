@@ -19,18 +19,21 @@ jobs:
       - name: Show Swift version
         run: swift --version
 
-      - name: Test
-        run: swift test
+      - name: Check project
+        run: ./Scripts/check-project.sh
 
       - name: Build zip
         id: build_zip
         run: |
           ZIP_PATH="$(./Scripts/make-release-zip.sh "${GITHUB_REF_NAME}")"
           echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+          echo "checksum_path=$ZIP_PATH.sha256" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.build_zip.outputs.zip_path }}
+          files: |
+            ${{ steps.build_zip.outputs.zip_path }}
+            ${{ steps.build_zip.outputs.checksum_path }}
           generate_release_notes: true
           prerelease: true

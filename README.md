@@ -60,7 +60,9 @@ Global shortcuts are intentionally secondary. Some apps, including developer too
 
 This project is currently source-first. A signed release is on the roadmap.
 
-If a GitHub Release is available, download `Linggan-Floating-Ball-<version>.zip`, unzip it, and open `ClipboardStation.app`. Release builds are currently unsigned and may require approval in macOS Privacy & Security.
+If a GitHub Release is available, download `Linggan-Floating-Ball-<version>.zip`, verify the matching `.sha256` file, unzip it, and open `ClipboardStation.app`. Release builds are currently unsigned and may require approval in macOS Privacy & Security.
+
+For non-developer setup, checksum verification, permissions, and uninstall steps, read [Install Guide](docs/INSTALL.md).
 
 Requirements:
 
