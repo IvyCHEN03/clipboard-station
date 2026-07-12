@@ -35,6 +35,8 @@ cd clipboard-station
 
 This installs the app into `~/Applications/ClipboardStation.app` and starts a user LaunchAgent so the floating bubble can stay available.
 
+After installing, follow [GETTING_STARTED.md](GETTING_STARTED.md) for the five-minute first run.
+
 ## Verify Local Install
 
 Run:

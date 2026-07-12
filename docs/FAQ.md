@@ -4,6 +4,10 @@
 
 No. Linggan Floating Ball is local-first. Clipboard content is stored locally and encrypted on disk. Nothing is uploaded unless you enable AI title/tag generation and configure an API provider.
 
+## What should I do first?
+
+Follow [GETTING_STARTED.md](GETTING_STARTED.md). It walks through install, the floating bubble, demo snippets, real capture, composition, and optional AI tags.
+
 ## When does AI tagging send data out?
 
 Only snippets that need AI-generated titles or tags are sent, and only after AI tagging is enabled with a Base URL, model, and API key. Existing tags are preserved and are not regenerated unless the app is asked to process missing tags.

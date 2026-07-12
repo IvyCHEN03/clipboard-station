@@ -87,7 +87,7 @@ Install a local app into `~/Applications` and start the launch agent:
 
 The floating bubble should appear after installation. The app will also start on login through a user LaunchAgent.
 
-New users can follow the short [User Guide](docs/USER_GUIDE.md) for the first-run workflow, snippet collection, block composition, and AI tagging setup.
+New users can follow [Getting Started](docs/GETTING_STARTED.md) for a five-minute trial path, then [User Guide](docs/USER_GUIDE.md) for the full workflow.
 
 Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipeline, data model, persistence flow, and testing map.
 
