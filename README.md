@@ -93,6 +93,8 @@ Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipelin
 
 Common privacy, install, shortcut, AI, and contribution questions are answered in [FAQ](docs/FAQ.md).
 
+For product fit and comparison with clipboard managers, launchers, cloud clipboard tools, and notes apps, read [Product Positioning](docs/POSITIONING.md).
+
 For development, run directly from source:
 
 ```bash

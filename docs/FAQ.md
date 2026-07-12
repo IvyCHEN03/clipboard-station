@@ -12,6 +12,10 @@ Only snippets that need AI-generated titles or tags are sent, and only after AI 
 
 Global shortcuts are fragile on macOS because other apps can reserve the same key combinations. The floating bubble and menu bar icon are more reliable, especially when working across browsers, AI tools, editors, and terminals.
 
+## Is this a replacement for a clipboard manager?
+
+Not exactly. It can collect clipboard content, but the product is optimized for AI-heavy work: collecting fragments, tagging them, reordering them, and composing a final prompt. See [POSITIONING.md](POSITIONING.md) for a deeper comparison.
+
 ## Why is the app unsigned?
 
 The project is still early and source-first. Signed and notarized releases are on the roadmap. Until then, macOS may require approval in Privacy & Security before opening a downloaded release build.

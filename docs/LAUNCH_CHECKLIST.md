@@ -20,6 +20,7 @@ Use this checklist when preparing the repository for a public push, first releas
 - [ ] Social preview image uses the blue bubble icon or a redacted app screenshot.
 - [ ] README badges render correctly.
 - [ ] README first screen shows the product value before implementation details.
+- [ ] [POSITIONING.md](POSITIONING.md) clearly explains who the app is and is not for.
 
 ## Release Readiness
 
@@ -76,6 +77,7 @@ Suggested channels:
 The repository should make these promises obvious within 30 seconds:
 
 - What it does: collect and compose fragments while using many AI chats.
+- Who it is for: people comparing, extracting, and recombining AI outputs.
 - Why it is safe: local-first, encrypted persistence, optional AI tagging.
 - How to try it: release zip or source install.
 - How to trust it: tests, checks, privacy docs, diagnostics, release checksum.
