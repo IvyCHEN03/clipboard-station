@@ -14,6 +14,8 @@ Linggan Floating Ball, formerly AI Clipboard Station, is a tiny macOS menu bar a
 
 It is designed for one very specific workflow: grab many fragments fast, keep them visible, tag them, reorder them like blocks, and paste a composed answer back into any AI input box.
 
+![Workflow preview](docs/assets/workflow-preview.svg)
+
 ## Demo
 
 A public demo GIF is planned. Until then, see [docs/DEMO.md](docs/DEMO.md) for the exact recording script, screenshot checklist, and release-note copy.

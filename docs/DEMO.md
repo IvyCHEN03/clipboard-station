@@ -28,6 +28,7 @@ Linggan Floating Ball is a local-first macOS clipboard station for collecting te
 
 Capture these still images for a polished GitHub README:
 
+- `workflow-preview.svg`: synthetic overview diagram used until a real GIF exists.
 - `01-empty-onboarding.png`: first-run empty state with the quick-start steps.
 - `02-collected-snippets.png`: text, screenshot, and table snippets in one list.
 - `03-filtered-tags.png`: time filter plus multiple selected tag chips.

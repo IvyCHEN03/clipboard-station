@@ -4,6 +4,7 @@ Place README-ready screenshots and GIFs here.
 
 Suggested files:
 
+- `workflow-preview.svg`
 - `hero.gif`
 - `01-empty-onboarding.png`
 - `02-collected-snippets.png`

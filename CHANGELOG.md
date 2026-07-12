@@ -15,6 +15,7 @@
 - Added an FAQ for privacy, install, shortcut, AI, diagnostics, and contribution questions.
 - Added CODEOWNERS and a categorized good-first-issues guide for new contributors.
 - Added a GitHub launch checklist for repository profile, release, visual assets, and first-week maintenance.
+- Added a synthetic workflow preview asset for the README.
 - Added Dependabot configuration for GitHub Actions maintenance.
 - Added architecture documentation and model-level tests for search, filters, and legacy decoding.
 - Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.
