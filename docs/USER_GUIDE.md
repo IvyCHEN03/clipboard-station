@@ -79,3 +79,5 @@ Existing tags are preserved. Failed snippets show a failure state and can be ret
 - Paste automation fails: grant Accessibility permission in macOS Settings.
 - AI returns quota errors: check provider billing and quota.
 - Old app icon still appears: relaunch the app; Finder or Dock icon caches may update after a short delay.
+
+When opening a GitHub issue, open Settings and click `复制诊断信息`. The copied text includes non-sensitive app status such as version, macOS, permissions, settings toggles, and snippet counts.

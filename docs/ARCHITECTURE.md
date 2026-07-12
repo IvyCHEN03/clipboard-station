@@ -26,6 +26,7 @@ The app intentionally allows repeated captures. Re-copying the same content can 
 - `SnippetKind`: display and export behavior for text, screenshot, spreadsheet, or file snippets.
 - `StationSettings`: user preferences, AI provider configuration, launch behavior, and persistence settings.
 - `TimeFilter`: the user-facing date filters used by the station.
+- `SupportDiagnostics`: non-sensitive status text users can copy into GitHub issues.
 
 ## Persistence And Privacy
 

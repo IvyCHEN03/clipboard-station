@@ -57,5 +57,5 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Screenshots or logs
-      description: Optional. Please redact private content.
+      label: Diagnostics, screenshots, or logs
+      description: Optional. In the app, open Settings and click "复制诊断信息", then paste it here. Please redact private content from screenshots or logs.

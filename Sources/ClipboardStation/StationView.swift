@@ -616,6 +616,11 @@ private struct SettingsView: View {
                 } label: {
                     Label("一键加入开机启动并常驻", systemImage: "power.circle")
                 }
+                Button {
+                    store.copyDiagnostics()
+                } label: {
+                    Label("复制诊断信息", systemImage: "stethoscope")
+                }
             }
 
             Toggle("监听普通复制", isOn: $store.settings.monitorClipboard)

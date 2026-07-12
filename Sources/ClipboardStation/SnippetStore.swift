@@ -531,6 +531,33 @@ final class SnippetStore: ObservableObject {
         addPasteboardContents(source: .manualPasteboardImport)
     }
 
+    func copyDiagnostics() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(makeDiagnostics().rendered, forType: .string)
+        markInternalPasteboardWrite()
+        showToast("已复制诊断信息")
+    }
+
+    func makeDiagnostics() -> SupportDiagnostics {
+        SupportDiagnostics(
+            appVersion: AppMetadata.version,
+            appBuild: AppMetadata.build,
+            macOSVersion: ProcessInfo.processInfo.operatingSystemVersionString,
+            snippetCount: snippets.count,
+            filteredSnippetCount: filteredSnippets.count,
+            draftBlockCount: draftSnippetIDs.count,
+            monitorClipboard: settings.monitorClipboard,
+            autoPaste: settings.autoPaste,
+            persistSnippets: settings.persistSnippets,
+            launchAtLogin: settings.launchAtLogin,
+            aiEnrichment: settings.aiEnrichment,
+            aiProviderHost: SupportDiagnostics.providerHost(from: settings.aiBaseURL),
+            aiModel: settings.aiModel,
+            shortcutStatus: shortcutStatusText,
+            accessibilityTrusted: isAccessibilityTrusted
+        )
+    }
+
     func loadDemoSnippets() {
         let existingDemoTitles = Set(DemoContent.makeSnippets().map(\.title))
         snippets.removeAll { existingDemoTitles.contains($0.title) }
