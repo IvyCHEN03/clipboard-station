@@ -2,6 +2,8 @@
 
 Use this script to record a short GIF, video, or screenshot set for README, releases, and social posts.
 
+For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
+
 ## One-Sentence Pitch
 
 Linggan Floating Ball is a local-first macOS clipboard station for collecting text, screenshots, and table snippets while working across many AI chats.

@@ -2,6 +2,8 @@
 
 This project is not ready for a broad non-developer release until signing and notarization are in place. Use this checklist when preparing any public release.
 
+For repository profile, social launch, and first-week maintenance tasks, see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
+
 ## Preflight
 
 - [ ] `./Scripts/check-project.sh` passes locally.

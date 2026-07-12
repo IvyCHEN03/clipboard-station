@@ -14,6 +14,7 @@
 - Added a demo script and screenshot checklist for README and release assets.
 - Added an FAQ for privacy, install, shortcut, AI, diagnostics, and contribution questions.
 - Added CODEOWNERS and a categorized good-first-issues guide for new contributors.
+- Added a GitHub launch checklist for repository profile, release, visual assets, and first-week maintenance.
 - Added architecture documentation and model-level tests for search, filters, and legacy decoding.
 - Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.
 - Added local install, uninstall, doctor, and release zip scripts.

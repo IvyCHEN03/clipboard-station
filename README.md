@@ -206,6 +206,8 @@ git push origin v0.4.0
 
 The release workflow uses [VERSION](VERSION) for local zips and the Git tag for GitHub release zips.
 
+For a public repository launch, use [GitHub Launch Checklist](docs/LAUNCH_CHECKLIST.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
