@@ -16,6 +16,32 @@ It is designed for one very specific workflow: grab many fragments fast, keep th
 
 ![Workflow preview](docs/assets/workflow-preview.svg)
 
+## Quick Start
+
+For a first trial from source:
+
+```bash
+git clone https://github.com/IvyCHEN03/clipboard-station.git
+cd clipboard-station
+./Scripts/install-local.sh
+```
+
+Then click the small blue floating bubble, copy a few text fragments, and drag them into the composer at the bottom of the station.
+
+For a guided five-minute walkthrough, read [Getting Started](docs/GETTING_STARTED.md). For non-developer install details, read [Install Guide](docs/INSTALL.md).
+
+## Project Map
+
+| Need | Start here |
+| --- | --- |
+| Try the app quickly | [Getting Started](docs/GETTING_STARTED.md) |
+| Install, repair, or uninstall | [Install Guide](docs/INSTALL.md) |
+| Learn the full workflow | [User Guide](docs/USER_GUIDE.md) |
+| Understand privacy and AI tagging | [Privacy](PRIVACY.md) and [FAQ](docs/FAQ.md) |
+| Compare product positioning | [Product Positioning](docs/POSITIONING.md) |
+| Contribute a small fix | [Contributing](CONTRIBUTING.md) and [Good First Issues](docs/GOOD_FIRST_ISSUES.md) |
+| Prepare a release | [Release Checklist](docs/RELEASE_CHECKLIST.md) |
+
 ## Demo
 
 A public demo GIF is planned. Until then, see [docs/DEMO.md](docs/DEMO.md) for the exact recording script, screenshot checklist, and release-note copy.
@@ -87,13 +113,7 @@ Install a local app into `~/Applications` and start the launch agent:
 
 The floating bubble should appear after installation. The app will also start on login through a user LaunchAgent.
 
-New users can follow [Getting Started](docs/GETTING_STARTED.md) for a five-minute trial path, then [User Guide](docs/USER_GUIDE.md) for the full workflow.
-
 Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipeline, data model, persistence flow, and testing map.
-
-Common privacy, install, shortcut, AI, and contribution questions are answered in [FAQ](docs/FAQ.md).
-
-For product fit and comparison with clipboard managers, launchers, cloud clipboard tools, and notes apps, read [Product Positioning](docs/POSITIONING.md).
 
 For development, run directly from source:
 
