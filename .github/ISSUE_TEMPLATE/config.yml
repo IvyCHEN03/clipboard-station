@@ -3,6 +3,9 @@ contact_links:
   - name: FAQ
     url: https://github.com/IvyCHEN03/clipboard-station/blob/main/docs/FAQ.md
     about: Read common answers about privacy, install, shortcuts, AI tagging, and diagnostics.
+  - name: Good first issues
+    url: https://github.com/IvyCHEN03/clipboard-station/blob/main/docs/GOOD_FIRST_ISSUES.md
+    about: Find scoped starter tasks for documentation, tests, demos, and macOS reliability.
   - name: Privacy notes
     url: https://github.com/IvyCHEN03/clipboard-station/blob/main/PRIVACY.md
     about: Read how local data and optional AI tagging work.

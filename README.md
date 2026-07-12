@@ -182,12 +182,12 @@ See [ROADMAP.md](ROADMAP.md) for more detail.
 The project is early but usable. Good first contributions:
 
 - Fix macOS permission edge cases.
-- Improve onboarding copy and empty states.
 - Add tests for persistence, AI parsing, and snippet import behavior.
 - Improve accessibility labels and keyboard navigation.
-- Create installation docs for non-developers.
+- Add screenshots or a demo GIF.
+- Improve install and troubleshooting docs for non-developers.
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and [Good First Issues](docs/GOOD_FIRST_ISSUES.md) before opening a PR.
 
 Quality gates:
 

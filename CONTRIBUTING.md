@@ -45,13 +45,7 @@ Before changing capture, persistence, AI tagging, or permissions, read [Architec
 
 ## Good First Issues
 
-- Improve onboarding and permission copy.
-- Add screenshots or a demo GIF.
-- Add tests for `AIEnricher` parsing behavior.
-- Add tests for snippet search, filters, and decoding compatibility.
-- Add tests for persistence and import type detection.
-- Improve accessibility labels and keyboard navigation.
-- Improve README installation steps for non-developers.
+See [Good First Issues](docs/GOOD_FIRST_ISSUES.md) for scoped starter tasks across documentation, tests, macOS reliability, demo assets, and product polish.
 
 ## Pull Request Checklist
 
@@ -62,6 +56,8 @@ Before changing capture, persistence, AI tagging, or permissions, read [Architec
 - Run `swift build`.
 - Run `swift test`.
 - If UI behavior changes, include before/after screenshots when possible.
+
+Code ownership is tracked in [.github/CODEOWNERS](.github/CODEOWNERS).
 
 ## Security and Privacy
 
