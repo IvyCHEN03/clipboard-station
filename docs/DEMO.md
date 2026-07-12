@@ -9,16 +9,18 @@ Linggan Floating Ball is a local-first macOS clipboard station for collecting te
 ## 60-Second Flow
 
 1. Show the small blue floating bubble on the desktop.
-2. Open two or three AI/chat/browser windows with useful text.
-3. Copy a paragraph. Show it appears as a text snippet.
-4. Copy the same paragraph again. Show repeated captures are allowed.
-5. Copy spreadsheet-like cells. Show the table snippet.
-6. Copy or import a screenshot. Show the image preview.
-7. Click a time filter and two tag chips. Show the filtered count in the header.
-8. Drag three snippets into the bottom composer.
-9. Click between blocks and add a short custom sentence.
-10. Copy the composed output.
-11. Open Settings and show local status, launch-at-login, and optional AI tagging.
+2. Start from the empty state and click `载入示例`.
+3. Show text, table-like, and screenshot-insight examples with tags.
+4. Open two or three AI/chat/browser windows with useful text.
+5. Copy a paragraph. Show it appears as a text snippet.
+6. Copy the same paragraph again. Show repeated captures are allowed.
+7. Copy spreadsheet-like cells. Show the table snippet.
+8. Copy or import a screenshot. Show the image preview.
+9. Click a time filter and two tag chips. Show the filtered count in the header.
+10. Drag three snippets into the bottom composer.
+11. Click between blocks and add a short custom sentence.
+12. Copy the composed output.
+13. Open Settings and show local status, launch-at-login, and optional AI tagging.
 
 ## Screenshot Set
 

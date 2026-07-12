@@ -531,6 +531,14 @@ final class SnippetStore: ObservableObject {
         addPasteboardContents(source: .manualPasteboardImport)
     }
 
+    func loadDemoSnippets() {
+        let existingDemoTitles = Set(DemoContent.makeSnippets().map(\.title))
+        snippets.removeAll { existingDemoTitles.contains($0.title) }
+        snippets.insert(contentsOf: DemoContent.makeSnippets(), at: 0)
+        persist()
+        showToast("已载入示例片段")
+    }
+
     func shouldIgnorePasteboardChange(_ changeCount: Int) -> Bool {
         ignoredPasteboardChangeCounts.remove(changeCount) != nil
     }

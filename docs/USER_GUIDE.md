@@ -14,8 +14,9 @@ For a quick visual walkthrough plan, see [DEMO.md](DEMO.md).
 
 2. Look for the small blue bubble near the screen edge.
 3. Click the bubble or the menu bar icon to open the station.
-4. Copy text, a screenshot, or spreadsheet cells from any app.
-5. Confirm the snippet appears in the station.
+4. Click `载入示例` if you want to try the workflow without using private clipboard content.
+5. Copy text, a screenshot, or spreadsheet cells from any app.
+6. Confirm the snippet appears in the station.
 
 If the bubble does not appear, run:
 

@@ -281,6 +281,12 @@ struct StationView: View {
                 }
 
                 Button {
+                    store.loadDemoSnippets()
+                } label: {
+                    Label("载入示例", systemImage: "sparkles")
+                }
+
+                Button {
                     showSettings = true
                 } label: {
                     Label("检查设置", systemImage: "gearshape")
