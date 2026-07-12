@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 final class FloatingTriggerController {
-    private static let triggerSize = NSSize(width: 50, height: 50)
+    private static let triggerSize = NSSize(width: 44, height: 44)
 
     private enum DefaultsKey {
         static let originX = "floating-trigger-origin-x"
@@ -42,6 +42,8 @@ final class FloatingTriggerController {
         let host = NSHostingController(rootView: triggerView)
         host.view.wantsLayer = true
         host.view.layer?.backgroundColor = NSColor.clear.cgColor
+        host.view.layer?.masksToBounds = true
+        host.view.layer?.cornerRadius = Self.triggerSize.width / 2
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: Self.triggerSize),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -162,17 +164,13 @@ private struct FloatingTriggerView: View {
                     .frame(width: 8, height: 6)
                     .offset(x: -9, y: -10)
             }
-            .frame(width: 42, height: 42)
+            .frame(width: 40, height: 40)
             .scaleEffect(pressed ? 0.94 : (hovering ? 1.08 : 1.0))
-            .shadow(
-                color: Color(red: 0.28, green: 0.62, blue: 1.0).opacity(hovering ? 0.34 : 0.22),
-                radius: hovering ? 10 : 7,
-                y: 4
-            )
         }
         .buttonStyle(.plain)
-        .frame(width: 50, height: 50)
+        .frame(width: 44, height: 44)
         .background(Color.clear)
+        .clipShape(Circle())
         .contentShape(Circle())
         .simultaneousGesture(
             DragGesture(minimumDistance: 7)
