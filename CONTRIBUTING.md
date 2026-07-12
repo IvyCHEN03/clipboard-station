@@ -31,6 +31,8 @@ Run checks:
 ./Scripts/check-project.sh
 ```
 
+For documentation-only changes, `./Scripts/check-doc-links.sh` is a faster local check for broken Markdown links.
+
 Before changing capture, persistence, AI tagging, or permissions, read [Architecture](docs/ARCHITECTURE.md).
 
 ## Product Principles

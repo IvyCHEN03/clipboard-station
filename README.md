@@ -195,7 +195,7 @@ Quality gates:
 ./Scripts/check-project.sh
 ```
 
-CI runs the same project checks on GitHub Actions. Tagged releases matching `v*` build a zip artifact automatically.
+CI runs the same project checks on GitHub Actions, including build, tests, shell syntax, local Markdown links, bundle plist, and version metadata. Tagged releases matching `v*` build a zip artifact automatically.
 
 Maintainers can cut a prerelease with:
 

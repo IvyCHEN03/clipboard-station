@@ -19,6 +19,10 @@ for script in Scripts/*.sh; do
 done
 
 echo
+echo "== Markdown links =="
+./Scripts/check-doc-links.sh
+
+echo
 echo "== Bundle plist =="
 plutil -lint BundleResources/Info.plist
 
