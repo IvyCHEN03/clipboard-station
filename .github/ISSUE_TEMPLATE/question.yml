@@ -1,0 +1,49 @@
+name: Usage question
+description: Ask how to install, configure, or use Linggan Floating Ball.
+title: "[Question]: "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not paste private clipboard contents, API keys, screenshots with sensitive data, or encrypted local state. For common setup answers, check the FAQ first.
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Install or launch
+        - Floating bubble or menu bar
+        - Clipboard capture
+        - Screenshots or OCR
+        - Spreadsheet snippets
+        - AI tags
+        - Composer blocks
+        - Privacy or local data
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do, and where did you get stuck?
+      placeholder: I installed the app and can see the bubble, but...
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: macOS 15.5
+  - type: input
+    id: install-method
+    attributes:
+      label: Install method
+      placeholder: Release zip, ./Scripts/install-local.sh, swift run, or other
+  - type: textarea
+    id: checked
+    attributes:
+      label: What have you tried?
+      description: Optional. Link to the docs you checked or commands you ran.

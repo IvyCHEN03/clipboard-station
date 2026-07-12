@@ -28,6 +28,7 @@ Recommended labels:
 - `bug`
 - `enhancement`
 - `documentation`
+- `question`
 - `privacy`
 - `permissions`
 - `install`

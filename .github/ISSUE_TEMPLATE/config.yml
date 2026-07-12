@@ -1,5 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
+  - name: Security and private data
+    url: https://github.com/IvyCHEN03/clipboard-station/blob/main/SECURITY.md
+    about: Read this before reporting anything involving clipboard contents, API keys, local state, or screenshots with private data.
   - name: FAQ
     url: https://github.com/IvyCHEN03/clipboard-station/blob/main/docs/FAQ.md
     about: Read common answers about privacy, install, shortcuts, AI tagging, and diagnostics.
