@@ -43,6 +43,7 @@ For a guided five-minute walkthrough, read [Getting Started](docs/GETTING_STARTE
 | Understand community expectations | [Code of Conduct](CODE_OF_CONDUCT.md) |
 | Prepare a release | [Release Checklist](docs/RELEASE_CHECKLIST.md) |
 | Configure repository labels | [GitHub Labels](docs/LABELS.md) |
+| Configure the GitHub profile | [Repository Profile](docs/REPOSITORY_PROFILE.md) |
 
 ## Demo
 

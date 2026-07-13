@@ -4,19 +4,7 @@ Use this checklist when preparing the repository for a public push, first releas
 
 ## Repository Profile
 
-- [ ] Description: `Local-first macOS clipboard station for working across many AI chats.`
-- [ ] Website: link to the latest GitHub release once one exists.
-- [ ] Topics:
-  - `macos`
-  - `swift`
-  - `swiftui`
-  - `clipboard`
-  - `menubar-app`
-  - `ai-tools`
-  - `local-first`
-  - `productivity`
-  - `privacy`
-  - `prompt-engineering`
+- [ ] Apply the About sidebar, topics, social preview, and pinned-repo copy from [REPOSITORY_PROFILE.md](REPOSITORY_PROFILE.md).
 - [ ] Social preview image uses the blue bubble icon or a redacted app screenshot.
 - [ ] README badges render correctly.
 - [ ] README first screen shows the product value before implementation details.

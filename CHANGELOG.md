@@ -19,6 +19,7 @@
 - Added an FAQ for privacy, install, shortcut, AI, diagnostics, and contribution questions.
 - Added CODEOWNERS and a categorized good-first-issues guide for new contributors.
 - Added a GitHub launch checklist for repository profile, release, visual assets, and first-week maintenance.
+- Added a repository profile guide with copy-ready GitHub About, topics, social preview, and launch-post text.
 - Added a synthetic workflow preview asset for the README.
 - Added product positioning docs comparing the app with clipboard managers, launchers, cloud clipboard tools, and notes apps.
 - Added a five-minute getting-started guide for first-time users.
