@@ -36,6 +36,7 @@ browser-extension/image-collector
 Images are saved through the browser download manager under a `LingganImages/...` folder.
 
 Native app bridge: `Cmd` + clicking the macOS Linggan floating bubble sends `Ctrl+Shift+L` to the active browser page.
+If `Cmd` + click still opens the station window, quit the old app instance and reinstall/reopen the latest build.
 
 Keyboard fallback while the page is focused: `Ctrl+Shift+L`.
 

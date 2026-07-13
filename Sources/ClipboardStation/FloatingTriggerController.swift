@@ -174,25 +174,112 @@ private struct FloatingTriggerView: View {
         .background(Color.clear)
         .clipShape(Circle())
         .contentShape(Circle())
-        .onTapGesture {
-            if NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.command) {
+        .overlay {
+            FloatingTriggerMouseCapture(
+                pressed: $pressed,
+                action: action,
+                commandAction: commandAction,
+                dragChanged: dragChanged,
+                dragEnded: dragEnded
+            )
+        }
+        .onHover { hovering = $0 }
+        .help("点一下打开/关闭灵感悬浮球，Cmd+点收当前浏览器帖子图片，拖动可换位置")
+    }
+}
+
+private struct FloatingTriggerMouseCapture: NSViewRepresentable {
+    @Binding var pressed: Bool
+    let action: () -> Void
+    let commandAction: () -> Void
+    let dragChanged: (CGSize) -> Void
+    let dragEnded: () -> Void
+
+    func makeNSView(context: Context) -> CaptureView {
+        CaptureView(
+            pressed: $pressed,
+            action: action,
+            commandAction: commandAction,
+            dragChanged: dragChanged,
+            dragEnded: dragEnded
+        )
+    }
+
+    func updateNSView(_ nsView: CaptureView, context: Context) {
+        nsView.pressed = $pressed
+        nsView.action = action
+        nsView.commandAction = commandAction
+        nsView.dragChanged = dragChanged
+        nsView.dragEnded = dragEnded
+    }
+
+    final class CaptureView: NSView {
+        var pressed: Binding<Bool>
+        var action: () -> Void
+        var commandAction: () -> Void
+        var dragChanged: (CGSize) -> Void
+        var dragEnded: () -> Void
+        private var downLocation: NSPoint?
+        private var didDrag = false
+
+        init(
+            pressed: Binding<Bool>,
+            action: @escaping () -> Void,
+            commandAction: @escaping () -> Void,
+            dragChanged: @escaping (CGSize) -> Void,
+            dragEnded: @escaping () -> Void
+        ) {
+            self.pressed = pressed
+            self.action = action
+            self.commandAction = commandAction
+            self.dragChanged = dragChanged
+            self.dragEnded = dragEnded
+            super.init(frame: .zero)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            nil
+        }
+
+        override func mouseDown(with event: NSEvent) {
+            downLocation = event.locationInWindow
+            didDrag = false
+            pressed.wrappedValue = true
+        }
+
+        override func mouseDragged(with event: NSEvent) {
+            guard let downLocation else {
+                return
+            }
+            let current = event.locationInWindow
+            let delta = CGSize(
+                width: current.x - downLocation.x,
+                height: downLocation.y - current.y
+            )
+            if abs(delta.width) > 4 || abs(delta.height) > 4 {
+                didDrag = true
+            }
+            dragChanged(delta)
+        }
+
+        override func mouseUp(with event: NSEvent) {
+            defer {
+                downLocation = nil
+                pressed.wrappedValue = false
+            }
+
+            if didDrag {
+                dragEnded()
+                return
+            }
+
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if flags.contains(.command) {
                 commandAction()
             } else {
                 action()
             }
         }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 7)
-                .onChanged { value in
-                    pressed = true
-                    dragChanged(value.translation)
-                }
-                .onEnded { _ in
-                    pressed = false
-                    dragEnded()
-                }
-        )
-        .onHover { hovering = $0 }
-        .help("点一下打开/关闭灵感悬浮球，Cmd+点收当前浏览器帖子图片，拖动可换位置")
     }
 }
