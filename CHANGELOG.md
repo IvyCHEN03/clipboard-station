@@ -22,6 +22,7 @@
 - Added a repository profile guide with copy-ready GitHub About, topics, social preview, and launch-post text.
 - Added a synthetic workflow preview asset for the README.
 - Added product positioning docs comparing the app with clipboard managers, launchers, cloud clipboard tools, and notes apps.
+- Updated the roadmap to reflect completed onboarding, backup, export, cleanup, test, and launch-readiness work.
 - Added a five-minute getting-started guide for first-time users.
 - Added an issue triage playbook for launch-week support and documentation feedback loops.
 - Added a guided usage-question issue template and security contact link for safer GitHub reports.

@@ -203,8 +203,9 @@ Read [PRIVACY.md](PRIVACY.md) for the full data flow.
 The next product priorities are:
 
 - Signed and notarized releases.
-- A polished onboarding flow for permissions and launch at login.
-- A clearer first-run empty state with a short demo workflow.
+- A real screenshot or short demo GIF.
+- More persistence and pasteboard-import edge-case tests.
+- Better keyboard-first navigation in the snippet list and block composer.
 - Better OCR controls for screenshots.
 - Optional release builds with Sparkle or a simple updater.
 
