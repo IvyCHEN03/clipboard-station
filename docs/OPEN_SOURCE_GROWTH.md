@@ -39,7 +39,7 @@ Current assets that support this:
 
 Still needed:
 
-- A real redacted screenshot or short GIF above the fold.
+- A real redacted 8-15 second GIF above the fold; the synthetic hero is only a temporary substitute.
 - A release badge that points to a usable prerelease once the first public zip exists.
 
 ### 2. First 2 Minutes

@@ -14,19 +14,30 @@ It is designed for one very specific workflow: grab many fragments fast, keep th
 
 ![Linggan Floating Ball app preview](docs/assets/hero-preview.svg)
 
-## 30-Second Tour
+## 10-Second Pitch
 
-Use Linggan Floating Ball when one clipboard is not enough:
+Use Linggan Floating Ball when the normal clipboard is too small for AI-heavy work.
+
+It gives copied fragments a local, visible place to land, then lets you filter and compose them into one final prompt.
+
+## Best Fit
+
+Use it if you:
+
+- Compare answers across several AI chats.
+- Collect quotes, logs, screenshots, spreadsheet cells, or notes before asking a better question.
+- Need repeated copies to stay in order instead of being deduplicated away.
+- Want local-first storage instead of cloud clipboard sync.
+
+Skip it if you mainly need cross-device clipboard sync, long-term note taking, or a full clipboard-history replacement.
+
+## 2-Minute Trial
 
 1. Copy useful fragments from AI chats, web pages, notes, screenshots, or spreadsheets.
 2. Click the small blue floating bubble to keep everything visible.
 3. Filter by search, tag, type, or recent time window.
 4. Drag snippets into the bottom composer and type text between the blocks.
 5. Copy the final composed prompt back into any AI input box.
-
-Best fit: researchers, builders, students, operators, and anyone comparing answers across several AI tools at once.
-
-Not the goal: cloud clipboard sync, full note taking, or replacing every clipboard manager.
 
 ## Quick Start
 
@@ -70,9 +81,11 @@ The app is usable today, but still pre-1.0:
 
 ## Demo
 
-A public demo GIF is planned. Until then, see [docs/DEMO.md](docs/DEMO.md) for the exact recording script, screenshot checklist, and release-note copy.
+The README currently uses a synthetic hero preview so the workflow is visible without exposing private clipboard content. A real redacted GIF is the top launch asset still needed.
 
-The core flow is simple: copy fragments, filter them, drag the useful ones into the composer, add text between blocks, and paste the final prompt.
+The GIF should show the core loop: copy fragments, open the floating bubble, filter snippets, drag useful ones into the composer, add text between blocks, and copy the final prompt.
+
+See [docs/DEMO.md](docs/DEMO.md) for the recording script, screenshot checklist, privacy rules, and release-note copy.
 
 ![Workflow preview](docs/assets/workflow-preview.svg)
 

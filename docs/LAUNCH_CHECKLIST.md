@@ -30,7 +30,8 @@ Use this checklist when preparing the repository for a public push, first releas
 ## Visual Assets
 
 - [ ] README uses `docs/assets/hero-preview.svg` or a stronger real screenshot above the fold.
-- [ ] Add `docs/assets/hero.gif`.
+- [ ] Add `docs/assets/hero.gif` before broad social launch.
+- [ ] Confirm `hero.gif` follows the 8-15 second flow and privacy checklist in [DEMO.md](DEMO.md).
 - [ ] Add the five screenshots listed in [DEMO.md](DEMO.md).
 - [ ] Use synthetic or redacted content only.
 - [ ] Keep GIF/video under a size that loads quickly on GitHub.
