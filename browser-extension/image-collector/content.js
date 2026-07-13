@@ -1,11 +1,26 @@
 (() => {
   const ROOT_ID = "linggan-image-collector-root";
   const MIN_IMAGE_EDGE = 120;
+  const POST_SELECTORS = [
+    "[role='dialog']",
+    "[data-e2e='note-detail']",
+    "[class*='note-container']",
+    "[class*='note-detail']",
+    "[class*='note-content']",
+    "[class*='media-container']",
+    "[class*='feed-detail']",
+    "[class*='post-detail']",
+    "[class*='swiper']",
+    "[class*='article']",
+    "article",
+    "main"
+  ];
   const state = {
     images: [],
     expanded: false,
     selected: new Set(),
-    status: ""
+    status: "",
+    sourceLabel: ""
   };
 
   if (document.getElementById(ROOT_ID)) {
@@ -15,12 +30,14 @@
   const root = document.createElement("div");
   root.id = ROOT_ID;
   root.innerHTML = `
-    <button class="lic-trigger" type="button" title="收集本页图片">收图</button>
+    <button class="lic-trigger" type="button" title="灵感收图：点击打开，Cmd+点击直接收当前帖子图片" aria-label="灵感收图">
+      <span class="lic-bubble-mark">✦</span>
+    </button>
     <section class="lic-panel lic-hidden" aria-label="灵感图片采集器">
       <div class="lic-header">
         <div>
-          <div class="lic-title">图片格</div>
-          <div class="lic-subtitle">双击展开，勾选后保存</div>
+          <div class="lic-title">灵感图片格</div>
+          <div class="lic-subtitle">Cmd+点泡泡直接收当前帖子</div>
         </div>
         <div class="lic-actions">
           <button class="lic-small" type="button" data-action="refresh">刷新</button>
@@ -46,8 +63,12 @@
   const toolbar = root.querySelector(".lic-toolbar");
   const status = root.querySelector(".lic-status");
 
-  trigger.addEventListener("click", () => {
+  trigger.addEventListener("click", event => {
     collectAndRender();
+    if (event.metaKey) {
+      state.expanded = true;
+      render();
+    }
     panel.classList.remove("lic-hidden");
   });
 
@@ -57,8 +78,11 @@
   });
 
   panel.addEventListener("click", event => {
-    const action = event.target?.dataset?.action;
+    const button = event.target?.closest?.("button[data-action]");
+    const action = button?.dataset?.action;
     if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
 
     if (action === "refresh") {
       collectAndRender();
@@ -89,11 +113,13 @@
   });
 
   function collectAndRender() {
-    state.images = collectImages();
+    const result = collectImages();
+    state.images = result.images;
+    state.sourceLabel = result.sourceLabel;
     state.selected = new Set(state.images.map(image => image.id));
     state.expanded = false;
     state.status = state.images.length
-      ? `已收集 ${state.images.length} 张候选图片`
+      ? `已从${state.sourceLabel}收集 ${state.images.length} 张候选图片`
       : "没有找到适合保存的大图";
     render();
   }
@@ -188,20 +214,21 @@
   }
 
   function collectImages() {
+    const scope = findBestImageScope();
     const found = [];
     const seen = new Set();
 
-    for (const img of document.images) {
+    for (const img of scope.element.querySelectorAll("img, picture img")) {
       const url = normalizeURL(img.currentSrc || img.src);
       if (!url || seen.has(url)) continue;
       const width = img.naturalWidth || img.width || 0;
       const height = img.naturalHeight || img.height || 0;
       if (!looksUsefulImage(url, width, height)) continue;
       seen.add(url);
-      found.push(toImageRecord(url, img.alt, width, height));
+      found.push(toImageRecord(url, img.alt, width, height, img.getBoundingClientRect()));
     }
 
-    for (const element of document.querySelectorAll("*")) {
+    for (const element of scope.element.querySelectorAll("*")) {
       const style = getComputedStyle(element);
       for (const url of extractBackgroundURLs(style.backgroundImage)) {
         const normalized = normalizeURL(url);
@@ -209,14 +236,22 @@
         const rect = element.getBoundingClientRect();
         if (!looksUsefulImage(normalized, rect.width, rect.height)) continue;
         seen.add(normalized);
-        found.push(toImageRecord(normalized, element.getAttribute("aria-label") || "", rect.width, rect.height));
+        found.push(toImageRecord(normalized, element.getAttribute("aria-label") || "", rect.width, rect.height, rect));
       }
     }
 
-    return found.slice(0, 80);
+    const images = found
+      .filter(image => isInsideReadableArea(scope.element, image.sourceRect))
+      .map(({ sourceRect, ...image }) => image)
+      .slice(0, 80);
+
+    return {
+      images,
+      sourceLabel: scope.label
+    };
   }
 
-  function toImageRecord(url, alt, width, height) {
+  function toImageRecord(url, alt, width, height, sourceRect) {
     const id = stableID(url);
     return {
       id,
@@ -224,8 +259,74 @@
       alt: alt || "",
       label: imageLabel(url, width, height),
       name: imageName(url, id),
-      type: typeFromURL(url)
+      type: typeFromURL(url),
+      sourceRect
     };
+  }
+
+  function findBestImageScope() {
+    const candidates = [];
+    for (const selector of POST_SELECTORS) {
+      for (const element of document.querySelectorAll(selector)) {
+        if (element === root || root.contains(element)) continue;
+        const score = imageScopeScore(element);
+        if (score > 0) {
+          candidates.push({ element, score, label: scopeLabelFor(selector) });
+        }
+      }
+    }
+
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => b.score - a.score);
+      return candidates[0];
+    }
+
+    return {
+      element: document.body || document.documentElement,
+      label: "页面"
+    };
+  }
+
+  function imageScopeScore(element) {
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 240 || rect.height < 180) return 0;
+    const viewportOverlap = overlapArea(rect, {
+      left: 0,
+      top: 0,
+      right: window.innerWidth,
+      bottom: window.innerHeight,
+      width: window.innerWidth,
+      height: window.innerHeight
+    });
+    const visibleBonus = viewportOverlap > 0 ? 1000 : 0;
+    const imageCount = [...element.querySelectorAll("img")]
+      .filter(img => looksUsefulImage(normalizeURL(img.currentSrc || img.src), img.naturalWidth || img.width || 0, img.naturalHeight || img.height || 0))
+      .length;
+    const textLength = (element.innerText || "").trim().length;
+    const area = Math.min(rect.width * rect.height, 1_200_000);
+    const className = String(element.className || "");
+    const postClassBonus = /note|post|media|swiper|article/i.test(className) ? 800 : 0;
+    return visibleBonus + postClassBonus + imageCount * 250 + Math.min(textLength, 3000) * 0.08 + area / 3000;
+  }
+
+  function scopeLabelFor(selector) {
+    if (selector.includes("dialog")) return "当前弹窗";
+    if (selector.includes("article") || selector === "article") return "当前文章";
+    if (selector === "main") return "主内容区";
+    return "当前帖子";
+  }
+
+  function overlapArea(a, b) {
+    const x = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+    const y = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+    return x * y;
+  }
+
+  function isInsideReadableArea(scopeElement, rect) {
+    if (!rect) return true;
+    const scopeRect = scopeElement.getBoundingClientRect();
+    if (scopeElement === document.body || scopeElement === document.documentElement) return true;
+    return overlapArea(scopeRect, rect) > 0;
   }
 
   function looksUsefulImage(url, width, height) {

@@ -175,7 +175,7 @@ Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipelin
 
 The repo includes an experimental Chrome/Edge companion extension for pages with many images and no convenient "download selected" flow.
 
-It adds a small `收图` button to web pages, gathers visible page images into one stacked cell, expands the stack on double-click, and saves the selected images through the browser download manager.
+It adds a small Linggan-style blue bubble to web pages, gathers current post or article images into one stacked cell, expands the stack on double-click, and saves the selected images through the browser download manager. `Cmd` + clicking the bubble collects and expands the current post immediately.
 
 To try it locally, load [browser-extension/image-collector](browser-extension/image-collector/README.md) as an unpacked extension from `chrome://extensions`.
 
