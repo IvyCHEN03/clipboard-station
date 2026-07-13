@@ -30,7 +30,7 @@ Repeated snippets can be meaningful when you are collecting ordered fragments fr
 
 ## How are screenshots and spreadsheet snippets handled?
 
-Screenshots are stored as local attachments and shown in the snippet list. Spreadsheet-like copied text is stored as tabular text so it can still be searched, tagged, and composed.
+Screenshots are stored as local attachments and shown in the snippet list. Tab-delimited copied cells from spreadsheet apps are stored as table-like text so they can still be searched, tagged, and composed.
 
 ## What is included in copied diagnostics?
 

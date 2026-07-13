@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 final class FloatingTriggerController {
-    private static let triggerSize = NSSize(width: 44, height: 44)
+    private static let triggerSize = NSSize(width: 36, height: 36)
 
     private enum DefaultsKey {
         static let originX = "floating-trigger-origin-x"
@@ -44,6 +44,7 @@ final class FloatingTriggerController {
         host.view.layer?.backgroundColor = NSColor.clear.cgColor
         host.view.layer?.masksToBounds = true
         host.view.layer?.cornerRadius = Self.triggerSize.width / 2
+        host.view.appearance = NSAppearance(named: .aqua)
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: Self.triggerSize),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -138,40 +139,40 @@ private struct FloatingTriggerView: View {
     let dragEnded: () -> Void
 
     var body: some View {
-        Button {
-            action()
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.78, green: 0.93, blue: 1.0),
-                                Color(red: 0.36, green: 0.70, blue: 1.0)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.78, green: 0.93, blue: 1.0),
+                            Color(red: 0.36, green: 0.70, blue: 1.0)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
-                Circle()
-                    .strokeBorder(.white.opacity(0.75), lineWidth: 1.4)
-                Image(systemName: "sparkle")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
-                    .offset(x: 1, y: -1)
-                Circle()
-                    .fill(.white.opacity(0.72))
-                    .frame(width: 8, height: 6)
-                    .offset(x: -9, y: -10)
-            }
-            .frame(width: 40, height: 40)
-            .scaleEffect(pressed ? 0.94 : (hovering ? 1.08 : 1.0))
+                )
+            Circle()
+                .strokeBorder(.white.opacity(0.78), lineWidth: 1.2)
+            Image(systemName: "sparkle")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(.white)
+                .offset(x: 1, y: -1)
+            Circle()
+                .fill(.white.opacity(0.72))
+                .frame(width: 7, height: 5)
+                .offset(x: -8, y: -8)
         }
-        .buttonStyle(.plain)
-        .frame(width: 44, height: 44)
+        .frame(width: 32, height: 32)
+        .scaleEffect(pressed ? 0.94 : (hovering ? 1.06 : 1.0))
+        .animation(.easeOut(duration: 0.12), value: hovering)
+        .animation(.easeOut(duration: 0.08), value: pressed)
+        .frame(width: 36, height: 36)
         .background(Color.clear)
         .clipShape(Circle())
         .contentShape(Circle())
+        .onTapGesture {
+            action()
+        }
         .simultaneousGesture(
             DragGesture(minimumDistance: 7)
                 .onChanged { value in

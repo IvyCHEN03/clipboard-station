@@ -244,7 +244,7 @@ final class SnippetStore: ObservableObject {
             showToast("剪贴板没有可保存内容")
             return
         }
-        if Self.looksLikeSpreadsheet(text) {
+        if PasteboardContentClassifier.looksLikeSpreadsheet(text) {
             addSpreadsheetText(text, source: source)
         } else {
             add(text: text, source: source, force: true)
@@ -831,34 +831,6 @@ final class SnippetStore: ObservableObject {
         case .text:
             return fileName
         }
-    }
-
-    static func looksLikeSpreadsheet(_ text: String) -> Bool {
-        let lines = text.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        guard !lines.isEmpty else {
-            return false
-        }
-
-        if lines.contains(where: { $0.contains("\t") }) {
-            return lines.contains { line in
-                line.split(separator: "\t", omittingEmptySubsequences: false).count >= 2
-            }
-        }
-
-        guard lines.count >= 2,
-              lines.allSatisfy({ $0.contains(",") }) else {
-            return false
-        }
-
-        let columnCounts = lines.map {
-            $0.split(separator: ",", omittingEmptySubsequences: false).count
-        }
-        guard let firstCount = columnCounts.first, firstCount >= 2 else {
-            return false
-        }
-        return columnCounts.allSatisfy { $0 == firstCount }
     }
 
     private func enrichSnippetIfNeeded(_ id: UUID, force: Bool = false, retryFailed: Bool = false) {

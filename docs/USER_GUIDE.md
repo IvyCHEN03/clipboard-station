@@ -32,7 +32,7 @@ If the bubble does not appear, run:
 
 - Text: use normal `Cmd+C`.
 - Screenshot: copy or import the screenshot; image snippets stay visible in the list.
-- Spreadsheet cells: copied tabular text is stored as a table-like snippet.
+- Spreadsheet cells: tab-delimited copied cells from Excel, Numbers, or Google Sheets are stored as table-like snippets.
 - Manual import: click the `+` button in the composition box to import the current clipboard.
 
 The app intentionally allows repeated captures. If you copy the same content three times, it can become three separate snippets.
