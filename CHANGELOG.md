@@ -9,6 +9,7 @@
 - Added a composition box that combines colored snippet blocks with custom text.
 - Added Markdown export for the current filtered snippet list.
 - Added local JSON backup export and import for snippets, settings, and attachments.
+- Added a privacy-focused local data cleanup action that removes snippets, composer text, and attachments.
 - Added queue status and per-snippet retry for AI tagging failures.
 - Added first-run onboarding and a user guide for new open-source users.
 - Added in-app help links to the getting-started guide, FAQ, and GitHub issue form.

@@ -66,4 +66,5 @@ The floating bubble and menu bar app are local UI surfaces. They do not create n
 - Keep AI tagging disabled when handling sensitive content.
 - Use a provider-specific API key with limited permissions.
 - Remove old snippets from the station when they are no longer useful.
+- Use Settings > `清除本地片段和附件` to remove saved snippets, composer text, and local attachments from this Mac.
 - Delete `state.enc` and the `Attachments` folder if you want to clear local data outside the app.

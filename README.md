@@ -75,6 +75,7 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Copy or paste a snippet into the current input box.
 - Export the current filtered list as readable Markdown.
 - Export and import local JSON backups for snippets, settings, and attachments.
+- Clear local snippets, composer text, and attachment files from Settings.
 - Store data locally with Keychain-backed AES-GCM encryption.
 - No cloud sync and no uploads unless you explicitly enable AI tagging.
 

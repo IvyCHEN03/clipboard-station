@@ -85,6 +85,8 @@ Backup files are not encrypted by the app. Store them somewhere private if they 
 
 Use `导出当前筛选为 Markdown` when you want a readable text handoff for notes, issues, or another AI chat. It exports the current filtered snippet list, including titles, metadata, tags, text, table text, and screenshot OCR when available.
 
+Use `清除本地片段和附件` in Settings when you want to remove snippets, composer text, and local attachment files from this Mac. Exported backup files and Keychain API keys are not removed.
+
 ## Common Fixes
 
 - Bubble missing: run `./Scripts/install-local.sh`, then `./Scripts/doctor.sh`.

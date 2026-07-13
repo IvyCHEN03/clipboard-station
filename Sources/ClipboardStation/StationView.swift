@@ -578,6 +578,7 @@ private struct SnippetBody: View {
 
 private struct SettingsView: View {
     @ObservedObject var store: SnippetStore
+    @State private var showClearLocalDataConfirmation = false
 
     var body: some View {
         Form {
@@ -660,6 +661,17 @@ private struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("隐私清理") {
+                Button(role: .destructive) {
+                    showClearLocalDataConfirmation = true
+                } label: {
+                    Label("清除本地片段和附件", systemImage: "trash")
+                }
+                Text("会删除当前片段、组合框内容和本地附件。不会删除 Keychain 中的 API Key，也不会删除你手动导出的备份文件。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+
             HStack {
                 Text("全局快捷键")
                 Spacer()
@@ -709,6 +721,18 @@ private struct SettingsView: View {
         .formStyle(.grouped)
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
+        .confirmationDialog(
+            "清除本地片段和附件？",
+            isPresented: $showClearLocalDataConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("清除本地数据", role: .destructive) {
+                store.clearLocalData()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("此操作会删除 App 内保存的片段、组合框内容和附件文件。已导出的备份文件和 Keychain API Key 不会被删除。")
+        }
     }
 }
 

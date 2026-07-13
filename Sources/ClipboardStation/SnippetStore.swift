@@ -263,6 +263,7 @@ final class SnippetStore: ObservableObject {
     }
 
     func delete(_ snippet: Snippet) {
+        AttachmentCleanup.removeAttachments(for: [snippet], in: attachmentsDirectory)
         snippets.removeAll { $0.id == snippet.id }
         draftSnippetIDs.removeAll { $0 == snippet.id }
         persist()
@@ -273,6 +274,8 @@ final class SnippetStore: ObservableObject {
         guard !ids.isEmpty else {
             return
         }
+        let deletedSnippets = snippets.filter { ids.contains($0.id) }
+        AttachmentCleanup.removeAttachments(for: deletedSnippets, in: attachmentsDirectory)
         snippets.removeAll { ids.contains($0.id) }
         draftSnippetIDs.removeAll { ids.contains($0) }
         persist()
@@ -389,10 +392,25 @@ final class SnippetStore: ObservableObject {
     }
 
     func clear() {
+        AttachmentCleanup.removeAttachments(for: snippets, in: attachmentsDirectory)
         snippets.removeAll()
         draftSnippetIDs.removeAll()
+        draftTextSlots.removeAll()
+        draftExtraText = ""
         persist()
         showToast("已清空")
+    }
+
+    func clearLocalData() {
+        AttachmentCleanup.removeAttachments(for: snippets, in: attachmentsDirectory)
+        snippets.removeAll()
+        draftSnippetIDs.removeAll()
+        draftTextSlots.removeAll()
+        draftExtraText = ""
+        try? FileManager.default.removeItem(at: attachmentsDirectory)
+        try? FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
+        persist()
+        showToast("已清除本地片段和附件")
     }
 
     func testAIConnection() {
