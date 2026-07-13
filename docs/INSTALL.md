@@ -41,6 +41,12 @@ cd clipboard-station
 
 This installs the app into `~/Applications/ClipboardStation.app` and starts a user LaunchAgent so the floating bubble can stay available.
 
+The install script rebuilds the packaged app every time before copying it into `~/Applications`. If you pull new changes or edit the source locally, run the same command again to refresh the installed app and restart the launch agent:
+
+```bash
+./Scripts/install-local.sh
+```
+
 After installing, follow [GETTING_STARTED.md](GETTING_STARTED.md) for the five-minute first run.
 
 ## Verify Local Install
@@ -85,6 +91,7 @@ The uninstall script removes the app and LaunchAgent but keeps local snippet dat
 ## Troubleshooting
 
 - Floating bubble missing: run `./Scripts/install-local.sh`, then `./Scripts/doctor.sh`.
+- Local changes do not appear: run `./Scripts/install-local.sh` again so the app is rebuilt, reinstalled, and restarted.
 - App opens but paste does not work: grant Accessibility permission.
 - macOS says the app is damaged or cannot be opened: confirm you downloaded from the project release, then approve it in Privacy & Security.
 - Release checksum fails: delete the zip and download it again.

@@ -24,6 +24,10 @@ Not exactly. It can collect clipboard content, but the product is optimized for 
 
 The project is still early and source-first. Signed and notarized releases are on the roadmap. Until then, macOS may require approval in Privacy & Security before opening a downloaded release build.
 
+## I changed the source, but the app still looks old. Why?
+
+The installed app in `~/Applications/ClipboardStation.app` is a packaged copy. Run `./Scripts/install-local.sh` again after pulling or editing the source; the script rebuilds the app, replaces the installed copy, and restarts the launch agent.
+
 ## Why does the app allow repeated copies?
 
 Repeated snippets can be meaningful when you are collecting ordered fragments from many AI chats. The app intentionally allows repeated captures instead of deduplicating everything away.

@@ -10,9 +10,7 @@ LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.local.clipboard-station.agent.plist
 
 cd "$ROOT_DIR"
 
-if [[ ! -d "$BUILT_APP" ]]; then
-  ./Scripts/package-app.sh
-fi
+./Scripts/package-app.sh
 
 mkdir -p "$INSTALL_DIR"
 rm -rf "$INSTALLED_APP"
