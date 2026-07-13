@@ -9,6 +9,7 @@ For push, token, tag, and prerelease steps, see [PUBLISHING.md](PUBLISHING.md). 
 - [ ] `./Scripts/check-project.sh` passes locally.
 - [ ] GitHub Actions CI passes on `main`.
 - [ ] Publishing steps in [PUBLISHING.md](PUBLISHING.md) are understood before pushing tags.
+- [ ] `./Scripts/publish-prerelease.sh vX.Y.Z` dry-run shows the expected plan.
 - [ ] README install instructions match the current build path.
 - [ ] `VERSION`, `BundleResources/Info.plist`, README release command, and the intended Git tag refer to the same version.
 - [ ] `CHANGELOG.md` has an entry for the release.

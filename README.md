@@ -282,8 +282,7 @@ CI runs the same project checks on GitHub Actions, including build, tests, shell
 Maintainers can cut a prerelease with:
 
 ```bash
-git tag v0.4.0
-git push origin v0.4.0
+./Scripts/publish-prerelease.sh --apply v0.4.0
 ```
 
 The release workflow uses [VERSION](VERSION) for local zips and the Git tag for GitHub release zips.

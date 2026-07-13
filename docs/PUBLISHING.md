@@ -51,7 +51,23 @@ Review:
 - The zip and `.sha256` file exist under `.build/dist/`.
 - No `.build/` artifacts are staged for commit.
 
-## 4. Push Main
+## 4. Recommended Publish Command
+
+After committing and authenticating GitHub safely, use the prerelease helper:
+
+```bash
+./Scripts/publish-prerelease.sh --apply v0.4.0
+```
+
+Without `--apply`, it only prints the plan:
+
+```bash
+./Scripts/publish-prerelease.sh v0.4.0
+```
+
+The apply run checks the project, builds release assets, verifies the zip, pushes `main`, creates the tag, and pushes the tag. The GitHub release workflow then creates the prerelease assets.
+
+## 5. Manual Push Main
 
 After committing:
 
@@ -61,7 +77,7 @@ git push origin main
 
 Then check GitHub Actions CI for `main`. Do not tag a release until CI is green.
 
-## 5. Cut The Prerelease Tag
+## 6. Manual Prerelease Tag
 
 The release workflow runs on tags matching `v*`.
 
@@ -78,7 +94,7 @@ The GitHub release workflow should:
 4. Generate release notes from `CHANGELOG.md`.
 5. Publish a prerelease with both assets attached.
 
-## 6. Verify The GitHub Release
+## 7. Verify The GitHub Release
 
 Before sharing the repository broadly:
 
@@ -95,7 +111,7 @@ shasum -a 256 -c Linggan-Floating-Ball-v0.4.0.zip.sha256
 - Confirm release notes include privacy notes and unsigned-install limitations.
 - Confirm README badges render and the release badge links to the workflow.
 
-## 7. Update Repository Profile
+## 8. Update Repository Profile
 
 After the first prerelease exists:
 
@@ -104,7 +120,7 @@ After the first prerelease exists:
 - Add the README hero image or a redacted app screenshot as social preview.
 - Pin the repository on the GitHub profile.
 
-## 8. First Public Share
+## 9. First Public Share
 
 Share only after:
 
