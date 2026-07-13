@@ -9,6 +9,7 @@
 - Added a composition box that combines colored snippet blocks with custom text.
 - Added queue status and per-snippet retry for AI tagging failures.
 - Added first-run onboarding and a user guide for new open-source users.
+- Added in-app help links to the getting-started guide, FAQ, and GitHub issue form.
 - Added demo snippets for a safe first-run walkthrough without private clipboard content.
 - Added non-sensitive diagnostics copying for GitHub bug reports.
 - Added a demo script and screenshot checklist for README and release assets.

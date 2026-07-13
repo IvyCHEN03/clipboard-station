@@ -55,6 +55,10 @@ struct StationView: View {
 
             Spacer()
 
+            IconButton(systemName: "questionmark.circle", help: "打开使用指南") {
+                ProjectLinks.open(.gettingStarted)
+            }
+
             IconButton(systemName: isPinned ? "pin.fill" : "pin", help: "置顶浮窗") {
                 isPinned.toggle()
                 NSApp.windows.first(where: { $0.isVisible })?.level = isPinned ? .floating : .normal
@@ -290,6 +294,12 @@ struct StationView: View {
                     showSettings = true
                 } label: {
                     Label("检查设置", systemImage: "gearshape")
+                }
+
+                Button {
+                    ProjectLinks.open(.gettingStarted)
+                } label: {
+                    Label("使用指南", systemImage: "questionmark.circle")
                 }
             }
             .buttonStyle(.bordered)
@@ -653,6 +663,27 @@ private struct SettingsView: View {
             } label: {
                 Label("测试 AI 连接", systemImage: "network")
             }
+
+            Section("帮助") {
+                Button {
+                    ProjectLinks.open(.gettingStarted)
+                } label: {
+                    Label("打开使用指南", systemImage: "book")
+                }
+                Button {
+                    ProjectLinks.open(.faq)
+                } label: {
+                    Label("查看 FAQ", systemImage: "questionmark.bubble")
+                }
+                Button {
+                    ProjectLinks.open(.issues)
+                } label: {
+                    Label("反馈问题", systemImage: "exclamationmark.bubble")
+                }
+                Text("打开的是 GitHub 文档页面；不会上传剪贴板内容。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .padding(.horizontal, 8)
@@ -973,6 +1004,27 @@ private struct IconButton: View {
         }
         .buttonStyle(.borderless)
         .help(help)
+    }
+}
+
+private enum ProjectLinks {
+    case gettingStarted
+    case faq
+    case issues
+
+    var url: URL {
+        switch self {
+        case .gettingStarted:
+            return URL(string: "https://github.com/IvyCHEN03/clipboard-station/blob/main/docs/GETTING_STARTED.md")!
+        case .faq:
+            return URL(string: "https://github.com/IvyCHEN03/clipboard-station/blob/main/docs/FAQ.md")!
+        case .issues:
+            return URL(string: "https://github.com/IvyCHEN03/clipboard-station/issues/new/choose")!
+        }
+    }
+
+    static func open(_ link: ProjectLinks) {
+        NSWorkspace.shared.open(link.url)
     }
 }
 

@@ -20,6 +20,8 @@ For common privacy, shortcut, install, and AI questions, see [FAQ.md](FAQ.md).
 5. Copy text, a screenshot, or spreadsheet cells from any app.
 6. Confirm the snippet appears in the station.
 
+Use the `?` button in the header or the Help section in Settings to open the GitHub getting-started guide, FAQ, or issue form.
+
 If the bubble does not appear, run:
 
 ```bash
