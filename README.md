@@ -16,6 +16,20 @@ It is designed for one very specific workflow: grab many fragments fast, keep th
 
 ![Workflow preview](docs/assets/workflow-preview.svg)
 
+## 30-Second Tour
+
+Use Linggan Floating Ball when one clipboard is not enough:
+
+1. Copy useful fragments from AI chats, web pages, notes, screenshots, or spreadsheets.
+2. Click the small blue floating bubble to keep everything visible.
+3. Filter by search, tag, type, or recent time window.
+4. Drag snippets into the bottom composer and type text between the blocks.
+5. Copy the final composed prompt back into any AI input box.
+
+Best fit: researchers, builders, students, operators, and anyone comparing answers across several AI tools at once.
+
+Not the goal: cloud clipboard sync, full note taking, or replacing every clipboard manager.
+
 ## Quick Start
 
 For a first trial from source:
@@ -29,6 +43,15 @@ cd clipboard-station
 Then click the small blue floating bubble, copy a few text fragments, and drag them into the composer at the bottom of the station.
 
 For a guided five-minute walkthrough, read [Getting Started](docs/GETTING_STARTED.md). For non-developer install details, read [Install Guide](docs/INSTALL.md).
+
+## Current Status
+
+The app is usable today, but still pre-1.0:
+
+- Local-first by default; no telemetry and no cloud sync.
+- AI tagging is optional and only runs after you add your own OpenAI-compatible API settings.
+- Local builds are currently unsigned and not notarized, so macOS may require manual approval.
+- The floating bubble is the recommended entry point because global shortcuts can conflict with other apps.
 
 ## Project Map
 
@@ -44,6 +67,7 @@ For a guided five-minute walkthrough, read [Getting Started](docs/GETTING_STARTE
 | Prepare a release | [Release Checklist](docs/RELEASE_CHECKLIST.md) |
 | Configure repository labels | [GitHub Labels](docs/LABELS.md) |
 | Configure the GitHub profile | [Repository Profile](docs/REPOSITORY_PROFILE.md) |
+| Plan a public launch | [Open Source Growth Plan](docs/OPEN_SOURCE_GROWTH.md) |
 
 ## Demo
 
@@ -61,6 +85,14 @@ When you are comparing ideas across multiple AI tools, the default clipboard is 
 - Cloud clipboard tools feel risky when the content is private.
 
 Linggan Floating Ball keeps that work local and gives it a small, always-available place to land.
+
+## Why Trust It
+
+- The core workflow runs locally on your Mac.
+- Snippets are encrypted at rest with a Keychain-backed key.
+- Diagnostics avoid clipboard contents, API keys, and encrypted state.
+- The full project check runs build, tests, script checks, Markdown links, plist lint, and version metadata.
+- Releases include checksum verification, and unsigned-build limitations are documented before install.
 
 ## Highlights
 

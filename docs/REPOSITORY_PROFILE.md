@@ -62,6 +62,10 @@ The first screen should show:
 - The floating bubble/product visual.
 - A quick-start path.
 - Privacy boundary: no upload unless AI tagging is enabled.
+- Current status: usable pre-1.0, unsigned builds, and optional AI tagging.
+- A clear next click for users and contributors.
+
+Use [OPEN_SOURCE_GROWTH.md](OPEN_SOURCE_GROWTH.md) to evaluate whether the first 10 seconds, first 2 minutes, first successful moment, and trust moment are all supported.
 
 ## Launch Post Copy
 
@@ -90,3 +94,4 @@ Do not do a broad launch until:
 - Unsigned-install limitations are clear.
 - `./Scripts/check-project.sh` passes.
 - The issue templates and labels are configured.
+- The launch copy and feedback plan in [OPEN_SOURCE_GROWTH.md](OPEN_SOURCE_GROWTH.md) are ready.

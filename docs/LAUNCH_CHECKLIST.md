@@ -4,6 +4,7 @@ Use this checklist when preparing the repository for a public push, first releas
 
 ## Repository Profile
 
+- [ ] Review the launch funnel in [OPEN_SOURCE_GROWTH.md](OPEN_SOURCE_GROWTH.md).
 - [ ] Apply the About sidebar, topics, social preview, and pinned-repo copy from [REPOSITORY_PROFILE.md](REPOSITORY_PROFILE.md).
 - [ ] Social preview image uses the blue bubble icon or a redacted app screenshot.
 - [ ] README badges render correctly.
@@ -35,7 +36,7 @@ Use this checklist when preparing the repository for a public push, first releas
 
 ## First Public Post
 
-Core message:
+Use the channel guidance in [OPEN_SOURCE_GROWTH.md](OPEN_SOURCE_GROWTH.md). Core message:
 
 ```text
 I built Linggan Floating Ball: a local-first macOS clipboard station for people working across many AI chats. It captures repeated text snippets, screenshots, and table-like content, then lets you reorder them into a final prompt. Local by default; AI tags are optional.
