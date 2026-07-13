@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added an experimental browser image collector extension for stacking, expanding, selecting, and saving current-post images from image-heavy pages.
+- Improved the browser image collector with multiple temporary capture rows and browser-toolbar launch to avoid a second page bubble.
 - Added a prerelease publishing helper with dry-run and guarded apply modes.
 - Tightened README positioning and demo guidance around the 10-second pitch, 2-minute trial, and required hero GIF.
 - Added a publishing guide for safe token handling, push, tag, prerelease, verification, and rollback steps.

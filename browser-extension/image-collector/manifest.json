@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "description": "Collect image-heavy web pages into a selectable stack and save chosen images locally.",
   "permissions": [
-    "downloads"
+    "activeTab",
+    "downloads",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"

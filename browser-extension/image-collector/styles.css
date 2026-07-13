@@ -46,7 +46,7 @@
   position: absolute;
   right: 0;
   top: 58px;
-  width: 320px;
+  width: 380px;
   max-height: 72vh;
   padding: 14px;
   overflow: auto;
@@ -85,6 +85,7 @@
 .lic-actions,
 .lic-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -113,11 +114,58 @@
   color: white;
 }
 
+.lic-batches {
+  display: grid;
+  gap: 10px;
+}
+
+.lic-batch {
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 14px;
+  background: rgba(248, 251, 255, 0.78);
+}
+
+.lic-batch-expanded {
+  border-color: rgba(96, 165, 250, 0.55);
+  background: rgba(239, 248, 255, 0.9);
+}
+
+.lic-batch-row {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  cursor: zoom-in;
+}
+
+.lic-batch-meta {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.lic-batch-meta strong {
+  overflow: hidden;
+  color: #172033;
+  font-size: 13px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lic-batch-meta span {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
 .lic-stack {
   position: relative;
-  height: 138px;
+  width: 88px;
+  height: 64px;
   border: 1px dashed #bfdbfe;
-  border-radius: 16px;
+  border-radius: 12px;
   background: #f8fbff;
   cursor: zoom-in;
   overflow: hidden;
@@ -125,26 +173,26 @@
 
 .lic-stack img {
   position: absolute;
-  top: calc(18px + var(--lic-offset));
-  left: calc(28px + var(--lic-offset));
-  width: 190px;
-  height: 96px;
+  top: calc(8px + var(--lic-offset));
+  left: calc(10px + var(--lic-offset));
+  width: 64px;
+  height: 42px;
   object-fit: cover;
-  border: 3px solid white;
-  border-radius: 14px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  border: 2px solid white;
+  border-radius: 8px;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
 }
 
 .lic-count {
   position: absolute;
   z-index: 5;
-  right: 14px;
-  bottom: 14px;
-  padding: 8px 10px;
+  right: 5px;
+  bottom: 5px;
+  padding: 4px 6px;
   border-radius: 999px;
   background: #172033;
   color: white;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 850;
 }
 
@@ -161,7 +209,7 @@
 
 .lic-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 

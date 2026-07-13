@@ -16,11 +16,10 @@
     "main"
   ];
   const state = {
-    images: [],
-    expanded: false,
-    selected: new Set(),
+    batches: [],
+    activeBatchID: "",
     status: "",
-    sourceLabel: ""
+    autoHideTrigger: false
   };
 
   if (document.getElementById(ROOT_ID)) {
@@ -30,27 +29,21 @@
   const root = document.createElement("div");
   root.id = ROOT_ID;
   root.innerHTML = `
-    <button class="lic-trigger" type="button" title="灵感收图：点击打开，Cmd+点击直接收当前帖子图片" aria-label="灵感收图">
+    <button class="lic-trigger lic-hidden" type="button" title="灵感收图：点击暂存当前帖子" aria-label="灵感收图">
       <span class="lic-bubble-mark">✦</span>
     </button>
     <section class="lic-panel lic-hidden" aria-label="灵感图片采集器">
       <div class="lic-header">
         <div>
-          <div class="lic-title">灵感图片格</div>
-          <div class="lic-subtitle">Cmd+点泡泡直接收当前帖子</div>
+          <div class="lic-title">灵感图片暂存</div>
+          <div class="lic-subtitle">每个帖子一行，双击展开</div>
         </div>
         <div class="lic-actions">
-          <button class="lic-small" type="button" data-action="refresh">刷新</button>
-          <button class="lic-small" type="button" data-action="collapse">收起</button>
+          <button class="lic-small" type="button" data-action="capture">收图</button>
+          <button class="lic-small" type="button" data-action="close">收起</button>
         </div>
       </div>
-      <div class="lic-stack" title="双击展开图片格"></div>
-      <div class="lic-toolbar lic-hidden">
-        <button class="lic-small" type="button" data-action="select-all">全选</button>
-        <button class="lic-small" type="button" data-action="clear">取消</button>
-        <button class="lic-primary" type="button" data-action="download">保存选中</button>
-      </div>
-      <div class="lic-grid lic-hidden"></div>
+      <div class="lic-batches"></div>
       <div class="lic-status"></div>
     </section>
   `;
@@ -58,22 +51,34 @@
 
   const trigger = root.querySelector(".lic-trigger");
   const panel = root.querySelector(".lic-panel");
-  const stack = root.querySelector(".lic-stack");
-  const grid = root.querySelector(".lic-grid");
-  const toolbar = root.querySelector(".lic-toolbar");
+  const batches = root.querySelector(".lic-batches");
   const status = root.querySelector(".lic-status");
 
-  trigger.addEventListener("click", event => {
-    collectAndRender();
-    if (event.metaKey) {
-      state.expanded = true;
-      render();
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type !== "captureCurrentPost") return false;
+    captureBatch();
+    panel.classList.remove("lic-hidden");
+    sendResponse({ ok: true });
+    return false;
+  });
+
+  window.addEventListener("keydown", event => {
+    if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "l") {
+      event.preventDefault();
+      captureBatch();
+      panel.classList.remove("lic-hidden");
     }
+  });
+
+  trigger.addEventListener("click", event => {
+    captureBatch();
     panel.classList.remove("lic-hidden");
   });
 
-  stack.addEventListener("dblclick", () => {
-    state.expanded = !state.expanded;
+  batches.addEventListener("dblclick", event => {
+    const row = event.target?.closest?.(".lic-batch");
+    if (!row) return;
+    state.activeBatchID = state.activeBatchID === row.dataset.batchId ? "" : row.dataset.batchId;
     render();
   });
 
@@ -84,110 +89,132 @@
     event.preventDefault();
     event.stopPropagation();
 
-    if (action === "refresh") {
-      collectAndRender();
-    } else if (action === "collapse") {
-      state.expanded = false;
+    if (action === "capture") {
+      captureBatch();
+    } else if (action === "close") {
       panel.classList.add("lic-hidden");
       render();
     } else if (action === "select-all") {
-      state.images.forEach(image => state.selected.add(image.id));
+      const batch = batchForButton(button);
+      batch?.images.forEach(image => batch.selected.add(image.id));
       render();
     } else if (action === "clear") {
-      state.selected.clear();
+      batchForButton(button)?.selected.clear();
+      render();
+    } else if (action === "remove-batch") {
+      const batch = batchForButton(button);
+      state.batches = state.batches.filter(item => item.id !== batch?.id);
+      if (state.activeBatchID === batch?.id) state.activeBatchID = "";
       render();
     } else if (action === "download") {
-      downloadSelected();
+      const batch = batchForButton(button);
+      if (batch) downloadSelected(batch);
     }
   });
 
-  grid.addEventListener("change", event => {
+  batches.addEventListener("change", event => {
     if (!event.target?.matches("input[type='checkbox']")) return;
+    const batch = event.target.closest(".lic-batch")?.dataset?.batchId;
+    const activeBatch = state.batches.find(item => item.id === batch);
+    if (!activeBatch) return;
     const id = event.target.value;
     if (event.target.checked) {
-      state.selected.add(id);
+      activeBatch.selected.add(id);
     } else {
-      state.selected.delete(id);
+      activeBatch.selected.delete(id);
     }
     renderStatus();
   });
 
-  function collectAndRender() {
+  function captureBatch() {
     const result = collectImages();
-    state.images = result.images;
-    state.sourceLabel = result.sourceLabel;
-    state.selected = new Set(state.images.map(image => image.id));
-    state.expanded = false;
-    state.status = state.images.length
-      ? `已从${state.sourceLabel}收集 ${state.images.length} 张候选图片`
+    const batch = {
+      id: `batch-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      title: `${result.sourceLabel} ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+      sourceLabel: result.sourceLabel,
+      images: result.images,
+      selected: new Set(result.images.map(image => image.id))
+    };
+    if (result.images.length > 0) {
+      state.batches.unshift(batch);
+      state.activeBatchID = batch.id;
+    }
+    state.status = result.images.length
+      ? `已暂存 ${batch.title} · ${result.images.length} 张`
       : "没有找到适合保存的大图";
     render();
   }
 
   function render() {
-    renderStack();
-    renderGrid();
+    renderBatches();
     renderStatus();
   }
 
-  function renderStack() {
-    const previewImages = state.images.slice(0, 4);
-    stack.innerHTML = "";
-    stack.classList.toggle("lic-empty", state.images.length === 0);
+  function renderBatches() {
+    batches.innerHTML = "";
 
-    if (state.images.length === 0) {
-      stack.innerHTML = `
-        <div class="lic-empty-text">未收集到图片</div>
+    if (state.batches.length === 0) {
+      batches.innerHTML = `
+        <div class="lic-empty-text">还没有图片暂存。点“收图”保存当前帖子。</div>
       `;
       return;
     }
 
-    const label = document.createElement("div");
-    label.className = "lic-count";
-    label.textContent = `${state.images.length} 张`;
-    stack.appendChild(label);
-
-    previewImages.forEach((image, index) => {
-      const img = document.createElement("img");
-      img.src = image.url;
-      img.alt = image.alt || `image ${index + 1}`;
-      img.style.setProperty("--lic-offset", `${index * 8}px`);
-      stack.appendChild(img);
-    });
+    for (const batch of state.batches) {
+      const expanded = state.activeBatchID === batch.id;
+      const row = document.createElement("section");
+      row.className = `lic-batch${expanded ? " lic-batch-expanded" : ""}`;
+      row.dataset.batchId = batch.id;
+      row.innerHTML = `
+        <div class="lic-batch-row" title="双击展开这一行">
+          ${renderStackHTML(batch)}
+          <div class="lic-batch-meta">
+            <strong>${escapeHTML(batch.title)}</strong>
+            <span>${batch.images.length} 张 · 已选 ${batch.selected.size} 张</span>
+          </div>
+        </div>
+        <div class="lic-toolbar${expanded ? "" : " lic-hidden"}">
+          <button class="lic-small" type="button" data-action="select-all">全选</button>
+          <button class="lic-small" type="button" data-action="clear">取消</button>
+          <button class="lic-small" type="button" data-action="remove-batch">移除</button>
+          <button class="lic-primary" type="button" data-action="download">保存选中</button>
+        </div>
+        <div class="lic-grid${expanded ? "" : " lic-hidden"}">
+          ${batch.images.map(image => `
+            <label class="lic-item">
+              <input type="checkbox" value="${escapeAttribute(image.id)}" ${batch.selected.has(image.id) ? "checked" : ""}>
+              <img src="${escapeAttribute(image.url)}" alt="${escapeAttribute(image.alt || "collected image")}">
+              <span>${escapeHTML(image.label)}</span>
+            </label>
+          `).join("")}
+        </div>
+      `;
+      batches.appendChild(row);
+    }
   }
 
-  function renderGrid() {
-    const expanded = state.expanded && state.images.length > 0;
-    grid.classList.toggle("lic-hidden", !expanded);
-    toolbar.classList.toggle("lic-hidden", !expanded);
-
-    if (!expanded) {
-      grid.innerHTML = "";
-      return;
-    }
-
-    grid.innerHTML = "";
-    for (const image of state.images) {
-      const item = document.createElement("label");
-      item.className = "lic-item";
-      item.innerHTML = `
-        <input type="checkbox" value="${escapeAttribute(image.id)}" ${state.selected.has(image.id) ? "checked" : ""}>
-        <img src="${escapeAttribute(image.url)}" alt="${escapeAttribute(image.alt || "collected image")}">
-        <span>${escapeHTML(image.label)}</span>
-      `;
-      grid.appendChild(item);
-    }
+  function renderStackHTML(batch) {
+    const preview = batch.images.slice(0, 4).map((image, index) => `
+      <img src="${escapeAttribute(image.url)}" alt="${escapeAttribute(image.alt || `image ${index + 1}`)}" style="--lic-offset: ${index * 5}px">
+    `).join("");
+    return `
+      <div class="lic-stack" title="双击展开这一行">
+        ${preview}
+        <span class="lic-count">${batch.images.length}</span>
+      </div>
+    `;
   }
 
   function renderStatus() {
-    const selectedCount = state.selected.size;
-    status.textContent = state.images.length
-      ? `${state.status} · 已选 ${selectedCount} 张`
+    const totalImages = state.batches.reduce((sum, batch) => sum + batch.images.length, 0);
+    const selectedCount = state.batches.reduce((sum, batch) => sum + batch.selected.size, 0);
+    status.textContent = state.batches.length
+      ? `${state.status} · 暂存 ${state.batches.length} 行 / ${totalImages} 张 · 已选 ${selectedCount} 张`
       : state.status;
   }
 
-  function downloadSelected() {
-    const images = state.images.filter(image => state.selected.has(image.id));
+  function downloadSelected(batch) {
+    const images = batch.images.filter(image => batch.selected.has(image.id));
     if (images.length === 0) {
       state.status = "请先选择要保存的图片";
       renderStatus();
@@ -197,20 +224,25 @@
     chrome.runtime.sendMessage(
       {
         type: "downloadImages",
-        folder: folderName(),
+        folder: folderName(batch),
         images
       },
       response => {
         if (chrome.runtime.lastError) {
           state.status = `保存失败：${chrome.runtime.lastError.message}`;
         } else if (response?.ok) {
-          state.status = `已开始保存 ${response.started} 张图片`;
+          state.status = `已开始保存 ${batch.title} 的 ${response.started} 张图片`;
         } else {
           state.status = response?.error || "保存失败";
         }
         renderStatus();
       }
     );
+  }
+
+  function batchForButton(button) {
+    const id = button.closest(".lic-batch")?.dataset?.batchId;
+    return state.batches.find(batch => batch.id === id);
   }
 
   function collectImages() {
@@ -378,10 +410,18 @@
     return `img-${Math.abs(hash)}`;
   }
 
-  function folderName() {
+  function folderName(batch) {
     const host = location.hostname.replace(/^www\./, "") || "page";
     const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    return `LingganImages/${host}-${date}`;
+    const label = sanitizePathSegment(batch?.title || "images");
+    return `LingganImages/${host}-${date}-${label}`;
+  }
+
+  function sanitizePathSegment(value) {
+    return String(value || "images")
+      .replace(/[\\/:*?"<>|]+/g, "-")
+      .replace(/\s+/g, "-")
+      .slice(0, 40) || "images";
   }
 
   function escapeHTML(value) {

@@ -188,18 +188,20 @@ struct StationView: View {
             Spacer()
             Button {
                 selectedSnippetIDs = Set(store.filteredSnippets.map(\.id))
+                store.showToast("已全选当前 \(selectedSnippetIDs.count) 条")
             } label: {
                 Label("全选", systemImage: "checkmark.square")
             }
             .buttonStyle(.borderless)
+            .disabled(store.filteredSnippets.isEmpty)
 
             Button {
                 selectedSnippetIDs.removeAll()
+                store.showToast("已取消选择")
             } label: {
                 Label("取消", systemImage: "xmark.square")
             }
             .buttonStyle(.borderless)
-            .disabled(selectedSnippetIDs.isEmpty)
 
             Button {
                 store.enrichAllMissingTags()

@@ -45,6 +45,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return false;
 });
 
+chrome.action.onClicked.addListener(async tab => {
+  if (!tab?.id) return;
+  try {
+    await ensureCollectorInjected(tab.id);
+    chrome.tabs.sendMessage(tab.id, { type: "captureCurrentPost" }, () => {
+      if (chrome.runtime.lastError) {
+        console.warn("Linggan Image Collector capture failed:", chrome.runtime.lastError.message);
+      }
+    });
+  } catch (error) {
+    console.warn("Linggan Image Collector could not run on this page:", error?.message || error);
+  }
+});
+
+async function ensureCollectorInjected(tabId) {
+  await chrome.scripting.insertCSS({
+    target: { tabId },
+    files: ["styles.css"]
+  });
+
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ["content.js"]
+  });
+}
+
 function isDownloadableURL(url) {
   return /^https?:\/\//i.test(url) || /^data:image\//i.test(url);
 }
