@@ -29,6 +29,7 @@
 - Added Dependabot configuration for GitHub Actions maintenance.
 - Added architecture documentation and model-level tests for search, filters, and legacy decoding.
 - Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.
+- Added a code of conduct with privacy-sensitive community guidelines.
 - Added local install, uninstall, doctor, and release zip scripts.
 - Added a project check script for build, tests, shell syntax, plist, and version metadata.
 - Added release checksums and a non-developer install guide.

@@ -40,6 +40,7 @@ For a guided five-minute walkthrough, read [Getting Started](docs/GETTING_STARTE
 | Understand privacy and AI tagging | [Privacy](PRIVACY.md) and [FAQ](docs/FAQ.md) |
 | Compare product positioning | [Product Positioning](docs/POSITIONING.md) |
 | Contribute a small fix | [Contributing](CONTRIBUTING.md) and [Good First Issues](docs/GOOD_FIRST_ISSUES.md) |
+| Understand community expectations | [Code of Conduct](CODE_OF_CONDUCT.md) |
 | Prepare a release | [Release Checklist](docs/RELEASE_CHECKLIST.md) |
 
 ## Demo
@@ -213,7 +214,7 @@ The project is early but usable. Good first contributions:
 - Add screenshots or a demo GIF.
 - Improve install and troubleshooting docs for non-developers.
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) and [Good First Issues](docs/GOOD_FIRST_ISSUES.md) before opening a PR.
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [Good First Issues](docs/GOOD_FIRST_ISSUES.md), and [Code of Conduct](CODE_OF_CONDUCT.md) before opening a PR.
 
 Quality gates:
 

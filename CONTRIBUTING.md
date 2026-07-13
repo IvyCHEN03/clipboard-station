@@ -4,6 +4,8 @@ Thanks for considering a contribution.
 
 Linggan Floating Ball is an early macOS utility. Contributions are most useful when they keep the app local-first, simple, and reliable.
 
+Please also follow the [Code of Conduct](CODE_OF_CONDUCT.md), especially when discussing clipboard contents, screenshots, API keys, logs, or other private material.
+
 ## Development Setup
 
 Requirements:
