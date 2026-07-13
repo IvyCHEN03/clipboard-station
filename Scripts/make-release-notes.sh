@@ -1,15 +1,27 @@
-# Release Notes Template
+#!/usr/bin/env bash
+set -euo pipefail
 
-Use this template for each GitHub Release. Keep it short, practical, and privacy-aware.
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+VERSION="${1:-$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")}"
+DIST_DIR="$ROOT_DIR/.build/dist"
+OUTPUT="$DIST_DIR/RELEASE_NOTES-v$VERSION.md"
 
-Maintainers can generate a draft from `CHANGELOG.md`:
+mkdir -p "$DIST_DIR"
 
-```bash
-./Scripts/make-release-notes.sh vX.Y.Z
-```
+awk '
+  /^## Unreleased$/ { in_section=1; next }
+  /^## / && in_section { exit }
+  in_section && NF { print }
+' "$ROOT_DIR/CHANGELOG.md" > "$OUTPUT.tmp"
 
-````markdown
-# Linggan Floating Ball <version>
+if [[ ! -s "$OUTPUT.tmp" ]]; then
+  echo "No Unreleased changelog entries found." >&2
+  rm -f "$OUTPUT.tmp"
+  exit 1
+fi
+
+cat > "$OUTPUT" <<NOTES
+# Linggan Floating Ball v$VERSION
 
 Linggan Floating Ball is a local-first macOS clipboard station for collecting text, screenshots, and table snippets while working across multiple AI chats.
 
@@ -21,30 +33,28 @@ Linggan Floating Ball is a local-first macOS clipboard station for collecting te
 
 ## Highlights
 
-- <One user-facing improvement>
-- <One reliability or install improvement>
-- <One documentation or contributor improvement>
+$(cat "$OUTPUT.tmp")
 
 ## Download
 
 Download:
 
-- `Linggan-Floating-Ball-<version>.zip`
-- `Linggan-Floating-Ball-<version>.zip.sha256`
+- \`Linggan-Floating-Ball-v$VERSION.zip\`
+- \`Linggan-Floating-Ball-v$VERSION.zip.sha256\`
 
 Verify the checksum:
 
-```bash
-shasum -a 256 -c Linggan-Floating-Ball-<version>.zip.sha256
-```
+\`\`\`bash
+shasum -a 256 -c Linggan-Floating-Ball-v$VERSION.zip.sha256
+\`\`\`
 
-Then unzip and open `ClipboardStation.app`.
+Then unzip and open \`ClipboardStation.app\`.
 
 ## Important Install Note
 
 This release is currently unsigned and not notarized. macOS may block the first launch. If that happens, open System Settings > Privacy & Security and allow the app manually.
 
-For full install and uninstall steps, read `docs/INSTALL.md`.
+For full install and uninstall steps, read \`docs/INSTALL.md\`.
 
 ## Privacy Notes
 
@@ -54,7 +64,7 @@ For full install and uninstall steps, read `docs/INSTALL.md`.
 - If AI tagging is enabled, snippet text is sent only to the configured OpenAI-compatible endpoint.
 - API keys are stored in macOS Keychain.
 
-Read `PRIVACY.md` before using AI tagging with sensitive content.
+Read \`PRIVACY.md\` before using AI tagging with sensitive content.
 
 ## Known Limitations
 
@@ -71,14 +81,7 @@ Please use the GitHub issue templates:
 - Feature request for product ideas.
 
 Do not paste private clipboard contents, API keys, or sensitive screenshots into public issues.
-````
+NOTES
 
-## Maintainer Checklist
-
-Before publishing:
-
-- Replace every `<version>` placeholder.
-- Replace highlight placeholders with concrete user-facing changes.
-- Check that `CHANGELOG.md` has a matching entry.
-- Upload both the `.zip` and `.sha256` assets.
-- Confirm the release is marked prerelease until signing and notarization are available.
+rm -f "$OUTPUT.tmp"
+echo "$OUTPUT"

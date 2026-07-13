@@ -12,6 +12,7 @@ For repository profile, social launch, and first-week maintenance tasks, see [LA
 - [ ] `VERSION`, `BundleResources/Info.plist`, README release command, and the intended Git tag refer to the same version.
 - [ ] `CHANGELOG.md` has an entry for the release.
 - [ ] GitHub Release copy follows [RELEASE_NOTES_TEMPLATE.md](RELEASE_NOTES_TEMPLATE.md).
+- [ ] Run `./Scripts/make-release-notes.sh vX.Y.Z` and review the generated release draft.
 - [ ] Pull requests and issues use labels from [LABELS.md](LABELS.md) so generated release notes are grouped clearly.
 - [ ] No `.build/`, local app data, API keys, or private screenshots are committed.
 - [ ] Privacy-impacting changes are reflected in `PRIVACY.md`.
@@ -35,6 +36,7 @@ For repository profile, social launch, and first-week maintenance tasks, see [LA
 ## Packaging
 
 - [ ] Run `./Scripts/package-app.sh`.
+- [ ] Run `./Scripts/make-release-notes.sh vX.Y.Z`.
 - [ ] Run `./Scripts/make-release-zip.sh vX.Y.Z`.
 - [ ] Confirm `.build/ClipboardStation.app` launches.
 - [ ] Confirm `.build/dist/Linggan-Floating-Ball-vX.Y.Z.zip` exists and unzips to `ClipboardStation.app`.

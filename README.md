@@ -137,6 +137,7 @@ open .build/ClipboardStation.app
 Create a local release zip:
 
 ```bash
+./Scripts/make-release-notes.sh v0.4.0
 ./Scripts/make-release-zip.sh
 ```
 

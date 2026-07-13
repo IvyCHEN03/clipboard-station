@@ -32,6 +32,8 @@ echo
 echo "== Script dry-runs =="
 ./Scripts/sync-labels.sh >/dev/null
 echo "ok: Scripts/sync-labels.sh"
+./Scripts/make-release-notes.sh "$(tr -d '[:space:]' < VERSION)" >/dev/null
+echo "ok: Scripts/make-release-notes.sh"
 
 echo
 echo "== Markdown links =="
