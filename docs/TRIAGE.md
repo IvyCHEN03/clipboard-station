@@ -36,6 +36,9 @@ Recommended labels:
 - `composer`
 - `good first issue`
 - `maintenance`
+- `dependencies`
+- `security`
+- `ignore-for-release`
 
 ## Common Responses
 
