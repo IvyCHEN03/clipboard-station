@@ -30,6 +30,18 @@ Contributions should preserve these boundaries:
 - Local snippets stay encrypted at rest.
 - Build artifacts and local app data stay out of git.
 
+## Secret Scanning
+
+Run the local project check before pushing or tagging a release:
+
+```bash
+./Scripts/check-project.sh
+```
+
+This includes `./Scripts/check-secrets.sh`, which scans git-tracked files for common token shapes such as GitHub personal access tokens, OpenAI-compatible `sk-` keys, Slack tokens, and AWS access keys.
+
+If a real token was pasted into the repository or a public issue, remove it from the content, rotate or revoke it with the provider, and avoid reusing that token. The scanner is a guardrail, not a replacement for careful review of screenshots, logs, release notes, and issue text.
+
 ## Known Limitations
 
 - Local builds are not currently signed or notarized.

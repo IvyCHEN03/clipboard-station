@@ -14,6 +14,7 @@ For repository profile, social launch, and first-week maintenance tasks, see [LA
 - [ ] GitHub Release copy follows [RELEASE_NOTES_TEMPLATE.md](RELEASE_NOTES_TEMPLATE.md).
 - [ ] Run `./Scripts/make-release-notes.sh vX.Y.Z` and review the generated release draft.
 - [ ] Pull requests and issues use labels from [LABELS.md](LABELS.md) so generated release notes are grouped clearly.
+- [ ] `./Scripts/check-secrets.sh` passes and any exposed local tokens have been revoked.
 - [ ] No `.build/`, local app data, API keys, or private screenshots are committed.
 - [ ] Privacy-impacting changes are reflected in `PRIVACY.md`.
 

@@ -40,6 +40,10 @@ echo "== Markdown links =="
 ./Scripts/check-doc-links.sh
 
 echo
+echo "== Secret scan =="
+./Scripts/check-secrets.sh
+
+echo
 echo "== Bundle plist =="
 plutil -lint BundleResources/Info.plist
 
