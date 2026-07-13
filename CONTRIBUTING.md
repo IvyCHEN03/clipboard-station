@@ -37,6 +37,8 @@ The full check runs build, tests, shell syntax, script executable-bit checks, sa
 
 For documentation-only changes, `./Scripts/check-doc-links.sh` is a faster local check for broken Markdown links.
 
+For a fuller command list, code map, privacy rules, and testing expectations, read [Development Guide](docs/DEVELOPMENT.md).
+
 Before changing capture, persistence, AI tagging, or permissions, read [Architecture](docs/ARCHITECTURE.md).
 
 ## Product Principles
@@ -57,6 +59,7 @@ See [Good First Issues](docs/GOOD_FIRST_ISSUES.md) for scoped starter tasks acro
 - Keep changes scoped.
 - Avoid committing build artifacts from `.build/`.
 - Do not include API keys, local data, screenshots with private content, or Keychain material.
+- Run `./Scripts/check-secrets.sh` if your change includes docs, scripts, examples, release notes, or assets that might contain copied tokens.
 - Run `swift build`.
 - Run `swift test`.
 - Run `./Scripts/check-doc-links.sh` for documentation changes.

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a development guide with local commands, code map, privacy rules, and testing expectations.
 - Updated local install so source installs always rebuild before replacing the installed app.
 - Added a smaller floating bubble as the primary open/close entry point.
 - Added local encrypted persistence for snippets and attachment metadata.

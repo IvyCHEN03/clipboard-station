@@ -60,7 +60,7 @@ The app is usable today, but still pre-1.0:
 | Learn the full workflow | [User Guide](docs/USER_GUIDE.md) |
 | Understand privacy and AI tagging | [Privacy](PRIVACY.md) and [FAQ](docs/FAQ.md) |
 | Compare product positioning | [Product Positioning](docs/POSITIONING.md) |
-| Contribute a small fix | [Contributing](CONTRIBUTING.md) and [Good First Issues](docs/GOOD_FIRST_ISSUES.md) |
+| Contribute a small fix | [Contributing](CONTRIBUTING.md), [Development Guide](docs/DEVELOPMENT.md), and [Good First Issues](docs/GOOD_FIRST_ISSUES.md) |
 | Understand community expectations | [Code of Conduct](CODE_OF_CONDUCT.md) |
 | Prepare a release | [Release Checklist](docs/RELEASE_CHECKLIST.md) |
 | Configure repository labels | [GitHub Labels](docs/LABELS.md) |
@@ -254,6 +254,8 @@ The project is early but usable. Good first contributions:
 - Improve install and troubleshooting docs for non-developers.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md), [Good First Issues](docs/GOOD_FIRST_ISSUES.md), and [Code of Conduct](CODE_OF_CONDUCT.md) before opening a PR.
+
+For local development commands, code map, privacy rules, and testing expectations, read [Development Guide](docs/DEVELOPMENT.md).
 
 Quality gates:
 

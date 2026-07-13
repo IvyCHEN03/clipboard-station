@@ -44,8 +44,9 @@ This project is early and especially benefits from small, focused improvements. 
 ## Before You Start
 
 1. Read [CONTRIBUTING.md](../CONTRIBUTING.md).
-2. Read [ARCHITECTURE.md](ARCHITECTURE.md) if touching code.
-3. Run:
+2. Read [DEVELOPMENT.md](DEVELOPMENT.md) for local commands, the code map, privacy rules, and testing expectations.
+3. Read [ARCHITECTURE.md](ARCHITECTURE.md) if touching code.
+4. Run:
 
 ```bash
 ./Scripts/check-project.sh
