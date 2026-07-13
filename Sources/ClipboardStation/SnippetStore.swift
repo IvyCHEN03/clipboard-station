@@ -617,6 +617,31 @@ final class SnippetStore: ObservableObject {
         }
     }
 
+    func exportMarkdown() {
+        let snippetsToExport = filteredSnippets
+        guard !snippetsToExport.isEmpty else {
+            showToast("没有可导出的片段")
+            return
+        }
+
+        let panel = NSSavePanel()
+        panel.title = "导出 Markdown"
+        panel.nameFieldStringValue = "linggan-floating-ball-\(Self.fileDateFormatter.string(from: Date())).md"
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        guard panel.runModal() == .OK,
+              let url = panel.url else {
+            return
+        }
+
+        do {
+            let markdown = MarkdownExport.render(snippets: snippetsToExport)
+            try markdown.write(to: url, atomically: true, encoding: .utf8)
+            showToast("已导出 \(snippetsToExport.count) 条 Markdown")
+        } catch {
+            showToast("Markdown 导出失败")
+        }
+    }
+
     func shouldIgnorePasteboardChange(_ changeCount: Int) -> Bool {
         ignoredPasteboardChangeCounts.remove(changeCount) != nil
     }

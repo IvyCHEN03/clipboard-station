@@ -7,6 +7,7 @@
 - Added text, screenshot, and spreadsheet-like snippet capture.
 - Added AI-generated title and tag support through OpenAI-compatible chat completions endpoints.
 - Added a composition box that combines colored snippet blocks with custom text.
+- Added Markdown export for the current filtered snippet list.
 - Added local JSON backup export and import for snippets, settings, and attachments.
 - Added queue status and per-snippet retry for AI tagging failures.
 - Added first-run onboarding and a user guide for new open-source users.

@@ -641,6 +641,11 @@ private struct SettingsView: View {
 
             Section("本地备份") {
                 Button {
+                    store.exportMarkdown()
+                } label: {
+                    Label("导出当前筛选为 Markdown", systemImage: "doc.plaintext")
+                }
+                Button {
                     store.exportBackup()
                 } label: {
                     Label("导出 JSON 备份", systemImage: "square.and.arrow.up")

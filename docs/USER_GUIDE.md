@@ -83,6 +83,8 @@ Open Settings and use `导出 JSON 备份` to save a local backup containing sni
 
 Backup files are not encrypted by the app. Store them somewhere private if they contain sensitive clipboard content. API keys are not included in backups.
 
+Use `导出当前筛选为 Markdown` when you want a readable text handoff for notes, issues, or another AI chat. It exports the current filtered snippet list, including titles, metadata, tags, text, table text, and screenshot OCR when available.
+
 ## Common Fixes
 
 - Bubble missing: run `./Scripts/install-local.sh`, then `./Scripts/doctor.sh`.
