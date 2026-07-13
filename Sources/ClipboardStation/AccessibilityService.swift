@@ -16,6 +16,10 @@ enum AccessibilityService {
         sendKey(keyCode: CGKeyCode(kVK_ANSI_V), flags: .maskCommand)
     }
 
+    static func sendImageCollectorShortcut() {
+        sendKey(keyCode: CGKeyCode(kVK_ANSI_L), flags: [.maskControl, .maskShift])
+    }
+
     private static func sendKey(keyCode: CGKeyCode, flags: CGEventFlags) {
         let source = CGEventSource(stateID: .hidSystemState)
         let down = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true)

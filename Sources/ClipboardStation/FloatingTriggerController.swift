@@ -13,9 +13,11 @@ final class FloatingTriggerController {
     private var window: NSPanel?
     private var dragStartOrigin: NSPoint?
     private let action: () -> Void
+    private let commandAction: () -> Void
 
-    init(action: @escaping () -> Void) {
+    init(action: @escaping () -> Void, commandAction: @escaping () -> Void) {
         self.action = action
+        self.commandAction = commandAction
         configureWindow()
     }
 
@@ -32,6 +34,7 @@ final class FloatingTriggerController {
     private func configureWindow() {
         let triggerView = FloatingTriggerView(
             action: action,
+            commandAction: commandAction,
             dragChanged: { [weak self] translation in
                 self?.moveWindow(translation: translation)
             },
@@ -135,6 +138,7 @@ private struct FloatingTriggerView: View {
     @State private var hovering = false
     @State private var pressed = false
     let action: () -> Void
+    let commandAction: () -> Void
     let dragChanged: (CGSize) -> Void
     let dragEnded: () -> Void
 
@@ -171,7 +175,11 @@ private struct FloatingTriggerView: View {
         .clipShape(Circle())
         .contentShape(Circle())
         .onTapGesture {
-            action()
+            if NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.command) {
+                commandAction()
+            } else {
+                action()
+            }
         }
         .simultaneousGesture(
             DragGesture(minimumDistance: 7)
@@ -185,6 +193,6 @@ private struct FloatingTriggerView: View {
                 }
         )
         .onHover { hovering = $0 }
-        .help("点一下打开/关闭灵感悬浮球，拖动可换位置")
+        .help("点一下打开/关闭灵感悬浮球，Cmd+点收当前浏览器帖子图片，拖动可换位置")
     }
 }

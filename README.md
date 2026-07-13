@@ -175,7 +175,7 @@ Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipelin
 
 The repo includes an experimental Chrome/Edge companion extension for pages with many images and no convenient "download selected" flow.
 
-It opens from the browser extension button, gathers current post or article images into temporary image rows, expands a row on double-click, and saves the selected images through the browser download manager.
+It gathers current post or article images into temporary image rows, expands a row on double-click, and saves the selected images through the browser download manager. When the browser extension is installed, `Cmd` + clicking the native Linggan floating bubble sends a capture signal to the active browser page.
 
 To try it locally, load [browser-extension/image-collector](browser-extension/image-collector/README.md) as an unpacked extension from `chrome://extensions`.
 

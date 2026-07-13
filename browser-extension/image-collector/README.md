@@ -27,13 +27,15 @@ browser-extension/image-collector
 ## Use
 
 1. Open an image-heavy web page.
-2. Click the Linggan Image Collector button in the browser toolbar.
+2. Click the Linggan Image Collector button in the browser toolbar, or `Cmd` + click the native Linggan floating bubble when the macOS app is running.
 3. Repeat on other posts to keep multiple temporary image rows.
 4. Double-click one row to expand its images.
 5. Use `全选`, `取消`, or individual checkboxes.
 6. Click `保存选中`.
 
 Images are saved through the browser download manager under a `LingganImages/...` folder.
+
+Native app bridge: `Cmd` + clicking the macOS Linggan floating bubble sends `Ctrl+Shift+L` to the active browser page.
 
 Keyboard fallback while the page is focused: `Ctrl+Shift+L`.
 

@@ -142,9 +142,14 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     }
 
     private func configureFloatingTrigger() {
-        floatingTrigger = FloatingTriggerController { [weak self] in
-            self?.togglePopoverFromKeyboard()
-        }
+        floatingTrigger = FloatingTriggerController(
+            action: { [weak self] in
+                self?.togglePopoverFromKeyboard()
+            },
+            commandAction: { [weak self] in
+                self?.captureBrowserImagesFromFloatingTrigger()
+            }
+        )
         floatingTrigger?.show()
     }
 
@@ -250,6 +255,19 @@ final class StatusBarController: NSObject, NSWindowDelegate {
             store.add(text: text, source: .hotkeySelection, force: true)
             showStationWindow()
         }
+    }
+
+    private func captureBrowserImagesFromFloatingTrigger() {
+        let shouldPrompt = !didPromptForAccessibility
+        didPromptForAccessibility = true
+        guard AccessibilityService.isTrusted(prompt: shouldPrompt) else {
+            showStationWindow()
+            store.showToast("开启辅助功能权限后，Cmd+点灵感球可收当前浏览器帖子图片")
+            return
+        }
+
+        AccessibilityService.sendImageCollectorShortcut()
+        store.showToast("已发送网页收图指令")
     }
 
     @objc private func togglePopover(_ sender: AnyObject?) {
