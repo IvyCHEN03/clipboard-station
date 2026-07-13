@@ -40,6 +40,8 @@ Recommended labels:
 - `security`
 - `ignore-for-release`
 
+For colors, descriptions, and GitHub CLI setup commands, see [LABELS.md](LABELS.md).
+
 ## Common Responses
 
 ### Missing Floating Bubble

@@ -28,6 +28,7 @@
 - Improved the doctor script with privacy notes, OK/WARN status lines, summaries, and repair hints.
 - Added GitHub generated-release-notes categories for clearer public release pages.
 - Expanded the pull request template with user workflow, privacy, testing, and release-note checks.
+- Added a GitHub labels guide and safe label-sync script for repository launch.
 - Added Dependabot configuration for GitHub Actions maintenance.
 - Added architecture documentation and model-level tests for search, filters, and legacy decoding.
 - Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.
