@@ -120,7 +120,11 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     }
 
     private func configureStationWindow() {
-        let rootView = StationView(store: store)
+        let rootView = StationView(
+            store: store,
+            quitApp: { Self.quitCompletely() },
+            restartApp: { Self.restartApplication() }
+        )
         let host = NSHostingController(rootView: rootView)
         let panel = StationPanel(
             contentRect: NSRect(x: 0, y: 0, width: 440, height: 620),
@@ -139,6 +143,29 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         panel.isReleasedWhenClosed = false
         panel.delegate = self
         stationWindow = panel
+    }
+
+    private static func restartApplication() {
+        let bundleURL = Bundle.main.bundleURL
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = [
+            "-c",
+            "sleep 0.5; /usr/bin/open \"$1\"",
+            "restart-linggan",
+            bundleURL.path
+        ]
+        try? process.run()
+        NSApp.terminate(nil)
+    }
+
+    private static func quitCompletely() {
+        let label = "com.local.clipboard-station.agent"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        process.arguments = ["bootout", "gui/\(getuid())/\(label)"]
+        try? process.run()
+        NSApp.terminate(nil)
     }
 
     private func configureFloatingTrigger() {

@@ -3,6 +3,8 @@ import SwiftUI
 
 struct StationView: View {
     @ObservedObject var store: SnippetStore
+    let quitApp: () -> Void
+    let restartApp: () -> Void
     @State private var isPinned = false
     @State private var showSettings = false
     @State private var draggingSnippetID: UUID?
@@ -233,7 +235,7 @@ struct StationView: View {
     @ViewBuilder
     private var content: some View {
         if showSettings {
-            SettingsView(store: store)
+            SettingsView(store: store, quitApp: quitApp, restartApp: restartApp)
         } else if store.filteredSnippets.isEmpty {
             emptyState
         } else {
@@ -580,6 +582,8 @@ private struct SnippetBody: View {
 
 private struct SettingsView: View {
     @ObservedObject var store: SnippetStore
+    let quitApp: () -> Void
+    let restartApp: () -> Void
     @State private var showClearLocalDataConfirmation = false
 
     var body: some View {
@@ -670,6 +674,22 @@ private struct SettingsView: View {
                     Label("清除本地片段和附件", systemImage: "trash")
                 }
                 Text("会删除当前片段、组合框内容和本地附件。不会删除 Keychain 中的 API Key，也不会删除你手动导出的备份文件。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("应用控制") {
+                Button {
+                    restartApp()
+                } label: {
+                    Label("重启灵感悬浮球", systemImage: "arrow.clockwise")
+                }
+                Button(role: .destructive) {
+                    quitApp()
+                } label: {
+                    Label("彻底退出灵感悬浮球", systemImage: "power")
+                }
+                Text("退出后不是隐藏窗口；需要从“应用程序”重新打开，或等下次登录时自动启动。")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
