@@ -2,9 +2,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="${1:-$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")}"
+RAW_VERSION="${1:-$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")}"
+VERSION="${RAW_VERSION#v}"
+TAG_VERSION="v$VERSION"
 DIST_DIR="$ROOT_DIR/.build/dist"
-OUTPUT="$DIST_DIR/RELEASE_NOTES-v$VERSION.md"
+OUTPUT="$DIST_DIR/RELEASE_NOTES-$TAG_VERSION.md"
 
 mkdir -p "$DIST_DIR"
 
@@ -21,7 +23,7 @@ if [[ ! -s "$OUTPUT.tmp" ]]; then
 fi
 
 cat > "$OUTPUT" <<NOTES
-# Linggan Floating Ball v$VERSION
+# Linggan Floating Ball $TAG_VERSION
 
 Linggan Floating Ball is a local-first macOS clipboard station for collecting text, screenshots, and table snippets while working across multiple AI chats.
 
@@ -31,7 +33,16 @@ Linggan Floating Ball is a local-first macOS clipboard station for collecting te
 - People who want a local clipboard station for AI prompt composition.
 - People who understand that optional AI tagging sends selected snippet text to their configured provider.
 
-## Highlights
+## Release Highlights
+
+- Fast floating bubble entry point for opening the station without relying on fragile global shortcuts.
+- Local-first capture for text, screenshots, and spreadsheet-like snippets.
+- Encrypted local persistence with Keychain-backed storage.
+- Block composer for assembling copied fragments into one final prompt.
+- Optional AI-generated titles and tags through an OpenAI-compatible endpoint.
+- Open-source launch materials, install docs, diagnostics, tests, and release verification scripts.
+
+## Detailed Changes
 
 $(cat "$OUTPUT.tmp")
 
@@ -46,6 +57,12 @@ Verify the checksum:
 
 \`\`\`bash
 shasum -a 256 -c Linggan-Floating-Ball-v$VERSION.zip.sha256
+\`\`\`
+
+From a cloned checkout, maintainers can also run:
+
+\`\`\`bash
+./Scripts/verify-release.sh path/to/Linggan-Floating-Ball-v$VERSION.zip
 \`\`\`
 
 Then unzip and open \`ClipboardStation.app\`.

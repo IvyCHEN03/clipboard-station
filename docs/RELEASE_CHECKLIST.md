@@ -35,6 +35,8 @@ For repository profile, social launch, and first-week maintenance tasks, see [LA
 
 ## Packaging
 
+The release scripts accept either `0.4.0` or `v0.4.0`. Output assets are always named with the `v` prefix, such as `Linggan-Floating-Ball-v0.4.0.zip`.
+
 - [ ] Run `./Scripts/package-app.sh`.
 - [ ] Run `./Scripts/make-release-notes.sh vX.Y.Z`.
 - [ ] Run `./Scripts/make-release-zip.sh vX.Y.Z`.

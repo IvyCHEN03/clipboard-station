@@ -19,11 +19,17 @@ Linggan Floating Ball is a local-first macOS clipboard station for collecting te
 - People who want a local clipboard station for AI prompt composition.
 - People who understand that optional AI tagging sends selected snippet text to their configured provider.
 
-## Highlights
+## Release Highlights
 
-- <One user-facing improvement>
-- <One reliability or install improvement>
-- <One documentation or contributor improvement>
+- <One user-facing workflow improvement>
+- <One trust, privacy, or install improvement>
+- <One contributor or launch-readiness improvement>
+
+## Detailed Changes
+
+- <Concrete changelog item>
+- <Concrete changelog item>
+- <Concrete changelog item>
 
 ## Download
 
