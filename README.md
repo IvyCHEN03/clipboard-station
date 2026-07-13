@@ -139,6 +139,7 @@ Create a local release zip:
 ```bash
 ./Scripts/make-release-notes.sh v0.4.0
 ./Scripts/make-release-zip.sh
+./Scripts/verify-release.sh .build/dist/Linggan-Floating-Ball-v0.4.0.zip
 ```
 
 Release notes should follow [Release Notes Template](docs/RELEASE_NOTES_TEMPLATE.md) so users see install limits, checksum steps, privacy notes, and known issues before downloading.

@@ -38,6 +38,12 @@ Verify the checksum:
 shasum -a 256 -c Linggan-Floating-Ball-<version>.zip.sha256
 ```
 
+From a cloned checkout, maintainers can also run:
+
+```bash
+./Scripts/verify-release.sh path/to/Linggan-Floating-Ball-<version>.zip
+```
+
 Then unzip and open `ClipboardStation.app`.
 
 ## Important Install Note

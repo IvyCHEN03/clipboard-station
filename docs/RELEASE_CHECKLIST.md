@@ -41,6 +41,7 @@ For repository profile, social launch, and first-week maintenance tasks, see [LA
 - [ ] Confirm `.build/ClipboardStation.app` launches.
 - [ ] Confirm `.build/dist/Linggan-Floating-Ball-vX.Y.Z.zip` exists and unzips to `ClipboardStation.app`.
 - [ ] Confirm `.build/dist/Linggan-Floating-Ball-vX.Y.Z.zip.sha256` exists and verifies with `shasum -a 256 -c`.
+- [ ] Run `./Scripts/verify-release.sh .build/dist/Linggan-Floating-Ball-vX.Y.Z.zip`.
 - [ ] Confirm `./Scripts/install-local.sh` installs into `~/Applications`.
 - [ ] Confirm `./Scripts/uninstall-local.sh` removes the app and launch agent without deleting user data.
 - [ ] Confirm the app icon appears.

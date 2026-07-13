@@ -13,6 +13,12 @@ cd ~/Downloads
 shasum -a 256 -c Linggan-Floating-Ball-<version>.zip.sha256
 ```
 
+Or, from a cloned checkout, verify both checksum and zip contents:
+
+```bash
+./Scripts/verify-release.sh ~/Downloads/Linggan-Floating-Ball-<version>.zip
+```
+
 4. Unzip the file.
 5. Move `ClipboardStation.app` to `~/Applications` or `/Applications`.
 6. Open the app.
