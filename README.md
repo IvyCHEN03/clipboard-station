@@ -12,6 +12,8 @@ Linggan Floating Ball, formerly AI Clipboard Station, is a tiny macOS menu bar a
 
 It is designed for one very specific workflow: grab many fragments fast, keep them visible, tag them, reorder them like blocks, and paste a composed answer back into any AI input box.
 
+The repo also includes an experimental browser companion extension for collecting image-heavy web pages into one selectable stack.
+
 ![Linggan Floating Ball app preview](docs/assets/hero-preview.svg)
 
 ## 10-Second Pitch
@@ -69,6 +71,7 @@ The app is usable today, but still pre-1.0:
 | Try the app quickly | [Getting Started](docs/GETTING_STARTED.md) |
 | Install, repair, or uninstall | [Install Guide](docs/INSTALL.md) |
 | Learn the full workflow | [User Guide](docs/USER_GUIDE.md) |
+| Collect many web images | [Browser Image Collector](browser-extension/image-collector/README.md) |
 | Understand privacy and AI tagging | [Privacy](PRIVACY.md) and [FAQ](docs/FAQ.md) |
 | Compare product positioning | [Product Positioning](docs/POSITIONING.md) |
 | Contribute a small fix | [Contributing](CONTRIBUTING.md), [Development Guide](docs/DEVELOPMENT.md), and [Good First Issues](docs/GOOD_FIRST_ISSUES.md) |
@@ -123,6 +126,7 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Export the current filtered list as readable Markdown.
 - Export and import local JSON backups for snippets, settings, and attachments.
 - Clear local snippets, composer text, and attachment files from Settings.
+- Use the experimental browser image collector to stack, expand, select, and save images from image-heavy pages.
 - Store data locally with Keychain-backed AES-GCM encryption.
 - No cloud sync and no uploads unless you explicitly enable AI tagging.
 
@@ -166,6 +170,16 @@ Install a local app into `~/Applications` and start the launch agent:
 The floating bubble should appear after installation. The app will also start on login through a user LaunchAgent.
 
 Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipeline, data model, persistence flow, and testing map.
+
+## Browser Image Collector
+
+The repo includes an experimental Chrome/Edge companion extension for pages with many images and no convenient "download selected" flow.
+
+It adds a small `收图` button to web pages, gathers visible page images into one stacked cell, expands the stack on double-click, and saves the selected images through the browser download manager.
+
+To try it locally, load [browser-extension/image-collector](browser-extension/image-collector/README.md) as an unpacked extension from `chrome://extensions`.
+
+The extension does not bypass paywalls, authentication, DRM, or platform permissions. Some lazy-loaded pages need you to scroll first, then refresh the image stack.
 
 For development, run directly from source:
 

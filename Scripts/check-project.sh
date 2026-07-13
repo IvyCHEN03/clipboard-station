@@ -44,6 +44,14 @@ echo "== Secret scan =="
 ./Scripts/check-secrets.sh
 
 echo
+echo "== Browser extension =="
+python3 -c 'import json; json.load(open("browser-extension/image-collector/manifest.json")); print("ok: browser-extension/image-collector/manifest.json")'
+node --check browser-extension/image-collector/background.js
+echo "ok: browser-extension/image-collector/background.js"
+node --check browser-extension/image-collector/content.js
+echo "ok: browser-extension/image-collector/content.js"
+
+echo
 echo "== Bundle plist =="
 plutil -lint BundleResources/Info.plist
 

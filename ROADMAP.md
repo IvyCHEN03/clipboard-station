@@ -11,6 +11,7 @@ This roadmap is product-oriented rather than exhaustive. The goal is to make Lin
 - Add local JSON backup, Markdown export, and privacy-focused local data cleanup.
 - Add tests for models, AI response parsing, demo content, diagnostics, backup export, Markdown export, and attachment cleanup.
 - Add open-source launch docs, issue templates, PR checks, labels, release notes, release verification, and repository profile guidance.
+- Add an experimental browser image collector extension for image-heavy web pages.
 
 ## Next
 
@@ -19,6 +20,7 @@ This roadmap is product-oriented rather than exhaustive. The goal is to make Lin
 - Add focused tests for persistence and pasteboard import edge cases.
 - Polish empty states, status messages, and error recovery based on first external feedback.
 - Improve keyboard-first navigation in the snippet list and block composer.
+- Decide whether the browser image collector should stay as a companion extension or become a separately packaged project.
 
 ## Later
 
@@ -26,6 +28,7 @@ This roadmap is product-oriented rather than exhaustive. The goal is to make Lin
 - Better OCR controls for screenshots, including language selection and re-run OCR.
 - Configurable capture rules per content type.
 - Optional local-only semantic tags when system frameworks make it practical.
+- Optional handoff from the browser image collector into the macOS snippet station.
 
 ## Non-Goals
 
@@ -34,3 +37,4 @@ This roadmap is product-oriented rather than exhaustive. The goal is to make Lin
 - Background upload of clipboard content.
 - Replacing a full clipboard manager.
 - Becoming a general note-taking app.
+- Bypassing website permissions, paywalls, DRM, or copyright restrictions.
