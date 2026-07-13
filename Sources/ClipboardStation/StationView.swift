@@ -639,6 +639,22 @@ private struct SettingsView: View {
             Toggle("本地加密持久化保存", isOn: $store.settings.persistSnippets)
             Toggle("开机启动", isOn: $store.settings.launchAtLogin)
 
+            Section("本地备份") {
+                Button {
+                    store.exportBackup()
+                } label: {
+                    Label("导出 JSON 备份", systemImage: "square.and.arrow.up")
+                }
+                Button {
+                    store.importBackup()
+                } label: {
+                    Label("导入 JSON 备份", systemImage: "square.and.arrow.down")
+                }
+                Text("备份文件包含片段、设置和附件数据，只保存到你选择的位置，不会上传。API Key 不会导出。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+
             HStack {
                 Text("全局快捷键")
                 Spacer()

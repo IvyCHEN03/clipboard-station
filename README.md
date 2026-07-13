@@ -72,6 +72,7 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Reorder snippets with up/down buttons or a numeric position field.
 - Compose a prompt in the bottom block editor with colored snippet blocks and custom text between blocks.
 - Copy or paste a snippet into the current input box.
+- Export and import local JSON backups for snippets, settings, and attachments.
 - Store data locally with Keychain-backed AES-GCM encryption.
 - No cloud sync and no uploads unless you explicitly enable AI tagging.
 
@@ -198,7 +199,6 @@ The next product priorities are:
 - Signed and notarized releases.
 - A polished onboarding flow for permissions and launch at login.
 - A clearer first-run empty state with a short demo workflow.
-- Import/export for local backup.
 - Better OCR controls for screenshots.
 - Optional release builds with Sparkle or a simple updater.
 

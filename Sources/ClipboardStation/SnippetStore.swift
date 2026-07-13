@@ -3,6 +3,7 @@ import Carbon
 import Combine
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 import Vision
 
 @MainActor
@@ -566,6 +567,56 @@ final class SnippetStore: ObservableObject {
         showToast("已载入示例片段")
     }
 
+    func exportBackup() {
+        let panel = NSSavePanel()
+        panel.title = "导出灵感悬浮球备份"
+        panel.nameFieldStringValue = "linggan-floating-ball-backup-\(Self.fileDateFormatter.string(from: Date())).json"
+        panel.allowedContentTypes = [.json]
+        guard panel.runModal() == .OK,
+              let url = panel.url else {
+            return
+        }
+
+        do {
+            let backup = ClipboardBackupCodec.makeBackup(
+                snippets: snippets,
+                settings: settings,
+                appVersion: AppMetadata.version
+            )
+            let data = try ClipboardBackupCodec.encode(backup)
+            try data.write(to: url, options: [.atomic])
+            showToast("已导出 \(backup.snippets.count) 条片段")
+        } catch {
+            showToast("备份导出失败")
+        }
+    }
+
+    func importBackup() {
+        let panel = NSOpenPanel()
+        panel.title = "导入灵感悬浮球备份"
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK,
+              let url = panel.url else {
+            return
+        }
+
+        do {
+            let backup = try ClipboardBackupCodec.decode(try Data(contentsOf: url))
+            let restoredSnippets = try restoreBackupAttachments(backup)
+            var importedSettings = backup.settings
+            importedSettings.persistSnippets = true
+            snippets = restoredSnippets.sorted { $0.createdAt > $1.createdAt }
+            settings = importedSettings
+            persist()
+            showToast("已导入 \(snippets.count) 条片段")
+        } catch ClipboardBackupError.unsupportedVersion {
+            showToast("备份版本过新，无法导入")
+        } catch {
+            showToast("备份导入失败")
+        }
+    }
+
     func shouldIgnorePasteboardChange(_ changeCount: Int) -> Bool {
         ignoredPasteboardChangeCounts.remove(changeCount) != nil
     }
@@ -592,6 +643,38 @@ final class SnippetStore: ObservableObject {
         if ignoredPasteboardChangeCounts.count > 12 {
             ignoredPasteboardChangeCounts.remove(ignoredPasteboardChangeCounts.min() ?? 0)
         }
+    }
+
+    private func restoreBackupAttachments(_ backup: ClipboardBackup) throws -> [Snippet] {
+        try FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
+        let attachmentMap = Dictionary(uniqueKeysWithValues: backup.attachments.map { ($0.snippetID, $0) })
+        return try backup.snippets.map { snippet in
+            var restored = snippet
+            restored.isEnriching = false
+            if let attachment = attachmentMap[snippet.id] {
+                let fileName = uniqueBackupFileName(attachment.fileName)
+                let url = attachmentsDirectory.appendingPathComponent(fileName)
+                try attachment.data.write(to: url, options: [.atomic])
+                restored.attachmentPath = url.path
+                restored.fileName = fileName
+            } else if snippet.attachmentPath != nil {
+                restored.attachmentPath = nil
+            }
+            return restored
+        }
+    }
+
+    private func uniqueBackupFileName(_ fileName: String) -> String {
+        let fallback = "attachment-\(UUID().uuidString)"
+        let safeName = fileName.isEmpty ? fallback : URL(fileURLWithPath: fileName).lastPathComponent
+        let candidate = attachmentsDirectory.appendingPathComponent(safeName)
+        guard FileManager.default.fileExists(atPath: candidate.path) else {
+            return safeName
+        }
+        let ext = candidate.pathExtension
+        let stem = candidate.deletingPathExtension().lastPathComponent
+        let unique = "\(stem)-\(UUID().uuidString.prefix(8))"
+        return ext.isEmpty ? unique : "\(unique).\(ext)"
     }
 
     private func draftSlotKey(before id: UUID) -> String {

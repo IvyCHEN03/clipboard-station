@@ -77,6 +77,12 @@ Existing tags are preserved. Failed snippets show a failure state and can be ret
 - Nothing is uploaded unless AI tagging is enabled and configured.
 - API keys are stored in macOS Keychain.
 
+## Local Backup
+
+Open Settings and use `导出 JSON 备份` to save a local backup containing snippets, settings, and attachment data such as screenshots or table files. Use `导入 JSON 备份` to restore it later.
+
+Backup files are not encrypted by the app. Store them somewhere private if they contain sensitive clipboard content. API keys are not included in backups.
+
 ## Common Fixes
 
 - Bubble missing: run `./Scripts/install-local.sh`, then `./Scripts/doctor.sh`.

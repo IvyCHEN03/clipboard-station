@@ -38,6 +38,12 @@ Content may leave the device only when:
 
 API keys are stored in macOS Keychain and are not committed to the repository.
 
+## Local Backups
+
+If the user exports a JSON backup, the backup file contains snippets, settings, and attachment data such as screenshots or table files. The backup is written only to the location selected by the user.
+
+Backup files are not encrypted by the app. Treat them like private clipboard data and store or delete them carefully. API keys are not exported.
+
 ## Clipboard Monitoring
 
 When clipboard monitoring is enabled, the app polls the macOS pasteboard change count and imports supported content types. The current implementation focuses on:
