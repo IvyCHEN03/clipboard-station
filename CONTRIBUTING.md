@@ -55,7 +55,10 @@ See [Good First Issues](docs/GOOD_FIRST_ISSUES.md) for scoped starter tasks acro
 - Do not include API keys, local data, screenshots with private content, or Keychain material.
 - Run `swift build`.
 - Run `swift test`.
+- Run `./Scripts/check-doc-links.sh` for documentation changes.
 - If UI behavior changes, include before/after screenshots when possible.
+- Update `CHANGELOG.md` for user-facing, documentation, release, or maintenance changes.
+- Choose labels that match [.github/release.yml](.github/release.yml) when the change should appear in generated release notes.
 
 Code ownership is tracked in [.github/CODEOWNERS](.github/CODEOWNERS).
 GitHub Actions dependency updates are managed by [.github/dependabot.yml](.github/dependabot.yml).
