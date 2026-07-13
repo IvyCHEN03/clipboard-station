@@ -9,8 +9,9 @@ For every new issue:
 1. Thank the reporter.
 2. Check whether private clipboard content, API keys, screenshots, or logs need redaction.
 3. Ask for copied diagnostics if missing.
-4. Confirm the area: install, permissions, capture, screenshots/OCR, tables, AI tags, composer, release packaging, or docs.
-5. Decide whether the issue needs a code fix, documentation update, FAQ update, or roadmap note.
+4. Confirm install method, app version or commit, macOS version, and whether the issue is reproducible.
+5. Confirm the area: install, permissions, capture, screenshots/OCR, tables, AI tags, composer, release packaging, or docs.
+6. Decide whether the issue needs a code fix, documentation update, FAQ update, or roadmap note.
 
 ## Priority
 
@@ -52,6 +53,7 @@ Ask for:
 - install method
 - output from `./Scripts/doctor.sh`
 - copied diagnostics from Settings
+- whether `./Scripts/install-local.sh` was rerun after pulling source changes
 
 Point to [INSTALL.md](INSTALL.md) and [FAQ.md](FAQ.md).
 
@@ -66,6 +68,10 @@ Ask for provider host, model name, HTTP status, and whether quota/billing is act
 ### Install Or Release Problems
 
 Ask whether the `.sha256` check passes. If macOS blocks the unsigned app, point to [INSTALL.md](INSTALL.md) and keep the signed-release roadmap visible.
+
+### Broad Feature Requests
+
+Check whether the request supports the core collect, filter, compose, and paste workflow. If it needs cloud sync, telemetry, accounts, or broad clipboard-history behavior, link to [POSITIONING.md](POSITIONING.md) and ask for a narrower local-first workflow.
 
 ## Documentation Feedback Loop
 

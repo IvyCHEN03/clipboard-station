@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Improved issue templates with install, reproducibility, privacy, and product-fit prompts.
 - Added a development guide with local commands, code map, privacy rules, and testing expectations.
 - Updated local install so source installs always rebuild before replacing the installed app.
 - Added a smaller floating bubble as the primary open/close entry point.

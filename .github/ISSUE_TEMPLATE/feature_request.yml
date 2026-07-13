@@ -28,6 +28,11 @@ body:
     attributes:
       label: Proposed solution
       description: What would make the workflow feel simpler?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds
+      description: Optional. What do you use today, and why is it not enough?
   - type: dropdown
     id: privacy
     attributes:
@@ -39,3 +44,12 @@ body:
         - Not sure
     validations:
       required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Product fit
+      options:
+        - label: This supports collecting, filtering, composing, or pasting fragments while working across AI chats.
+          required: true
+        - label: This does not require cloud sync or telemetry.
+          required: false
