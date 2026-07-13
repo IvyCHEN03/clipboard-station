@@ -108,6 +108,7 @@ Trust assets:
 - Add one short GIF showing copy -> collect -> compose -> paste.
 - Make sure README links and badges render on GitHub.
 - Revoke any exposed GitHub tokens and use a fresh fine-grained token for publishing.
+- Follow [PUBLISHING.md](PUBLISHING.md) for safe push, tag, prerelease, and rollback steps.
 
 ### First GitHub Release
 

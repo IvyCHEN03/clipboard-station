@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a publishing guide for safe token handling, push, tag, prerelease, verification, and rollback steps.
 - Improved issue templates with install, reproducibility, privacy, and product-fit prompts.
 - Added a development guide with local commands, code map, privacy rules, and testing expectations.
 - Updated local install so source installs always rebuild before replacing the installed app.

@@ -2,12 +2,13 @@
 
 This project is not ready for a broad non-developer release until signing and notarization are in place. Use this checklist when preparing any public release.
 
-For repository profile, social launch, and first-week maintenance tasks, see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
+For push, token, tag, and prerelease steps, see [PUBLISHING.md](PUBLISHING.md). For repository profile, social launch, and first-week maintenance tasks, see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
 
 ## Preflight
 
 - [ ] `./Scripts/check-project.sh` passes locally.
 - [ ] GitHub Actions CI passes on `main`.
+- [ ] Publishing steps in [PUBLISHING.md](PUBLISHING.md) are understood before pushing tags.
 - [ ] README install instructions match the current build path.
 - [ ] `VERSION`, `BundleResources/Info.plist`, README release command, and the intended Git tag refer to the same version.
 - [ ] `CHANGELOG.md` has an entry for the release.

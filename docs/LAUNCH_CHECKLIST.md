@@ -13,6 +13,7 @@ Use this checklist when preparing the repository for a public push, first releas
 
 ## Release Readiness
 
+- [ ] Follow [PUBLISHING.md](PUBLISHING.md) for token safety, push, tag, and prerelease verification.
 - [ ] Complete [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 - [ ] Run:
 

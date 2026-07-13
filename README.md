@@ -63,6 +63,7 @@ The app is usable today, but still pre-1.0:
 | Contribute a small fix | [Contributing](CONTRIBUTING.md), [Development Guide](docs/DEVELOPMENT.md), and [Good First Issues](docs/GOOD_FIRST_ISSUES.md) |
 | Understand community expectations | [Code of Conduct](CODE_OF_CONDUCT.md) |
 | Prepare a release | [Release Checklist](docs/RELEASE_CHECKLIST.md) |
+| Push and publish safely | [Publishing Guide](docs/PUBLISHING.md) |
 | Configure repository labels | [GitHub Labels](docs/LABELS.md) |
 | Configure the GitHub profile | [Repository Profile](docs/REPOSITORY_PROFILE.md) |
 | Plan a public launch | [Open Source Growth Plan](docs/OPEN_SOURCE_GROWTH.md) |
@@ -275,6 +276,8 @@ git push origin v0.4.0
 The release workflow uses [VERSION](VERSION) for local zips and the Git tag for GitHub release zips.
 
 For a public repository launch, use [GitHub Launch Checklist](docs/LAUNCH_CHECKLIST.md).
+
+For safe push, token, tag, and prerelease steps, use [Publishing Guide](docs/PUBLISHING.md).
 
 ## License
 
