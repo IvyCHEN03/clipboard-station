@@ -33,6 +33,8 @@ Run checks:
 ./Scripts/check-project.sh
 ```
 
+The full check runs build, tests, shell syntax, script executable-bit checks, safe script dry-runs, Markdown links, bundle plist linting, and version metadata checks.
+
 For documentation-only changes, `./Scripts/check-doc-links.sh` is a faster local check for broken Markdown links.
 
 Before changing capture, persistence, AI tagging, or permissions, read [Architecture](docs/ARCHITECTURE.md).

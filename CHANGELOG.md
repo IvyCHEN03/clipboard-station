@@ -37,6 +37,7 @@
 - Added a code of conduct with privacy-sensitive community guidelines.
 - Added local install, uninstall, doctor, and release zip scripts.
 - Added a project check script for build, tests, shell syntax, plist, and version metadata.
+- Expanded project checks to verify script executable bits and safe script dry-runs.
 - Added release checksums and a non-developer install guide.
 - Added local Markdown link checking to the project check script.
 - Added GitHub Actions CI and release workflows.

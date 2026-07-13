@@ -19,6 +19,21 @@ for script in Scripts/*.sh; do
 done
 
 echo
+echo "== Script permissions =="
+for script in Scripts/*.sh; do
+  if [[ ! -x "$script" ]]; then
+    echo "$script is not executable" >&2
+    exit 1
+  fi
+  echo "ok: $script"
+done
+
+echo
+echo "== Script dry-runs =="
+./Scripts/sync-labels.sh >/dev/null
+echo "ok: Scripts/sync-labels.sh"
+
+echo
 echo "== Markdown links =="
 ./Scripts/check-doc-links.sh
 
