@@ -1,0 +1,77 @@
+<svg width="1280" height="760" viewBox="0 0 1280 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Linggan Floating Ball app preview</title>
+  <desc id="desc">A synthetic preview of the Linggan Floating Ball macOS app showing the floating bubble, snippet list, filters, AI tags, and block composer.</desc>
+  <rect width="1280" height="760" rx="42" fill="#F6FBFF"/>
+  <circle cx="154" cy="356" r="25" fill="#82CDFB"/>
+  <path d="M154 339L160 352L174 356L161 362L154 376L148 363L134 356L148 350L154 339Z" fill="white"/>
+  <text x="96" y="414" fill="#64748B" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="700">floating bubble</text>
+  <path d="M192 358C245 326 279 302 329 289" stroke="#9CCFFB" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 12"/>
+
+  <rect x="324" y="70" width="720" height="620" rx="38" fill="white" stroke="#D7E7F5" stroke-width="2"/>
+  <rect x="324" y="70" width="720" height="96" rx="38" fill="#FFFFFF"/>
+  <path d="M324 166H1044" stroke="#E2E8F0" stroke-width="2"/>
+
+  <circle cx="372" cy="118" r="13" fill="#FF5F57"/>
+  <circle cx="410" cy="118" r="13" fill="#FFBD2E"/>
+  <circle cx="448" cy="118" r="13" fill="#28C840"/>
+  <circle cx="506" cy="118" r="25" fill="#82CDFB"/>
+  <path d="M506 101L513 115L528 119L514 125L506 141L499 126L484 119L499 113L506 101Z" fill="white"/>
+  <text x="548" y="112" fill="#172033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="800">Linggan Floating Ball</text>
+  <text x="548" y="140" fill="#758195" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15">local-first AI clipboard station</text>
+  <rect x="900" y="101" width="54" height="34" rx="17" fill="#EDF7FF"/>
+  <text x="917" y="123" fill="#2382D9" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800">Tag</text>
+
+  <rect x="372" y="194" width="624" height="48" rx="24" fill="#F8FAFC" stroke="#E5EDF5"/>
+  <text x="416" y="225" fill="#94A3B8" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17">Search title, text, source, or tag</text>
+  <path d="M396 211C402 205 412 205 418 211C424 217 424 227 418 233C412 239 402 239 396 233C390 227 390 217 396 211Z" stroke="#94A3B8" stroke-width="3"/>
+  <path d="M417 232L428 243" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>
+
+  <g transform="translate(372 270)">
+    <rect width="116" height="34" rx="17" fill="#DBEAFE"/>
+    <text x="32" y="22" fill="#1D4ED8" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="700">Today</text>
+    <rect x="128" width="92" height="34" rx="17" fill="#ECFDF5"/>
+    <text x="154" y="22" fill="#047857" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="700">AI</text>
+    <rect x="232" width="132" height="34" rx="17" fill="#FFF7ED"/>
+    <text x="258" y="22" fill="#C2410C" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="700">Research</text>
+    <rect x="376" width="146" height="34" rx="17" fill="#FAE8FF"/>
+    <text x="399" y="22" fill="#A21CAF" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="700">Screenshot</text>
+  </g>
+
+  <g transform="translate(372 330)">
+    <rect width="624" height="80" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="18" y="20" width="38" height="38" rx="12" fill="#82CDFB"/>
+    <text x="31" y="45" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" font-weight="900">1</text>
+    <text x="74" y="34" fill="#172033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" font-weight="800">Compare model answers</text>
+    <text x="74" y="59" fill="#64748B" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14">Captured from ChatGPT, Claude, and notes</text>
+    <rect x="470" y="24" width="56" height="30" rx="15" fill="#E0F2FE"/>
+    <text x="489" y="44" fill="#0369A1" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="700">AI</text>
+    <rect x="536" y="24" width="66" height="30" rx="15" fill="#F0FDF4"/>
+    <text x="554" y="44" fill="#15803D" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="700">local</text>
+  </g>
+
+  <g transform="translate(372 428)">
+    <rect width="624" height="80" rx="18" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="18" y="20" width="38" height="38" rx="12" fill="#A7F3D0"/>
+    <text x="31" y="45" fill="#047857" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" font-weight="900">2</text>
+    <text x="74" y="34" fill="#172033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="17" font-weight="800">Table cells from a spreadsheet</text>
+    <text x="74" y="59" fill="#64748B" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14">Stored as searchable table-like text</text>
+    <rect x="470" y="24" width="132" height="30" rx="15" fill="#FFF7ED"/>
+    <text x="498" y="44" fill="#C2410C" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="700">spreadsheet</text>
+  </g>
+
+  <g transform="translate(372 526)">
+    <rect width="624" height="116" rx="20" fill="#F8FAFC" stroke="#D7E7F5"/>
+    <text x="20" y="34" fill="#172033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="800">Block composer</text>
+    <text x="142" y="34" fill="#94A3B8" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14">drag snippets, type between them, copy one final prompt</text>
+    <rect x="20" y="58" width="62" height="38" rx="13" fill="#82CDFB"/>
+    <text x="44" y="82" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="900">1</text>
+    <text x="94" y="82" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14">summarize then compare with</text>
+    <rect x="288" y="58" width="62" height="38" rx="13" fill="#A7F3D0"/>
+    <text x="312" y="82" fill="#047857" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="900">2</text>
+    <rect x="480" y="58" width="112" height="38" rx="19" fill="#172033"/>
+    <text x="510" y="82" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="800">Copy</text>
+  </g>
+
+  <text x="96" y="628" fill="#172033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" font-weight="850">Collect. Filter. Compose.</text>
+  <text x="96" y="660" fill="#64748B" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18">No cloud sync by default. Optional AI tags only when configured.</text>
+</svg>

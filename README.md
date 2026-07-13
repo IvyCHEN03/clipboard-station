@@ -8,13 +8,11 @@
 ![Swift](https://img.shields.io/badge/Swift-6-compatible-f05138)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-![App icon](BundleResources/InspirationBubble.iconset/icon_128x128.png)
-
 Linggan Floating Ball, formerly AI Clipboard Station, is a tiny macOS menu bar app for collecting useful text, screenshots, and table snippets while you work across ChatGPT, Claude, Codex, browsers, notes, and spreadsheets.
 
 It is designed for one very specific workflow: grab many fragments fast, keep them visible, tag them, reorder them like blocks, and paste a composed answer back into any AI input box.
 
-![Workflow preview](docs/assets/workflow-preview.svg)
+![Linggan Floating Ball app preview](docs/assets/hero-preview.svg)
 
 ## 30-Second Tour
 
@@ -74,6 +72,8 @@ The app is usable today, but still pre-1.0:
 A public demo GIF is planned. Until then, see [docs/DEMO.md](docs/DEMO.md) for the exact recording script, screenshot checklist, and release-note copy.
 
 The core flow is simple: copy fragments, filter them, drag the useful ones into the composer, add text between blocks, and paste the final prompt.
+
+![Workflow preview](docs/assets/workflow-preview.svg)
 
 ## Why It Exists
 
