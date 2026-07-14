@@ -297,9 +297,25 @@ final class StatusBarController: NSObject, NSWindowDelegate {
             return
         }
 
-        AccessibilityService.sendImageCollectorShortcut()
-        store.showToast("已发送网页收图指令")
+        guard let browser = NSWorkspace.shared.frontmostApplication,
+              Self.supportedBrowserBundleIDs.contains(browser.bundleIdentifier ?? "") else {
+            showStationWindow()
+            store.showToast("请先点一下要收图的 Chrome 页面，再 Cmd+点灵感球")
+            return
+        }
+
+        AccessibilityService.sendImageCollectorShortcut(to: browser.processIdentifier)
+        store.showToast("已向当前浏览器发送收图指令")
     }
+
+    private static let supportedBrowserBundleIDs: Set<String> = [
+        "com.google.Chrome",
+        "com.google.Chrome.beta",
+        "com.microsoft.edgemac",
+        "com.brave.Browser",
+        "company.thebrowser.Browser",
+        "org.chromium.Chromium"
+    ]
 
     @objc private func togglePopover(_ sender: AnyObject?) {
         togglePopoverFromKeyboard()

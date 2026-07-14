@@ -16,17 +16,26 @@ enum AccessibilityService {
         sendKey(keyCode: CGKeyCode(kVK_ANSI_V), flags: .maskCommand)
     }
 
-    static func sendImageCollectorShortcut() {
-        sendKey(keyCode: CGKeyCode(kVK_ANSI_L), flags: [.maskControl, .maskShift])
+    static func sendImageCollectorShortcut(to processID: pid_t) {
+        sendKey(
+            keyCode: CGKeyCode(kVK_ANSI_L),
+            flags: [.maskControl, .maskShift],
+            processID: processID
+        )
     }
 
-    private static func sendKey(keyCode: CGKeyCode, flags: CGEventFlags) {
+    private static func sendKey(keyCode: CGKeyCode, flags: CGEventFlags, processID: pid_t? = nil) {
         let source = CGEventSource(stateID: .hidSystemState)
         let down = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true)
         let up = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false)
         down?.flags = flags
         up?.flags = flags
-        down?.post(tap: .cghidEventTap)
-        up?.post(tap: .cghidEventTap)
+        if let processID {
+            down?.postToPid(processID)
+            up?.postToPid(processID)
+        } else {
+            down?.post(tap: .cghidEventTap)
+            up?.post(tap: .cghidEventTap)
+        }
     }
 }

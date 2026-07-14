@@ -37,12 +37,16 @@ final class ModelTests: XCTestCase {
 
     func testTimeFiltersContainExpectedDates() {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let today = now.addingTimeInterval(-60 * 60)
         let twoDaysAgo = now.addingTimeInterval(-2 * 24 * 60 * 60)
         let fiveDaysAgo = now.addingTimeInterval(-5 * 24 * 60 * 60)
         let eightDaysAgo = now.addingTimeInterval(-8 * 24 * 60 * 60)
 
+        XCTAssertTrue(TimeFilter.today.contains(today, now: now))
+        XCTAssertFalse(TimeFilter.threeDays.contains(today, now: now))
         XCTAssertTrue(TimeFilter.threeDays.contains(twoDaysAgo, now: now))
         XCTAssertFalse(TimeFilter.threeDays.contains(fiveDaysAgo, now: now))
+        XCTAssertFalse(TimeFilter.fishMemory.contains(twoDaysAgo, now: now))
         XCTAssertTrue(TimeFilter.fishMemory.contains(fiveDaysAgo, now: now))
         XCTAssertFalse(TimeFilter.fishMemory.contains(eightDaysAgo, now: now))
     }

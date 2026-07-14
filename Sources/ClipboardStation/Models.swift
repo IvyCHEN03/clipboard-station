@@ -222,13 +222,15 @@ enum TimeFilter: String, CaseIterable, Identifiable {
     }
 
     func contains(_ date: Date, now: Date = Date()) -> Bool {
+        let threeDayCutoff = Calendar.current.date(byAdding: .day, value: -3, to: now) ?? now
+        let sevenDayCutoff = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
         switch self {
         case .today:
             return Calendar.current.isDate(date, inSameDayAs: now)
         case .threeDays:
-            return date >= Calendar.current.date(byAdding: .day, value: -3, to: now) ?? now
+            return !Calendar.current.isDate(date, inSameDayAs: now) && date >= threeDayCutoff
         case .fishMemory:
-            return date >= Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
+            return date >= sevenDayCutoff && date < threeDayCutoff
         }
     }
 }

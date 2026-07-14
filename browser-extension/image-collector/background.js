@@ -46,6 +46,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 chrome.action.onClicked.addListener(async tab => {
+  await captureCurrentPost(tab);
+});
+
+chrome.commands.onCommand.addListener(async command => {
+  if (command !== "capture-current-post") return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  await captureCurrentPost(tab);
+});
+
+async function captureCurrentPost(tab) {
   if (!tab?.id) return;
   try {
     await ensureCollectorInjected(tab.id);
@@ -57,7 +67,7 @@ chrome.action.onClicked.addListener(async tab => {
   } catch (error) {
     console.warn("Linggan Image Collector could not run on this page:", error?.message || error);
   }
-});
+}
 
 async function ensureCollectorInjected(tabId) {
   await chrome.scripting.insertCSS({

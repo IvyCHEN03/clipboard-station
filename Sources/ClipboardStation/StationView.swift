@@ -16,11 +16,8 @@ struct StationView: View {
         VStack(spacing: 0) {
             header
             Divider()
-            if !showSettings && !showMemoryShore && !store.frequentTags.isEmpty {
+            if !showSettings && !showMemoryShore {
                 keywordBar
-            }
-            if !showSettings && !showMemoryShore && !store.snippets.isEmpty {
-                fishMemoryBanner
             }
             if !showSettings && !showMemoryShore {
                 searchBar
@@ -103,43 +100,25 @@ struct StationView: View {
         .padding(.vertical, 12)
     }
 
-    private var fishMemoryBanner: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
-                Image(systemName: "fish.fill")
-                    .foregroundStyle(.blue)
-                Text("鱼的7天记忆")
-                    .font(.system(size: 11, weight: .semibold))
-                Text(store.fishMemoryStatusText)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if store.expiringSoonCount > 0 {
-                    Text("\(store.expiringSoonCount) 条待整理")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(.orange)
-                }
-            }
-            ProgressView(value: store.fishMemoryProgress)
-                .tint(store.expiringSoonCount > 0 ? .orange : .blue)
-                .help("满 7 天后自动进入回忆浅滩，可在那里找回")
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 7)
-        .background(Color.blue.opacity(0.06))
-    }
-
     private var keywordBar: some View {
         VStack(alignment: .leading, spacing: 6) {
-            filterRow(title: "时间") {
+            HStack(spacing: 8) {
+                Text("时间")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, alignment: .trailing)
                 ForEach(TimeFilter.allCases) { filter in
-                    timeFilterButton(filter)
+                    timeSegmentButton(filter)
                 }
+                Spacer(minLength: 6)
             }
+            .padding(.horizontal, 14)
 
-            filterRow(title: "分类") {
-                ForEach(store.frequentTags) { item in
-                    tagFilterButton(item)
+            if !store.frequentTags.isEmpty {
+                filterRow(title: "分类") {
+                    ForEach(store.frequentTags) { item in
+                        tagFilterButton(item)
+                    }
                 }
             }
         }
@@ -162,27 +141,56 @@ struct StationView: View {
         .padding(.leading, 14)
     }
 
-    private func timeFilterButton(_ filter: TimeFilter) -> some View {
-        Button {
+    private func timeSegmentButton(_ filter: TimeFilter) -> some View {
+        let color = timeSegmentColor(filter)
+        let percentage = store.timeBucketPercentage(filter)
+        return Button {
             if store.selectedTimeFilter == filter {
                 store.selectedTimeFilter = nil
             } else {
                 store.selectedTimeFilter = filter
             }
         } label: {
-            Text(filter.label)
-                .lineLimit(1)
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(color.opacity(0.11))
+                GeometryReader { proxy in
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(color.opacity(store.selectedTimeFilter == filter ? 0.42 : 0.24))
+                        .frame(width: proxy.size.width * CGFloat(percentage) / 100)
+                }
+                HStack(spacing: 4) {
+                    Text(filter.label)
+                        .lineLimit(1)
+                    Spacer(minLength: 2)
+                    Text("\(percentage)%")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                }
                 .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    store.selectedTimeFilter == filter
-                        ? Color(red: 0.38, green: 0.72, blue: 1.0).opacity(0.22)
-                        : Color.secondary.opacity(0.1),
-                    in: Capsule()
-                )
+            }
+            .frame(maxWidth: .infinity, minHeight: 28, maxHeight: 28)
+            .overlay {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(
+                        store.selectedTimeFilter == filter ? color.opacity(0.85) : color.opacity(0.22),
+                        lineWidth: store.selectedTimeFilter == filter ? 1.5 : 1
+                    )
+            }
+            .foregroundStyle(color)
         }
         .buttonStyle(.plain)
-        .help("按时间筛选：\(filter.label)")
+        .help("筛选\(filter.label)的内容")
+    }
+
+    private func timeSegmentColor(_ filter: TimeFilter) -> Color {
+        switch filter {
+        case .today:
+            return Color(red: 0.12, green: 0.62, blue: 0.92)
+        case .threeDays:
+            return Color(red: 0.18, green: 0.66, blue: 0.43)
+        case .fishMemory:
+            return Color(red: 0.94, green: 0.50, blue: 0.18)
+        }
     }
 
     private func tagFilterButton(_ item: KeywordStat) -> some View {
@@ -236,12 +244,6 @@ struct StationView: View {
 
     private var selectionBar: some View {
         HStack(spacing: 8) {
-            Text(selectedSnippetIDs.isEmpty ? "未选择片段" : "已选择 \(selectedSnippetIDs.count) 条")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-            Text("当前 \(store.filteredSnippets.count) 条")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
             Spacer()
             Button {
                 selectedSnippetIDs = Set(store.filteredSnippets.map(\.id))
@@ -267,11 +269,6 @@ struct StationView: View {
             }
             .buttonStyle(.borderless)
             .help("待处理 \(store.pendingTagCount) · 进行中 \(store.runningTagCount) · 失败 \(store.failedTagCount)")
-
-            Text("\(store.pendingTagCount)/\(store.runningTagCount)/\(store.failedTagCount)")
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(store.failedTagCount > 0 ? .orange : .secondary)
-                .help("待处理 / 进行中 / 失败")
 
             Button(role: .destructive) {
                 store.delete(ids: selectedSnippetIDs)
@@ -579,9 +576,6 @@ private struct SnippetRow: View {
                     IconButton(systemName: "doc.on.doc", help: "复制") {
                         store.copy(snippet)
                     }
-                    IconButton(systemName: "arrow.down.doc", help: "粘贴到当前输入框") {
-                        store.paste(snippet, autoPaste: store.settings.autoPaste)
-                    }
                     IconButton(systemName: "trash", help: "删除", role: .destructive) {
                         store.delete(snippet)
                     }
@@ -820,7 +814,6 @@ private struct SettingsView: View {
             }
 
             Toggle("监听普通复制", isOn: $store.settings.monitorClipboard)
-            Toggle("点击粘贴图标后自动 Cmd+V", isOn: $store.settings.autoPaste)
             Toggle("AI 生成标题和标签", isOn: $store.settings.aiEnrichment)
             Toggle("本地加密持久化保存", isOn: $store.settings.persistSnippets)
             Toggle("开机启动", isOn: $store.settings.launchAtLogin)
@@ -1008,7 +1001,6 @@ private struct DraftDock: View {
     @ObservedObject var store: SnippetStore
     @Binding var draggingSnippetID: UUID?
     @Binding var draggingDraftID: UUID?
-    @FocusState private var isDraftExtraFocused: Bool
     @State private var activeDraftSlot: String?
 
     var body: some View {
@@ -1018,13 +1010,7 @@ private struct DraftDock: View {
                     .foregroundStyle(.secondary)
                 Text("组合框")
                     .font(.system(size: 12, weight: .semibold))
-                Text("拖入内容，按数字顺序组合")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
                 Spacer()
-                IconButton(systemName: "plus", help: "导入当前剪贴板") {
-                    store.importCurrentPasteboard()
-                }
                 IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
                     store.copyDraftText()
                 }
@@ -1092,27 +1078,6 @@ private struct DraftDock: View {
                 )
             )
 
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $store.draftExtraText)
-                    .font(.system(size: 12))
-                    .scrollContentBackground(.hidden)
-                    .focused($isDraftExtraFocused)
-                    .frame(minHeight: 58, maxHeight: 82)
-                    .padding(6)
-                if store.draftExtraText.isEmpty && !isDraftExtraFocused {
-                    Text("在这里补充手写内容，复制组合时会一起带上")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 12)
-                        .allowsHitTesting(false)
-                }
-            }
-            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color.secondary.opacity(0.18))
-            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -1200,10 +1165,18 @@ private struct DraftInsertionSlot: View {
                     Rectangle()
                         .fill(Color.secondary.opacity(0.24))
                         .frame(width: 2, height: 24)
-                        .padding(.horizontal, 5)
+                        .frame(width: 18, height: 28)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help("在这里插入文字")
+                .onHover { hovering in
+                    if hovering {
+                        NSCursor.iBeam.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
             }
         }
     }

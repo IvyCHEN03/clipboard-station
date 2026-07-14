@@ -124,6 +124,15 @@ final class SnippetStore: ObservableObject {
         return "最早一条约 \(Int(ceil(Double(hours) / 24))) 天后进入回忆浅滩"
     }
 
+    func timeBucketCount(_ filter: TimeFilter, now: Date = Date()) -> Int {
+        snippets.filter { filter.contains($0.createdAt, now: now) }.count
+    }
+
+    func timeBucketPercentage(_ filter: TimeFilter, now: Date = Date()) -> Int {
+        guard !snippets.isEmpty else { return 0 }
+        return Int((Double(timeBucketCount(filter, now: now)) / Double(snippets.count) * 100).rounded())
+    }
+
     func displayIndex(for snippet: Snippet) -> Int? {
         snippets.firstIndex { $0.id == snippet.id }.map { $0 + 1 }
     }
@@ -427,7 +436,6 @@ final class SnippetStore: ObservableObject {
         if let after = draftSlotTextAfterAll(), !after.isEmpty {
             parts.append(after)
         }
-        parts.append(draftExtraText.trimmingCharacters(in: .whitespacesAndNewlines))
         let text = parts.filter { !$0.isEmpty }.joined(separator: "\n\n")
         guard !text.isEmpty else {
             showToast("组合框没有可复制的文字")
