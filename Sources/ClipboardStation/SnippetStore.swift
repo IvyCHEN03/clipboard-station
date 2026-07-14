@@ -9,6 +9,7 @@ import Vision
 @MainActor
 final class SnippetStore: ObservableObject {
     @Published var snippets: [Snippet] = []
+    @Published var deletedSnippets: [DeletedSnippet] = []
     @Published var settings: StationSettings = .defaults {
         didSet {
             if oldValue != settings {
@@ -44,6 +45,9 @@ final class SnippetStore: ObservableObject {
     private var toastTask: Task<Void, Never>?
     private var didPromptForPasteAccessibility = false
     private var ignoredPasteboardChangeCounts = Set<Int>()
+    private var fishMemoryTimer: AnyCancellable?
+
+    static let fishMemoryDuration: TimeInterval = 7 * 24 * 60 * 60
 
     var filteredSnippets: [Snippet] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -98,8 +102,38 @@ final class SnippetStore: ObservableObject {
         snippets.filter(\.enrichmentFailed).count
     }
 
+    var fishMemoryProgress: Double {
+        guard let oldest = snippets.map(\.createdAt).min() else { return 0 }
+        return Self.memoryProgress(createdAt: oldest)
+    }
+
+    var expiringSoonCount: Int {
+        let warningDate = Date().addingTimeInterval(-6 * 24 * 60 * 60)
+        return snippets.filter { $0.createdAt <= warningDate }.count
+    }
+
+    var fishMemoryStatusText: String {
+        guard let oldest = snippets.map(\.createdAt).min() else {
+            return "还没有需要整理的记忆"
+        }
+        let remaining = max(Self.fishMemoryDuration - Date().timeIntervalSince(oldest), 0)
+        let hours = max(Int(ceil(remaining / 3600)), 1)
+        if hours < 24 {
+            return "最早一条约 \(hours) 小时后进入回忆浅滩"
+        }
+        return "最早一条约 \(Int(ceil(Double(hours) / 24))) 天后进入回忆浅滩"
+    }
+
     func displayIndex(for snippet: Snippet) -> Int? {
         snippets.firstIndex { $0.id == snippet.id }.map { $0 + 1 }
+    }
+
+    static func memoryProgress(createdAt: Date, now: Date = Date()) -> Double {
+        min(max(now.timeIntervalSince(createdAt) / fishMemoryDuration, 0), 1)
+    }
+
+    static func shouldMoveToMemoryShore(createdAt: Date, now: Date = Date()) -> Bool {
+        now.timeIntervalSince(createdAt) >= fishMemoryDuration
     }
 
     func toggleTagFilter(_ tag: String) {
@@ -119,10 +153,17 @@ final class SnippetStore: ObservableObject {
 
         let state = persistentStore.load()
         snippets = state.snippets.sorted { $0.createdAt > $1.createdAt }
+        deletedSnippets = state.deletedSnippets.sorted { $0.deletedAt > $1.deletedAt }
         settings = state.settings
         aiAPIKey = KeychainCredentials.read(account: "ai-api-key")
         repairOpenHotkeyIfNeeded()
         repairDeepSeekSettingsIfNeeded()
+        expireFishMemory()
+        fishMemoryTimer = Timer.publish(every: 3600, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.expireFishMemory()
+            }
         refreshRuntimeStatus(shortcutListening: false)
     }
 
@@ -263,23 +304,44 @@ final class SnippetStore: ObservableObject {
     }
 
     func delete(_ snippet: Snippet) {
-        AttachmentCleanup.removeAttachments(for: [snippet], in: attachmentsDirectory)
-        snippets.removeAll { $0.id == snippet.id }
+        moveToMemoryShore([snippet])
         draftSnippetIDs.removeAll { $0 == snippet.id }
         persist()
-        showToast("已删除")
+        showToast("已移到回忆浅滩")
     }
 
     func delete(ids: Set<UUID>) {
         guard !ids.isEmpty else {
             return
         }
-        let deletedSnippets = snippets.filter { ids.contains($0.id) }
-        AttachmentCleanup.removeAttachments(for: deletedSnippets, in: attachmentsDirectory)
-        snippets.removeAll { ids.contains($0.id) }
+        let removed = snippets.filter { ids.contains($0.id) }
+        moveToMemoryShore(removed)
         draftSnippetIDs.removeAll { ids.contains($0) }
         persist()
-        showToast("已删除 \(ids.count) 条")
+        showToast("已将 \(ids.count) 条移到回忆浅滩")
+    }
+
+    func restoreFromMemoryShore(_ item: DeletedSnippet) {
+        guard let index = deletedSnippets.firstIndex(where: { $0.id == item.id }) else { return }
+        let restored = deletedSnippets.remove(at: index).snippet
+        snippets.insert(restored, at: 0)
+        persist()
+        showToast("已找回“\(restored.title)”")
+    }
+
+    func permanentlyDelete(_ item: DeletedSnippet) {
+        guard let index = deletedSnippets.firstIndex(where: { $0.id == item.id }) else { return }
+        let removed = deletedSnippets.remove(at: index).snippet
+        AttachmentCleanup.removeAttachments(for: [removed], in: attachmentsDirectory)
+        persist()
+        showToast("已永久删除")
+    }
+
+    func emptyMemoryShore() {
+        AttachmentCleanup.removeAttachments(for: deletedSnippets.map(\.snippet), in: attachmentsDirectory)
+        deletedSnippets.removeAll()
+        persist()
+        showToast("回忆浅滩已清空")
     }
 
     func moveSnippet(id: UUID, before targetID: UUID?) {
@@ -392,18 +454,22 @@ final class SnippetStore: ObservableObject {
     }
 
     func clear() {
-        AttachmentCleanup.removeAttachments(for: snippets, in: attachmentsDirectory)
+        moveToMemoryShore(snippets)
         snippets.removeAll()
         draftSnippetIDs.removeAll()
         draftTextSlots.removeAll()
         draftExtraText = ""
         persist()
-        showToast("已清空")
+        showToast("全部内容已移到回忆浅滩")
     }
 
     func clearLocalData() {
-        AttachmentCleanup.removeAttachments(for: snippets, in: attachmentsDirectory)
+        AttachmentCleanup.removeAttachments(
+            for: snippets + deletedSnippets.map(\.snippet),
+            in: attachmentsDirectory
+        )
         snippets.removeAll()
+        deletedSnippets.removeAll()
         draftSnippetIDs.removeAll()
         draftTextSlots.removeAll()
         draftExtraText = ""
@@ -783,7 +849,35 @@ final class SnippetStore: ObservableObject {
 
     private func persist() {
         let persistedSnippets = settings.persistSnippets ? snippets : []
-        persistentStore.save(PersistedState(snippets: persistedSnippets, settings: settings))
+        let persistedDeletedSnippets = settings.persistSnippets ? deletedSnippets : []
+        persistentStore.save(PersistedState(
+            snippets: persistedSnippets,
+            deletedSnippets: persistedDeletedSnippets,
+            settings: settings
+        ))
+    }
+
+    private func expireFishMemory(now: Date = Date()) {
+        let expired = snippets.filter { Self.shouldMoveToMemoryShore(createdAt: $0.createdAt, now: now) }
+        guard !expired.isEmpty else { return }
+        let ids = Set(expired.map(\.id))
+        moveToMemoryShore(expired, deletedAt: now)
+        draftSnippetIDs.removeAll { ids.contains($0) }
+        persist()
+        showToast("\(expired.count) 条记忆已进入回忆浅滩")
+    }
+
+    private func moveToMemoryShore(_ removed: [Snippet], deletedAt: Date = Date()) {
+        guard !removed.isEmpty else { return }
+        let existingIDs = Set(deletedSnippets.map(\.id))
+        deletedSnippets.insert(
+            contentsOf: removed
+                .filter { !existingIDs.contains($0.id) }
+                .map { DeletedSnippet(snippet: $0, deletedAt: deletedAt) },
+            at: 0
+        )
+        let ids = Set(removed.map(\.id))
+        snippets.removeAll { ids.contains($0.id) }
     }
 
     @discardableResult

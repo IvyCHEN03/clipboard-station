@@ -136,6 +136,13 @@ struct Snippet: Identifiable, Codable, Equatable {
     }
 }
 
+struct DeletedSnippet: Identifiable, Codable, Equatable {
+    var snippet: Snippet
+    var deletedAt: Date
+
+    var id: UUID { snippet.id }
+}
+
 struct StationSettings: Codable, Equatable {
     var monitorClipboard: Bool = true
     var autoPaste: Bool = true

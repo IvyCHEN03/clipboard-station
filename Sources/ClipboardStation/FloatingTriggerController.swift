@@ -14,10 +14,19 @@ final class FloatingTriggerController {
     private var dragStartOrigin: NSPoint?
     private let action: () -> Void
     private let commandAction: () -> Void
+    private let restartAction: () -> Void
+    private let quitAction: () -> Void
 
-    init(action: @escaping () -> Void, commandAction: @escaping () -> Void) {
+    init(
+        action: @escaping () -> Void,
+        commandAction: @escaping () -> Void,
+        restartAction: @escaping () -> Void,
+        quitAction: @escaping () -> Void
+    ) {
         self.action = action
         self.commandAction = commandAction
+        self.restartAction = restartAction
+        self.quitAction = quitAction
         configureWindow()
     }
 
@@ -35,6 +44,8 @@ final class FloatingTriggerController {
         let triggerView = FloatingTriggerView(
             action: action,
             commandAction: commandAction,
+            restartAction: restartAction,
+            quitAction: quitAction,
             dragChanged: { [weak self] translation in
                 self?.moveWindow(translation: translation)
             },
@@ -139,6 +150,8 @@ private struct FloatingTriggerView: View {
     @State private var pressed = false
     let action: () -> Void
     let commandAction: () -> Void
+    let restartAction: () -> Void
+    let quitAction: () -> Void
     let dragChanged: (CGSize) -> Void
     let dragEnded: () -> Void
 
@@ -179,6 +192,8 @@ private struct FloatingTriggerView: View {
                 pressed: $pressed,
                 action: action,
                 commandAction: commandAction,
+                restartAction: restartAction,
+                quitAction: quitAction,
                 dragChanged: dragChanged,
                 dragEnded: dragEnded
             )
@@ -192,6 +207,8 @@ private struct FloatingTriggerMouseCapture: NSViewRepresentable {
     @Binding var pressed: Bool
     let action: () -> Void
     let commandAction: () -> Void
+    let restartAction: () -> Void
+    let quitAction: () -> Void
     let dragChanged: (CGSize) -> Void
     let dragEnded: () -> Void
 
@@ -200,6 +217,8 @@ private struct FloatingTriggerMouseCapture: NSViewRepresentable {
             pressed: $pressed,
             action: action,
             commandAction: commandAction,
+            restartAction: restartAction,
+            quitAction: quitAction,
             dragChanged: dragChanged,
             dragEnded: dragEnded
         )
@@ -209,6 +228,8 @@ private struct FloatingTriggerMouseCapture: NSViewRepresentable {
         nsView.pressed = $pressed
         nsView.action = action
         nsView.commandAction = commandAction
+        nsView.restartAction = restartAction
+        nsView.quitAction = quitAction
         nsView.dragChanged = dragChanged
         nsView.dragEnded = dragEnded
     }
@@ -217,6 +238,8 @@ private struct FloatingTriggerMouseCapture: NSViewRepresentable {
         var pressed: Binding<Bool>
         var action: () -> Void
         var commandAction: () -> Void
+        var restartAction: () -> Void
+        var quitAction: () -> Void
         var dragChanged: (CGSize) -> Void
         var dragEnded: () -> Void
         private var downLocation: NSPoint?
@@ -226,12 +249,16 @@ private struct FloatingTriggerMouseCapture: NSViewRepresentable {
             pressed: Binding<Bool>,
             action: @escaping () -> Void,
             commandAction: @escaping () -> Void,
+            restartAction: @escaping () -> Void,
+            quitAction: @escaping () -> Void,
             dragChanged: @escaping (CGSize) -> Void,
             dragEnded: @escaping () -> Void
         ) {
             self.pressed = pressed
             self.action = action
             self.commandAction = commandAction
+            self.restartAction = restartAction
+            self.quitAction = quitAction
             self.dragChanged = dragChanged
             self.dragEnded = dragEnded
             super.init(frame: .zero)
@@ -280,6 +307,33 @@ private struct FloatingTriggerMouseCapture: NSViewRepresentable {
             } else {
                 action()
             }
+        }
+
+        override func rightMouseDown(with event: NSEvent) {
+            let menu = NSMenu(title: "灵感悬浮球")
+            let openItem = NSMenuItem(title: "打开灵感悬浮球", action: #selector(openStation), keyEquivalent: "")
+            openItem.target = self
+            menu.addItem(openItem)
+            menu.addItem(.separator())
+            let restartItem = NSMenuItem(title: "重启灵感悬浮球", action: #selector(restartStation), keyEquivalent: "")
+            restartItem.target = self
+            menu.addItem(restartItem)
+            let quitItem = NSMenuItem(title: "彻底退出灵感悬浮球", action: #selector(quitStation), keyEquivalent: "")
+            quitItem.target = self
+            menu.addItem(quitItem)
+            NSMenu.popUpContextMenu(menu, with: event, for: self)
+        }
+
+        @objc private func openStation() {
+            action()
+        }
+
+        @objc private func restartStation() {
+            restartAction()
+        }
+
+        @objc private func quitStation() {
+            quitAction()
         }
     }
 }

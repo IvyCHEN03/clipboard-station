@@ -7,6 +7,7 @@ struct StationView: View {
     let restartApp: () -> Void
     @State private var isPinned = false
     @State private var showSettings = false
+    @State private var showMemoryShore = false
     @State private var draggingSnippetID: UUID?
     @State private var draggingDraftID: UUID?
     @State private var selectedSnippetIDs = Set<UUID>()
@@ -15,16 +16,23 @@ struct StationView: View {
         VStack(spacing: 0) {
             header
             Divider()
-            if !showSettings && !store.frequentTags.isEmpty {
+            if !showSettings && !showMemoryShore && !store.frequentTags.isEmpty {
                 keywordBar
             }
-            searchBar
-            if !showSettings && !store.filteredSnippets.isEmpty {
+            if !showSettings && !showMemoryShore && !store.snippets.isEmpty {
+                fishMemoryBanner
+            }
+            if !showSettings && !showMemoryShore {
+                searchBar
+            }
+            if !showSettings && !showMemoryShore && !store.filteredSnippets.isEmpty {
                 selectionBar
             }
             content
-            Divider()
-            DraftDock(store: store, draggingSnippetID: $draggingSnippetID, draggingDraftID: $draggingDraftID)
+            if !showSettings && !showMemoryShore {
+                Divider()
+                DraftDock(store: store, draggingSnippetID: $draggingSnippetID, draggingDraftID: $draggingDraftID)
+            }
         }
         .frame(minWidth: 420, minHeight: 560)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -61,6 +69,26 @@ struct StationView: View {
                 ProjectLinks.open(.gettingStarted)
             }
 
+            Button {
+                showMemoryShore.toggle()
+                showSettings = false
+            } label: {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: showMemoryShore ? "tray.full.fill" : "tray.full")
+                    if !store.deletedSnippets.isEmpty {
+                        Text("\(min(store.deletedSnippets.count, 99))")
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(2)
+                            .background(.orange, in: Circle())
+                            .offset(x: 6, y: -5)
+                    }
+                }
+                .frame(width: 20, height: 20)
+            }
+            .buttonStyle(.plain)
+            .help("回忆浅滩：找回已删除内容")
+
             IconButton(systemName: isPinned ? "pin.fill" : "pin", help: "置顶浮窗") {
                 isPinned.toggle()
                 NSApp.windows.first(where: { $0.isVisible })?.level = isPinned ? .floating : .normal
@@ -68,10 +96,37 @@ struct StationView: View {
 
             IconButton(systemName: "gearshape", help: "设置") {
                 showSettings.toggle()
+                showMemoryShore = false
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
+    }
+
+    private var fishMemoryBanner: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 6) {
+                Image(systemName: "fish.fill")
+                    .foregroundStyle(.blue)
+                Text("鱼的7天记忆")
+                    .font(.system(size: 11, weight: .semibold))
+                Text(store.fishMemoryStatusText)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if store.expiringSoonCount > 0 {
+                    Text("\(store.expiringSoonCount) 条待整理")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.orange)
+                }
+            }
+            ProgressView(value: store.fishMemoryProgress)
+                .tint(store.expiringSoonCount > 0 ? .orange : .blue)
+                .help("满 7 天后自动进入回忆浅滩，可在那里找回")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 7)
+        .background(Color.blue.opacity(0.06))
     }
 
     private var keywordBar: some View {
@@ -236,6 +291,8 @@ struct StationView: View {
     private var content: some View {
         if showSettings {
             SettingsView(store: store, quitApp: quitApp, restartApp: restartApp)
+        } else if showMemoryShore {
+            MemoryShoreView(store: store)
         } else if store.filteredSnippets.isEmpty {
             emptyState
         } else {
@@ -320,6 +377,128 @@ struct StationView: View {
         }
     }
 
+}
+
+private struct MemoryShoreView: View {
+    @ObservedObject var store: SnippetStore
+    @State private var showEmptyConfirmation = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("回忆浅滩")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("手动删除或满 7 天的内容会停在这里，直到你恢复或永久删除。")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button(role: .destructive) {
+                    showEmptyConfirmation = true
+                } label: {
+                    Label("清空", systemImage: "trash")
+                }
+                .buttonStyle(.borderless)
+                .disabled(store.deletedSnippets.isEmpty)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+
+            Divider()
+
+            if store.deletedSnippets.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 30))
+                        .foregroundStyle(.secondary)
+                    Text("浅滩现在很干净")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("删除的内容和过期的 7 天记忆会暂存在这里。")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(store.deletedSnippets) { item in
+                            MemoryShoreRow(item: item, store: store)
+                        }
+                    }
+                    .padding(12)
+                }
+            }
+        }
+        .confirmationDialog(
+            "永久清空回忆浅滩？",
+            isPresented: $showEmptyConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("永久清空", role: .destructive) {
+                store.emptyMemoryShore()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("这里的文字、截图、表格和附件将无法恢复。")
+        }
+    }
+}
+
+private struct MemoryShoreRow: View {
+    let item: DeletedSnippet
+    @ObservedObject var store: SnippetStore
+    @State private var showDeleteConfirmation = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: item.snippet.kind == .screenshot ? "photo" : "doc.text")
+                    .foregroundStyle(.secondary)
+                Text(item.snippet.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                Spacer()
+                Button {
+                    store.restoreFromMemoryShore(item)
+                } label: {
+                    Image(systemName: "arrow.uturn.backward")
+                }
+                .buttonStyle(.borderless)
+                .help("恢复到片段列表")
+                Button(role: .destructive) {
+                    showDeleteConfirmation = true
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.borderless)
+                .help("永久删除")
+            }
+
+            Text(item.snippet.text.isEmpty ? item.snippet.kind.label : item.snippet.text)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+
+            Text("进入浅滩：\(item.deletedAt.formatted(date: .abbreviated, time: .shortened))")
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(10)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+        .confirmationDialog(
+            "永久删除“\(item.snippet.title)”？",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("永久删除", role: .destructive) {
+                store.permanentlyDelete(item)
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("此操作无法撤销。")
+        }
+    }
 }
 
 private struct SnippetRow: View {

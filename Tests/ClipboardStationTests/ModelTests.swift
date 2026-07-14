@@ -47,6 +47,21 @@ final class ModelTests: XCTestCase {
         XCTAssertFalse(TimeFilter.fishMemory.contains(eightDaysAgo, now: now))
     }
 
+    @MainActor
+    func testFishMemoryProgressAndExpirationAtSevenDays() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let threeAndHalfDaysAgo = now.addingTimeInterval(-3.5 * 24 * 60 * 60)
+        let sevenDaysAgo = now.addingTimeInterval(-7 * 24 * 60 * 60)
+
+        XCTAssertEqual(
+            SnippetStore.memoryProgress(createdAt: threeAndHalfDaysAgo, now: now),
+            0.5,
+            accuracy: 0.0001
+        )
+        XCTAssertFalse(SnippetStore.shouldMoveToMemoryShore(createdAt: threeAndHalfDaysAgo, now: now))
+        XCTAssertTrue(SnippetStore.shouldMoveToMemoryShore(createdAt: sevenDaysAgo, now: now))
+    }
+
     func testDecodingLegacySnippetDefaultsKindAndTransientState() throws {
         let id = UUID()
         let data = """

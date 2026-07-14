@@ -164,7 +164,9 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
         process.arguments = ["bootout", "gui/\(getuid())/\(label)"]
-        try? process.run()
+        if (try? process.run()) != nil {
+            process.waitUntilExit()
+        }
         NSApp.terminate(nil)
     }
 
@@ -175,7 +177,9 @@ final class StatusBarController: NSObject, NSWindowDelegate {
             },
             commandAction: { [weak self] in
                 self?.captureBrowserImagesFromFloatingTrigger()
-            }
+            },
+            restartAction: { Self.restartApplication() },
+            quitAction: { Self.quitCompletely() }
         )
         floatingTrigger?.show()
     }
