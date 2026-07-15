@@ -1,0 +1,58 @@
+# Changelog
+
+## Unreleased
+
+- Added an experimental browser image collector extension for stacking, expanding, selecting, and saving current-post images from image-heavy pages.
+- Improved the browser image collector with multiple temporary capture rows and browser-toolbar launch to avoid a second page bubble.
+- Added a native floating-bubble bridge: Cmd-clicking the macOS Linggan bubble can trigger the browser image collector on the active page.
+- Added a prerelease publishing helper with dry-run and guarded apply modes.
+- Tightened README positioning and demo guidance around the 10-second pitch, 2-minute trial, and required hero GIF.
+- Added a publishing guide for safe token handling, push, tag, prerelease, verification, and rollback steps.
+- Improved issue templates with install, reproducibility, privacy, and product-fit prompts.
+- Added a development guide with local commands, code map, privacy rules, and testing expectations.
+- Updated local install so source installs always rebuild before replacing the installed app.
+- Added a smaller floating bubble as the primary open/close entry point.
+- Added local encrypted persistence for snippets and attachment metadata.
+- Added text, screenshot, and spreadsheet-like snippet capture.
+- Added AI-generated title and tag support through OpenAI-compatible chat completions endpoints.
+- Added a composition box that combines colored snippet blocks with custom text.
+- Added Markdown export for the current filtered snippet list.
+- Added local JSON backup export and import for snippets, settings, and attachments.
+- Added a privacy-focused local data cleanup action that removes snippets, composer text, and attachments.
+- Added queue status and per-snippet retry for AI tagging failures.
+- Added first-run onboarding and a user guide for new open-source users.
+- Added in-app help links to the getting-started guide, FAQ, and GitHub issue form.
+- Added demo snippets for a safe first-run walkthrough without private clipboard content.
+- Added non-sensitive diagnostics copying for GitHub bug reports.
+- Added a demo script and screenshot checklist for README and release assets.
+- Added an FAQ for privacy, install, shortcut, AI, diagnostics, and contribution questions.
+- Added CODEOWNERS and a categorized good-first-issues guide for new contributors.
+- Added a GitHub launch checklist for repository profile, release, visual assets, and first-week maintenance.
+- Added a repository profile guide with copy-ready GitHub About, topics, social preview, and launch-post text.
+- Added a synthetic workflow preview asset for the README.
+- Added product positioning docs comparing the app with clipboard managers, launchers, cloud clipboard tools, and notes apps.
+- Updated the roadmap to reflect completed onboarding, backup, export, cleanup, test, and launch-readiness work.
+- Added a five-minute getting-started guide for first-time users.
+- Added an issue triage playbook for launch-week support and documentation feedback loops.
+- Added a guided usage-question issue template and security contact link for safer GitHub reports.
+- Added a release notes template focused on install trust, checksums, privacy, and known limitations.
+- Added README quick-start and project-map sections for faster first-time evaluation.
+- Improved the doctor script with privacy notes, OK/WARN status lines, summaries, and repair hints.
+- Added GitHub generated-release-notes categories for clearer public release pages.
+- Expanded the pull request template with user workflow, privacy, testing, and release-note checks.
+- Added a GitHub labels guide and safe label-sync script for repository launch.
+- Added Dependabot configuration for GitHub Actions maintenance.
+- Added architecture documentation and model-level tests for search, filters, and legacy decoding.
+- Added pasteboard content classification tests and made comma-separated text detection more conservative.
+- Added README, privacy notes, contribution guide, roadmap, and MIT license for open-source readiness.
+- Added a code of conduct with privacy-sensitive community guidelines.
+- Added local install, uninstall, doctor, and release zip scripts.
+- Added a release-notes draft generator based on the Unreleased changelog.
+- Added a release archive verifier for checksum and packaged app sanity checks.
+- Added a project check script for build, tests, shell syntax, plist, and version metadata.
+- Expanded project checks to verify script executable bits and safe script dry-runs.
+- Added release checksums and a non-developer install guide.
+- Added local Markdown link checking to the project check script.
+- Added GitHub Actions CI and release workflows.
+- Added initial tests for AI enrichment response decoding.
+- Standardized the project version metadata around v0.4.0.

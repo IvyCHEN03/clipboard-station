@@ -17,8 +17,8 @@ func drawIcon(size: CGFloat) -> NSImage {
     NSRect(x: 0, y: 0, width: size, height: size).fill()
 
     let scale = size / 1024
-    let rect = NSRect(x: 112 * scale, y: 134 * scale, width: 800 * scale, height: 706 * scale)
-    let bubble = NSBezierPath(roundedRect: rect, xRadius: 250 * scale, yRadius: 250 * scale)
+    let rect = NSRect(x: 148 * scale, y: 148 * scale, width: 728 * scale, height: 728 * scale)
+    let bubble = NSBezierPath(ovalIn: rect)
 
     let gradient = NSGradient(colors: [
         NSColor(calibratedRed: 0.76, green: 0.93, blue: 1.0, alpha: 1),
@@ -26,48 +26,32 @@ func drawIcon(size: CGFloat) -> NSImage {
     ])!
     gradient.draw(in: bubble, angle: 135)
 
-    NSColor.white.withAlphaComponent(0.42).setStroke()
-    bubble.lineWidth = 34 * scale
+    NSColor.white.withAlphaComponent(0.68).setStroke()
+    bubble.lineWidth = 22 * scale
     bubble.stroke()
 
-    let tail = NSBezierPath()
-    tail.move(to: NSPoint(x: 346 * scale, y: 188 * scale))
-    tail.curve(
-        to: NSPoint(x: 224 * scale, y: 82 * scale),
-        controlPoint1: NSPoint(x: 316 * scale, y: 126 * scale),
-        controlPoint2: NSPoint(x: 266 * scale, y: 94 * scale)
-    )
-    tail.curve(
-        to: NSPoint(x: 404 * scale, y: 136 * scale),
-        controlPoint1: NSPoint(x: 288 * scale, y: 66 * scale),
-        controlPoint2: NSPoint(x: 358 * scale, y: 90 * scale)
-    )
-    tail.close()
-    NSColor(calibratedRed: 0.34, green: 0.72, blue: 1.0, alpha: 1).setFill()
-    tail.fill()
-
     let spark = NSBezierPath()
-    spark.move(to: NSPoint(x: 514 * scale, y: 664 * scale))
-    spark.line(to: NSPoint(x: 560 * scale, y: 548 * scale))
-    spark.line(to: NSPoint(x: 676 * scale, y: 502 * scale))
-    spark.line(to: NSPoint(x: 560 * scale, y: 456 * scale))
-    spark.line(to: NSPoint(x: 514 * scale, y: 340 * scale))
-    spark.line(to: NSPoint(x: 468 * scale, y: 456 * scale))
-    spark.line(to: NSPoint(x: 352 * scale, y: 502 * scale))
-    spark.line(to: NSPoint(x: 468 * scale, y: 548 * scale))
+    spark.move(to: NSPoint(x: 512 * scale, y: 648 * scale))
+    spark.line(to: NSPoint(x: 552 * scale, y: 548 * scale))
+    spark.line(to: NSPoint(x: 652 * scale, y: 508 * scale))
+    spark.line(to: NSPoint(x: 552 * scale, y: 468 * scale))
+    spark.line(to: NSPoint(x: 512 * scale, y: 368 * scale))
+    spark.line(to: NSPoint(x: 472 * scale, y: 468 * scale))
+    spark.line(to: NSPoint(x: 372 * scale, y: 508 * scale))
+    spark.line(to: NSPoint(x: 472 * scale, y: 548 * scale))
     spark.close()
     NSColor.white.withAlphaComponent(0.96).setFill()
     spark.fill()
 
     let smallSpark = NSBezierPath()
-    smallSpark.move(to: NSPoint(x: 704 * scale, y: 694 * scale))
-    smallSpark.line(to: NSPoint(x: 730 * scale, y: 632 * scale))
-    smallSpark.line(to: NSPoint(x: 792 * scale, y: 606 * scale))
-    smallSpark.line(to: NSPoint(x: 730 * scale, y: 580 * scale))
-    smallSpark.line(to: NSPoint(x: 704 * scale, y: 518 * scale))
-    smallSpark.line(to: NSPoint(x: 678 * scale, y: 580 * scale))
-    smallSpark.line(to: NSPoint(x: 616 * scale, y: 606 * scale))
-    smallSpark.line(to: NSPoint(x: 678 * scale, y: 632 * scale))
+    smallSpark.move(to: NSPoint(x: 690 * scale, y: 682 * scale))
+    smallSpark.line(to: NSPoint(x: 712 * scale, y: 630 * scale))
+    smallSpark.line(to: NSPoint(x: 764 * scale, y: 608 * scale))
+    smallSpark.line(to: NSPoint(x: 712 * scale, y: 586 * scale))
+    smallSpark.line(to: NSPoint(x: 690 * scale, y: 534 * scale))
+    smallSpark.line(to: NSPoint(x: 668 * scale, y: 586 * scale))
+    smallSpark.line(to: NSPoint(x: 616 * scale, y: 608 * scale))
+    smallSpark.line(to: NSPoint(x: 668 * scale, y: 630 * scale))
     smallSpark.close()
     NSColor.white.withAlphaComponent(0.9).setFill()
     smallSpark.fill()

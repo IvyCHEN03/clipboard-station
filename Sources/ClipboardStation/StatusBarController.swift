@@ -41,9 +41,15 @@ final class StationPanel: NSPanel {
 
 @MainActor
 final class StatusBarController: NSObject, NSWindowDelegate {
+    private enum DefaultsKey {
+        static let stationOriginX = "station-window-origin-x"
+        static let stationOriginY = "station-window-origin-y"
+    }
+
     private let store = SnippetStore()
     private let monitor: ClipboardMonitor
     private let screenshotMonitor: ScreenshotShortcutMonitor
+    private let imageCollectorBridge = ImageCollectorBridge()
     private let hotKey = HotKeyController()
     private let keyboardMonitor = KeyboardShortcutMonitor()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -70,6 +76,7 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         screenshotMonitor.stop()
         hotKey.stop()
         keyboardMonitor.stop()
+        imageCollectorBridge.stop()
         floatingTrigger?.close()
         DistributedNotificationCenter.default().removeObserver(self)
     }
@@ -120,7 +127,11 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     }
 
     private func configureStationWindow() {
-        let rootView = StationView(store: store)
+        let rootView = StationView(
+            store: store,
+            quitApp: { Self.quitCompletely() },
+            restartApp: { Self.restartApplication() }
+        )
         let host = NSHostingController(rootView: rootView)
         let panel = StationPanel(
             contentRect: NSRect(x: 0, y: 0, width: 440, height: 620),
@@ -139,12 +150,52 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         panel.isReleasedWhenClosed = false
         panel.delegate = self
         stationWindow = panel
+        restoreStationWindowPosition()
+    }
+
+    private static func restartApplication() {
+        let bundleURL = Bundle.main.bundleURL
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = [
+            "-c",
+            "sleep 0.5; /usr/bin/open \"$1\"",
+            "restart-linggan",
+            bundleURL.path
+        ]
+        try? process.run()
+        NSApp.terminate(nil)
+    }
+
+    private static func quitCompletely() {
+        let label = "com.local.clipboard-station.agent"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        process.arguments = ["bootout", "gui/\(getuid())/\(label)"]
+        if (try? process.run()) != nil {
+            process.waitUntilExit()
+        }
+        NSApp.terminate(nil)
     }
 
     private func configureFloatingTrigger() {
-        floatingTrigger = FloatingTriggerController { [weak self] in
-            self?.togglePopoverFromKeyboard()
-        }
+        floatingTrigger = FloatingTriggerController(
+            action: { [weak self] in
+                guard let self else { return }
+                Task { @MainActor in
+                    if await self.imageCollectorBridge.isPanelOpen() {
+                        self.imageCollectorBridge.requestHidePanel()
+                    } else {
+                        self.togglePopoverFromKeyboard()
+                    }
+                }
+            },
+            commandAction: { [weak self] in
+                self?.captureBrowserImagesFromFloatingTrigger()
+            },
+            restartAction: { Self.restartApplication() },
+            quitAction: { Self.quitCompletely() }
+        )
         floatingTrigger?.show()
     }
 
@@ -158,21 +209,22 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     }
 
     private func configureServices() {
+        imageCollectorBridge.start()
+        store.settingsChanged = { [weak self] settings in
+            Task { @MainActor in
+                self?.applyRuntimeSettings(settings)
+            }
+        }
+        applyRuntimeSettings(store.settings)
+    }
+
+    private func applyRuntimeSettings(_ settings: StationSettings) {
         monitor.start()
         screenshotMonitor.start()
         restartHotKey()
         restartKeyboardMonitor()
         refreshShortcutStatus()
-        store.settingsChanged = { [weak self] settings in
-            Task { @MainActor in
-                self?.monitor.start()
-                self?.screenshotMonitor.start()
-                self?.restartHotKey()
-                self?.restartKeyboardMonitor()
-                self?.refreshShortcutStatus()
-                LaunchAtLogin.setEnabled(settings.launchAtLogin)
-            }
-        }
+        LaunchAtLogin.setEnabled(settings.launchAtLogin)
     }
 
     private func restartHotKey() {
@@ -252,6 +304,20 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         }
     }
 
+    private func captureBrowserImagesFromFloatingTrigger() {
+        Task { [weak self] in
+            guard let self else { return }
+            let requestID = await imageCollectorBridge.requestCapture()
+            store.showToast("正在收取当前浏览器帖子图片")
+            try? await Task.sleep(for: .seconds(2))
+            guard requestID > 0,
+                  !(await imageCollectorBridge.wasConsumed(requestID)) else {
+                return
+            }
+            store.showToast("浏览器扩展未响应：请重新加载 Linggan Image Collector 并刷新帖子")
+        }
+    }
+
     @objc private func togglePopover(_ sender: AnyObject?) {
         togglePopoverFromKeyboard()
     }
@@ -270,7 +336,12 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        saveStationWindowPosition()
         NSApp.deactivate()
+    }
+
+    func windowDidMove(_ notification: Notification) {
+        saveStationWindowPosition()
     }
 
     private func hideStationWindow() {
@@ -282,16 +353,36 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         guard let stationWindow else {
             return
         }
-        if let screen = NSScreen.main {
-            let frame = screen.visibleFrame
-            let size = stationWindow.frame.size
-            let origin = NSPoint(
-                x: frame.midX - size.width / 2,
-                y: frame.midY - size.height / 2
-            )
-            stationWindow.setFrameOrigin(origin)
-        }
         NSApp.activate(ignoringOtherApps: true)
         stationWindow.makeKeyAndOrderFront(nil)
+    }
+
+    private func restoreStationWindowPosition() {
+        guard let stationWindow, let screen = NSScreen.main else { return }
+        let defaults = UserDefaults.standard
+        let savedX = defaults.object(forKey: DefaultsKey.stationOriginX) as? Double
+        let savedY = defaults.object(forKey: DefaultsKey.stationOriginY) as? Double
+        let visibleFrame = screen.visibleFrame
+        let size = stationWindow.frame.size
+        let fallback = NSPoint(
+            x: visibleFrame.midX - size.width / 2,
+            y: visibleFrame.midY - size.height / 2
+        )
+        let requested = NSPoint(x: savedX ?? fallback.x, y: savedY ?? fallback.y)
+        let matchingScreen = NSScreen.screens.first { screen in
+            screen.visibleFrame.intersects(NSRect(origin: requested, size: size))
+        } ?? screen
+        let frame = matchingScreen.visibleFrame
+        let origin = NSPoint(
+            x: min(max(requested.x, frame.minX), frame.maxX - size.width),
+            y: min(max(requested.y, frame.minY), frame.maxY - size.height)
+        )
+        stationWindow.setFrameOrigin(origin)
+    }
+
+    private func saveStationWindowPosition() {
+        guard let origin = stationWindow?.frame.origin else { return }
+        UserDefaults.standard.set(origin.x, forKey: DefaultsKey.stationOriginX)
+        UserDefaults.standard.set(origin.y, forKey: DefaultsKey.stationOriginY)
     }
 }

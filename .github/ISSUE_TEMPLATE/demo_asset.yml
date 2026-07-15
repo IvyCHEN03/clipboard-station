@@ -1,0 +1,36 @@
+name: Demo or screenshot improvement
+description: Suggest a better README screenshot, GIF, or demo flow.
+title: "[Demo]: "
+labels:
+  - documentation
+  - good first issue
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Visual demos help new users understand Linggan Floating Ball quickly. Please avoid private clipboard content, API keys, or personal data.
+  - type: dropdown
+    id: asset-type
+    attributes:
+      label: Asset type
+      options:
+        - README hero GIF
+        - Screenshot
+        - Release video
+        - Demo script
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should change?
+      description: Describe the screenshot, GIF, or demo moment you think would help.
+      placeholder: Show the composer with three colored blocks and custom text between them.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Optional links, mockups, or redacted examples.

@@ -3,26 +3,34 @@ import SwiftUI
 
 struct StationView: View {
     @ObservedObject var store: SnippetStore
+    let quitApp: () -> Void
+    let restartApp: () -> Void
     @State private var isPinned = false
     @State private var showSettings = false
+    @State private var showMemoryShore = false
     @State private var draggingSnippetID: UUID?
     @State private var draggingDraftID: UUID?
     @State private var selectedSnippetIDs = Set<UUID>()
+    @State private var isRewound = false
 
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider()
-            if !showSettings && !store.frequentTags.isEmpty {
+            if !showSettings && !showMemoryShore {
                 keywordBar
             }
-            searchBar
-            if !showSettings && !store.filteredSnippets.isEmpty {
+            if !showSettings && !showMemoryShore {
+                searchBar
+            }
+            if !showSettings && !showMemoryShore && !store.filteredSnippets.isEmpty {
                 selectionBar
             }
             content
-            Divider()
-            DraftDock(store: store, draggingSnippetID: $draggingSnippetID, draggingDraftID: $draggingDraftID)
+            if !showSettings && !showMemoryShore {
+                Divider()
+                DraftDock(store: store, draggingSnippetID: $draggingSnippetID, draggingDraftID: $draggingDraftID)
+            }
         }
         .frame(minWidth: 420, minHeight: 560)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -39,6 +47,9 @@ struct StationView: View {
             }
         }
         .animation(.easeOut(duration: 0.18), value: store.toast)
+        .onChange(of: store.filteredSnippets.map(\.id)) { visibleIDs in
+            selectedSnippetIDs.formIntersection(Set(visibleIDs))
+        }
     }
 
     private var header: some View {
@@ -48,12 +59,36 @@ struct StationView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("灵感悬浮球")
                     .font(.system(size: 16, weight: .semibold))
-                Text("v0.4 积木组合版 · \(store.filteredSnippets.count)/\(store.snippets.count) 个片段")
+                Text("\(AppMetadata.displayVersion) 积木组合版 · \(store.filteredSnippets.count)/\(store.snippets.count) 个片段")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
+
+            IconButton(systemName: "questionmark.circle", help: "打开使用指南") {
+                ProjectLinks.open(.gettingStarted)
+            }
+
+            Button {
+                showMemoryShore.toggle()
+                showSettings = false
+            } label: {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: showMemoryShore ? "tray.full.fill" : "tray.full")
+                    if !store.deletedSnippets.isEmpty {
+                        Text("\(min(store.deletedSnippets.count, 99))")
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(2)
+                            .background(.orange, in: Circle())
+                            .offset(x: 6, y: -5)
+                    }
+                }
+                .frame(width: 20, height: 20)
+            }
+            .buttonStyle(.plain)
+            .help("回忆浅滩：找回已删除内容")
 
             IconButton(systemName: isPinned ? "pin.fill" : "pin", help: "置顶浮窗") {
                 isPinned.toggle()
@@ -62,6 +97,7 @@ struct StationView: View {
 
             IconButton(systemName: "gearshape", help: "设置") {
                 showSettings.toggle()
+                showMemoryShore = false
             }
         }
         .padding(.horizontal, 14)
@@ -70,15 +106,23 @@ struct StationView: View {
 
     private var keywordBar: some View {
         VStack(alignment: .leading, spacing: 6) {
-            filterRow(title: "时间") {
+            HStack(spacing: 8) {
+                Text("时间")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, alignment: .trailing)
                 ForEach(TimeFilter.allCases) { filter in
-                    timeFilterButton(filter)
+                    timeSegmentButton(filter)
                 }
+                Spacer(minLength: 6)
             }
+            .padding(.horizontal, 14)
 
-            filterRow(title: "分类") {
-                ForEach(store.frequentTags) { item in
-                    tagFilterButton(item)
+            if !store.frequentTags.isEmpty {
+                filterRow(title: "分类") {
+                    ForEach(store.frequentTags) { item in
+                        tagFilterButton(item)
+                    }
                 }
             }
         }
@@ -86,7 +130,7 @@ struct StationView: View {
     }
 
     private func filterRow<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        HStack(spacing: 8) {
+        return HStack(spacing: 8) {
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
@@ -101,27 +145,56 @@ struct StationView: View {
         .padding(.leading, 14)
     }
 
-    private func timeFilterButton(_ filter: TimeFilter) -> some View {
-        Button {
+    private func timeSegmentButton(_ filter: TimeFilter) -> some View {
+        let color = timeSegmentColor(filter)
+        let percentage = store.timeBucketPercentage(filter)
+        return Button {
             if store.selectedTimeFilter == filter {
                 store.selectedTimeFilter = nil
             } else {
                 store.selectedTimeFilter = filter
             }
         } label: {
-            Text(filter.label)
-                .lineLimit(1)
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(color.opacity(0.11))
+                GeometryReader { proxy in
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(color.opacity(store.selectedTimeFilter == filter ? 0.42 : 0.24))
+                        .frame(width: proxy.size.width * CGFloat(percentage) / 100)
+                }
+                HStack(spacing: 4) {
+                    Text(filter.label)
+                        .lineLimit(1)
+                    Spacer(minLength: 2)
+                    Text("\(percentage)%")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                }
                 .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    store.selectedTimeFilter == filter
-                        ? Color(red: 0.38, green: 0.72, blue: 1.0).opacity(0.22)
-                        : Color.secondary.opacity(0.1),
-                    in: Capsule()
-                )
+            }
+            .frame(maxWidth: .infinity, minHeight: 28, maxHeight: 28)
+            .overlay {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(
+                        store.selectedTimeFilter == filter ? color.opacity(0.85) : color.opacity(0.22),
+                        lineWidth: store.selectedTimeFilter == filter ? 1.5 : 1
+                    )
+            }
+            .foregroundStyle(color)
         }
         .buttonStyle(.plain)
-        .help("按时间筛选：\(filter.label)")
+        .help("筛选\(filter.label)的内容")
+    }
+
+    private func timeSegmentColor(_ filter: TimeFilter) -> Color {
+        switch filter {
+        case .today:
+            return Color(red: 0.12, green: 0.62, blue: 0.92)
+        case .threeDays:
+            return Color(red: 0.18, green: 0.66, blue: 0.43)
+        case .fishMemory:
+            return Color(red: 0.94, green: 0.50, blue: 0.18)
+        }
     }
 
     private func tagFilterButton(_ item: KeywordStat) -> some View {
@@ -174,66 +247,108 @@ struct StationView: View {
     }
 
     private var selectionBar: some View {
-        HStack(spacing: 8) {
-            Text(selectedSnippetIDs.isEmpty ? "未选择片段" : "已选择 \(selectedSnippetIDs.count) 条")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-            Text("当前 \(store.filteredSnippets.count) 条")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
-            Spacer()
-            Button {
-                selectedSnippetIDs = Set(store.filteredSnippets.map(\.id))
-            } label: {
-                Label("全选", systemImage: "checkmark.square")
-            }
-            .buttonStyle(.borderless)
+        let visibleIDs = Set(store.filteredSnippets.map(\.id))
+        let visibleSelection = selectedSnippetIDs.intersection(visibleIDs)
+        let allVisibleSelected = !visibleIDs.isEmpty && visibleSelection == visibleIDs
+        let actionScope = visibleSelection.isEmpty ? visibleIDs : visibleSelection
 
-            Button {
-                selectedSnippetIDs.removeAll()
-            } label: {
-                Label("取消", systemImage: "xmark.square")
-            }
-            .buttonStyle(.borderless)
-            .disabled(selectedSnippetIDs.isEmpty)
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                Spacer(minLength: 0)
+                Button {
+                    if allVisibleSelected {
+                        selectedSnippetIDs.subtract(visibleIDs)
+                        store.showToast("已取消当前选择")
+                    } else {
+                        selectedSnippetIDs = visibleIDs
+                        store.showToast("已全选当前 \(visibleIDs.count) 条")
+                    }
+                } label: {
+                    Label(
+                        allVisibleSelected ? "取消" : "全选",
+                        systemImage: allVisibleSelected ? "xmark.square" : "checkmark.square"
+                    )
+                }
+                .buttonStyle(.borderless)
+                .disabled(store.filteredSnippets.isEmpty)
 
-            Button {
-                store.enrichAllMissingTags()
-            } label: {
-                Label("Tag", systemImage: "tag")
-            }
-            .buttonStyle(.borderless)
-            .help("待处理 \(store.pendingTagCount) · 进行中 \(store.runningTagCount) · 失败 \(store.failedTagCount)")
+                Button {
+                    selectedSnippetIDs.subtract(visibleIDs)
+                    store.showToast("已取消当前筛选中的选择")
+                } label: {
+                    Label("取消", systemImage: "xmark.square")
+                }
+                .buttonStyle(.borderless)
+                .disabled(visibleSelection.isEmpty)
 
-            Text("\(store.pendingTagCount)/\(store.runningTagCount)/\(store.failedTagCount)")
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(store.failedTagCount > 0 ? .orange : .secondary)
-                .help("待处理 / 进行中 / 失败")
+                Button {
+                    let selected = displayedSnippets.filter { visibleSelection.contains($0.id) }
+                    store.copyAndPaste(selected)
+                } label: {
+                    Label("复制粘贴", systemImage: "doc.on.clipboard")
+                }
+                .buttonStyle(.borderless)
+                .disabled(visibleSelection.isEmpty)
+                .help("按当前显示顺序复制并粘贴已选的 \(visibleSelection.count) 条")
 
-            Button(role: .destructive) {
-                store.delete(ids: selectedSnippetIDs)
-                selectedSnippetIDs.removeAll()
-            } label: {
-                Label("删除", systemImage: "trash")
+                Button {
+                    store.enrichAllMissingTags(in: actionScope)
+                } label: {
+                    Label("Tag", systemImage: "tag")
+                }
+                .buttonStyle(.borderless)
+                .help("仅处理当前范围 \(actionScope.count) 条 · 全局进行中 \(store.runningTagCount) · 失败 \(store.failedTagCount)")
+
+                RewindControl(
+                    isRewound: isRewound,
+                    isEnabled: store.filteredSnippets.count >= 2,
+                    onRewind: rewindResults,
+                    onRestore: restoreNormalOrder
+                )
+                .frame(width: 52, height: 20)
+                .fixedSize()
+
+                Button(role: .destructive) {
+                    store.delete(ids: visibleSelection)
+                    selectedSnippetIDs.subtract(visibleSelection)
+                } label: {
+                    Label("删除", systemImage: "trash")
+                }
+                .buttonStyle(.borderless)
+                .disabled(visibleSelection.isEmpty)
             }
-            .buttonStyle(.borderless)
-            .disabled(selectedSnippetIDs.isEmpty)
         }
-        .font(.system(size: 12))
+        .font(.system(size: 11))
         .padding(.horizontal, 14)
         .padding(.bottom, 8)
+    }
+
+    private var displayedSnippets: [Snippet] {
+        isRewound ? Array(store.filteredSnippets.reversed()) : store.filteredSnippets
+    }
+
+    private func rewindResults() {
+        isRewound = true
+        store.showToast("已倒带当前筛选结果；双击恢复")
+    }
+
+    private func restoreNormalOrder() {
+        isRewound = false
+        store.showToast("已恢复正常顺序")
     }
 
     @ViewBuilder
     private var content: some View {
         if showSettings {
-            SettingsView(store: store)
+            SettingsView(store: store, quitApp: quitApp, restartApp: restartApp)
+        } else if showMemoryShore {
+            MemoryShoreView(store: store)
         } else if store.filteredSnippets.isEmpty {
             emptyState
         } else {
             ScrollView {
                 LazyVStack(spacing: 8) {
-                    ForEach(store.filteredSnippets) { snippet in
+                    ForEach(displayedSnippets) { snippet in
                         SnippetRow(
                             snippet: snippet,
                             store: store,
@@ -255,18 +370,53 @@ struct StationView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "text.badge.plus")
-                .font(.system(size: 34))
-                .foregroundStyle(.secondary)
-            Text("暂无片段")
-                .font(.system(size: 15, weight: .semibold))
-            Text("按 Cmd+Shift+C 打开，或直接复制文本自动收集。")
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                BubbleLogo()
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("开始收集灵感")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("复制文字、截图或表格后，它们会出现在这里。")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                QuickStartStep(number: "1", title: "复制内容", detail: "在任意 App 里复制文字、截图或表格。")
+                QuickStartStep(number: "2", title: "打开悬浮球", detail: "点击屏幕边缘的小泡泡，或使用菜单栏图标。")
+                QuickStartStep(number: "3", title: "组合输出", detail: "把片段拖到组合框，加入补充文字后复制。")
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    store.importCurrentPasteboard()
+                } label: {
+                    Label("导入当前剪贴板", systemImage: "square.and.arrow.down")
+                }
+
+                Button {
+                    store.loadDemoSnippets()
+                } label: {
+                    Label("载入示例", systemImage: "sparkles")
+                }
+
+                Button {
+                    showSettings = true
+                } label: {
+                    Label("检查设置", systemImage: "gearshape")
+                }
+
+                Button {
+                    ProjectLinks.open(.gettingStarted)
+                } label: {
+                    Label("使用指南", systemImage: "questionmark.circle")
+                }
+            }
+            .buttonStyle(.bordered)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .padding(24)
     }
 
     private func toggleSelection(_ id: UUID) {
@@ -277,6 +427,128 @@ struct StationView: View {
         }
     }
 
+}
+
+private struct MemoryShoreView: View {
+    @ObservedObject var store: SnippetStore
+    @State private var showEmptyConfirmation = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("回忆浅滩")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("手动删除或满 7 天的内容会停在这里，直到你恢复或永久删除。")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button(role: .destructive) {
+                    showEmptyConfirmation = true
+                } label: {
+                    Label("清空", systemImage: "trash")
+                }
+                .buttonStyle(.borderless)
+                .disabled(store.deletedSnippets.isEmpty)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+
+            Divider()
+
+            if store.deletedSnippets.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 30))
+                        .foregroundStyle(.secondary)
+                    Text("浅滩现在很干净")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("删除的内容和过期的 7 天记忆会暂存在这里。")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(store.deletedSnippets) { item in
+                            MemoryShoreRow(item: item, store: store)
+                        }
+                    }
+                    .padding(12)
+                }
+            }
+        }
+        .confirmationDialog(
+            "永久清空回忆浅滩？",
+            isPresented: $showEmptyConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("永久清空", role: .destructive) {
+                store.emptyMemoryShore()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("这里的文字、截图、表格和附件将无法恢复。")
+        }
+    }
+}
+
+private struct MemoryShoreRow: View {
+    let item: DeletedSnippet
+    @ObservedObject var store: SnippetStore
+    @State private var showDeleteConfirmation = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: item.snippet.kind == .screenshot ? "photo" : "doc.text")
+                    .foregroundStyle(.secondary)
+                Text(item.snippet.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                Spacer()
+                Button {
+                    store.restoreFromMemoryShore(item)
+                } label: {
+                    Image(systemName: "arrow.uturn.backward")
+                }
+                .buttonStyle(.borderless)
+                .help("恢复到片段列表")
+                Button(role: .destructive) {
+                    showDeleteConfirmation = true
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.borderless)
+                .help("永久删除")
+            }
+
+            Text(item.snippet.text.isEmpty ? item.snippet.kind.label : item.snippet.text)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+
+            Text("进入浅滩：\(item.deletedAt.formatted(date: .abbreviated, time: .shortened))")
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(10)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+        .confirmationDialog(
+            "永久删除“\(item.snippet.title)”？",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("永久删除", role: .destructive) {
+                store.permanentlyDelete(item)
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("此操作无法撤销。")
+        }
+    }
 }
 
 private struct SnippetRow: View {
@@ -357,9 +629,6 @@ private struct SnippetRow: View {
                     IconButton(systemName: "doc.on.doc", help: "复制") {
                         store.copy(snippet)
                     }
-                    IconButton(systemName: "arrow.down.doc", help: "粘贴到当前输入框") {
-                        store.paste(snippet, autoPaste: store.settings.autoPaste)
-                    }
                     IconButton(systemName: "trash", help: "删除", role: .destructive) {
                         store.delete(snippet)
                     }
@@ -416,6 +685,10 @@ private struct SnippetRow: View {
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(isSelected ? orderColor.opacity(0.35) : Color.clear)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 8))
+        .onTapGesture {
+            toggleSelection()
         }
         .onChange(of: snippet.title) { newValue in
             title = newValue
@@ -539,9 +812,30 @@ private struct SnippetBody: View {
 
 private struct SettingsView: View {
     @ObservedObject var store: SnippetStore
+    let quitApp: () -> Void
+    let restartApp: () -> Void
+    @State private var showClearLocalDataConfirmation = false
 
     var body: some View {
         Form {
+            Section("首次使用") {
+                OnboardingLine(
+                    title: "入口",
+                    detail: "优先使用屏幕边缘的小泡泡；快捷键只在 App 运行时生效。",
+                    systemImage: "circle.grid.2x2"
+                )
+                OnboardingLine(
+                    title: "收集",
+                    detail: store.settings.monitorClipboard ? "普通复制会自动进入列表。" : "已关闭监听，可用底部 + 手动导入。",
+                    systemImage: store.settings.monitorClipboard ? "doc.on.doc" : "plus.square"
+                )
+                OnboardingLine(
+                    title: "输出",
+                    detail: "把片段拖入组合框，可在积木之间补充文字。",
+                    systemImage: "text.cursor"
+                )
+            }
+
             Section("运行状态") {
                 StatusLine(
                     title: "App",
@@ -569,13 +863,65 @@ private struct SettingsView: View {
                 } label: {
                     Label("一键加入开机启动并常驻", systemImage: "power.circle")
                 }
+                Button {
+                    store.copyDiagnostics()
+                } label: {
+                    Label("复制诊断信息", systemImage: "stethoscope")
+                }
             }
 
             Toggle("监听普通复制", isOn: $store.settings.monitorClipboard)
-            Toggle("点击粘贴图标后自动 Cmd+V", isOn: $store.settings.autoPaste)
             Toggle("AI 生成标题和标签", isOn: $store.settings.aiEnrichment)
             Toggle("本地加密持久化保存", isOn: $store.settings.persistSnippets)
             Toggle("开机启动", isOn: $store.settings.launchAtLogin)
+
+            Section("本地备份") {
+                Button {
+                    store.exportMarkdown()
+                } label: {
+                    Label("导出当前筛选为 Markdown", systemImage: "doc.plaintext")
+                }
+                Button {
+                    store.exportBackup()
+                } label: {
+                    Label("导出 JSON 备份", systemImage: "square.and.arrow.up")
+                }
+                Button {
+                    store.importBackup()
+                } label: {
+                    Label("导入 JSON 备份", systemImage: "square.and.arrow.down")
+                }
+                Text("备份文件包含片段、设置和附件数据，只保存到你选择的位置，不会上传。API Key 不会导出。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("隐私清理") {
+                Button(role: .destructive) {
+                    showClearLocalDataConfirmation = true
+                } label: {
+                    Label("清除本地片段和附件", systemImage: "trash")
+                }
+                Text("会删除当前片段、组合框内容和本地附件。不会删除 Keychain 中的 API Key，也不会删除你手动导出的备份文件。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("应用控制") {
+                Button {
+                    restartApp()
+                } label: {
+                    Label("重启灵感悬浮球", systemImage: "arrow.clockwise")
+                }
+                Button(role: .destructive) {
+                    quitApp()
+                } label: {
+                    Label("彻底退出灵感悬浮球", systemImage: "power")
+                }
+                Text("退出后不是隐藏窗口；需要从“应用程序”重新打开，或等下次登录时自动启动。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
 
             HStack {
                 Text("全局快捷键")
@@ -601,10 +947,90 @@ private struct SettingsView: View {
             } label: {
                 Label("测试 AI 连接", systemImage: "network")
             }
+
+            Section("帮助") {
+                Button {
+                    ProjectLinks.open(.gettingStarted)
+                } label: {
+                    Label("打开使用指南", systemImage: "book")
+                }
+                Button {
+                    ProjectLinks.open(.faq)
+                } label: {
+                    Label("查看 FAQ", systemImage: "questionmark.bubble")
+                }
+                Button {
+                    ProjectLinks.open(.issues)
+                } label: {
+                    Label("反馈问题", systemImage: "exclamationmark.bubble")
+                }
+                Text("打开的是 GitHub 文档页面；不会上传剪贴板内容。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
+        .confirmationDialog(
+            "清除本地片段和附件？",
+            isPresented: $showClearLocalDataConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("清除本地数据", role: .destructive) {
+                store.clearLocalData()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("此操作会删除 App 内保存的片段、组合框内容和附件文件。已导出的备份文件和 Keychain API Key 不会被删除。")
+        }
+    }
+}
+
+private struct QuickStartStep: View {
+    let number: String
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(number)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(width: 22, height: 22)
+                .background(Color(red: 0.38, green: 0.72, blue: 1.0), in: Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+private struct OnboardingLine: View {
+    let title: String
+    let detail: String
+    let systemImage: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: systemImage)
+                .foregroundStyle(Color(red: 0.38, green: 0.72, blue: 1.0))
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                Text(detail)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }
 
@@ -632,7 +1058,6 @@ private struct DraftDock: View {
     @ObservedObject var store: SnippetStore
     @Binding var draggingSnippetID: UUID?
     @Binding var draggingDraftID: UUID?
-    @FocusState private var isDraftExtraFocused: Bool
     @State private var activeDraftSlot: String?
 
     var body: some View {
@@ -642,13 +1067,12 @@ private struct DraftDock: View {
                     .foregroundStyle(.secondary)
                 Text("组合框")
                     .font(.system(size: 12, weight: .semibold))
-                Text("拖入内容，按数字顺序组合")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
                 Spacer()
-                IconButton(systemName: "plus", help: "导入当前剪贴板") {
-                    store.importCurrentPasteboard()
+                IconButton(systemName: "xmark.circle", help: "一键取消组合框全部内容") {
+                    activeDraftSlot = nil
+                    store.clearDraft()
                 }
+                .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
                 IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
                     store.copyDraftText()
                 }
@@ -716,27 +1140,6 @@ private struct DraftDock: View {
                 )
             )
 
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $store.draftExtraText)
-                    .font(.system(size: 12))
-                    .scrollContentBackground(.hidden)
-                    .focused($isDraftExtraFocused)
-                    .frame(minHeight: 58, maxHeight: 82)
-                    .padding(6)
-                if store.draftExtraText.isEmpty && !isDraftExtraFocused {
-                    Text("在这里补充手写内容，复制组合时会一起带上")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 12)
-                        .allowsHitTesting(false)
-                }
-            }
-            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-            .overlay {
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color.secondary.opacity(0.18))
-            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -824,10 +1227,18 @@ private struct DraftInsertionSlot: View {
                     Rectangle()
                         .fill(Color.secondary.opacity(0.24))
                         .frame(width: 2, height: 24)
-                        .padding(.horizontal, 5)
+                        .frame(width: 18, height: 28)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help("在这里插入文字")
+                .onHover { hovering in
+                    if hovering {
+                        NSCursor.iBeam.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
             }
         }
     }
@@ -874,6 +1285,121 @@ private struct IconButton: View {
         }
         .buttonStyle(.borderless)
         .help(help)
+    }
+}
+
+private struct RewindControl: NSViewRepresentable {
+    let isRewound: Bool
+    let isEnabled: Bool
+    let onRewind: () -> Void
+    let onRestore: () -> Void
+
+    func makeNSView(context: Context) -> RewindButton {
+        let button = RewindButton()
+        button.isBordered = false
+        button.setButtonType(.momentaryChange)
+        button.imagePosition = .imageLeading
+        button.font = .systemFont(ofSize: 11)
+        button.focusRingType = .none
+        button.toolTip = "单击倒序当前筛选结果，双击恢复正常顺序"
+        button.setAccessibilityLabel("倒带")
+        update(button)
+        return button
+    }
+
+    func updateNSView(_ button: RewindButton, context: Context) {
+        update(button)
+    }
+
+    private func update(_ button: RewindButton) {
+        button.title = "倒带"
+        button.image = NSImage(
+            systemSymbolName: isRewound ? "backward.end.fill" : "backward.end",
+            accessibilityDescription: nil
+        )
+        button.isEnabled = isEnabled
+        button.onSingleClick = onRewind
+        button.onDoubleClick = onRestore
+    }
+}
+
+private final class RewindButton: NSButton, NSGestureRecognizerDelegate {
+    var onSingleClick: (() -> Void)?
+    var onDoubleClick: (() -> Void)?
+    private var singleClickRecognizer: NSClickGestureRecognizer?
+    private var doubleClickRecognizer: NSClickGestureRecognizer?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        configureClickRecognizers()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configureClickRecognizers()
+    }
+
+    private func configureClickRecognizers() {
+        let doubleClick = NSClickGestureRecognizer(target: self, action: #selector(handleDoubleClick))
+        doubleClick.numberOfClicksRequired = 2
+        doubleClick.delegate = self
+
+        let singleClick = NSClickGestureRecognizer(target: self, action: #selector(handleSingleClick))
+        singleClick.numberOfClicksRequired = 1
+        singleClick.delegate = self
+
+        addGestureRecognizer(doubleClick)
+        addGestureRecognizer(singleClick)
+        doubleClickRecognizer = doubleClick
+        singleClickRecognizer = singleClick
+    }
+
+    @objc private func handleSingleClick() {
+        guard isEnabled else { return }
+        onSingleClick?()
+    }
+
+    @objc private func handleDoubleClick() {
+        guard isEnabled else { return }
+        onDoubleClick?()
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: NSGestureRecognizer,
+        shouldRequireFailureOf otherGestureRecognizer: NSGestureRecognizer
+    ) -> Bool {
+        gestureRecognizer === singleClickRecognizer
+            && otherGestureRecognizer === doubleClickRecognizer
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 49 {
+            onSingleClick?()
+        } else {
+            super.keyDown(with: event)
+        }
+    }
+
+}
+
+private enum ProjectLinks {
+    case gettingStarted
+    case faq
+    case issues
+
+    var url: URL {
+        switch self {
+        case .gettingStarted:
+            return URL(string: "https://github.com/IvyCHEN03/clipboard-station/blob/main/docs/GETTING_STARTED.md")!
+        case .faq:
+            return URL(string: "https://github.com/IvyCHEN03/clipboard-station/blob/main/docs/FAQ.md")!
+        case .issues:
+            return URL(string: "https://github.com/IvyCHEN03/clipboard-station/issues/new/choose")!
+        }
+    }
+
+    static func open(_ link: ProjectLinks) {
+        NSWorkspace.shared.open(link.url)
     }
 }
 

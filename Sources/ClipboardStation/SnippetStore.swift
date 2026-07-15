@@ -3,14 +3,16 @@ import Carbon
 import Combine
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 import Vision
 
 @MainActor
 final class SnippetStore: ObservableObject {
     @Published var snippets: [Snippet] = []
+    @Published var deletedSnippets: [DeletedSnippet] = []
     @Published var settings: StationSettings = .defaults {
         didSet {
-            if oldValue != settings {
+            if oldValue != settings, didFinishInitialLoad, !isApplyingInitialLoad {
                 persist()
                 settingsChanged?(settings)
             }
@@ -24,7 +26,7 @@ final class SnippetStore: ObservableObject {
     @Published var draftTextSlots: [String: String] = [:]
     @Published var aiAPIKey: String = "" {
         didSet {
-            if oldValue != aiAPIKey {
+            if oldValue != aiAPIKey, didFinishInitialLoad, !isApplyingInitialLoad {
                 KeychainCredentials.save(aiAPIKey, account: "ai-api-key")
             }
         }
@@ -43,6 +45,11 @@ final class SnippetStore: ObservableObject {
     private var toastTask: Task<Void, Never>?
     private var didPromptForPasteAccessibility = false
     private var ignoredPasteboardChangeCounts = Set<Int>()
+    private var fishMemoryTimer: AnyCancellable?
+    private var didFinishInitialLoad = false
+    private var isApplyingInitialLoad = false
+
+    static let fishMemoryDuration: TimeInterval = 7 * 24 * 60 * 60
 
     var filteredSnippets: [Snippet] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -97,8 +104,47 @@ final class SnippetStore: ObservableObject {
         snippets.filter(\.enrichmentFailed).count
     }
 
+    var fishMemoryProgress: Double {
+        guard let oldest = snippets.map(\.createdAt).min() else { return 0 }
+        return Self.memoryProgress(createdAt: oldest)
+    }
+
+    var expiringSoonCount: Int {
+        let warningDate = Date().addingTimeInterval(-6 * 24 * 60 * 60)
+        return snippets.filter { $0.createdAt <= warningDate }.count
+    }
+
+    var fishMemoryStatusText: String {
+        guard let oldest = snippets.map(\.createdAt).min() else {
+            return "还没有需要整理的记忆"
+        }
+        let remaining = max(Self.fishMemoryDuration - Date().timeIntervalSince(oldest), 0)
+        let hours = max(Int(ceil(remaining / 3600)), 1)
+        if hours < 24 {
+            return "最早一条约 \(hours) 小时后进入回忆浅滩"
+        }
+        return "最早一条约 \(Int(ceil(Double(hours) / 24))) 天后进入回忆浅滩"
+    }
+
+    func timeBucketCount(_ filter: TimeFilter, now: Date = Date()) -> Int {
+        snippets.filter { filter.contains($0.createdAt, now: now) }.count
+    }
+
+    func timeBucketPercentage(_ filter: TimeFilter, now: Date = Date()) -> Int {
+        guard !snippets.isEmpty else { return 0 }
+        return Int((Double(timeBucketCount(filter, now: now)) / Double(snippets.count) * 100).rounded())
+    }
+
     func displayIndex(for snippet: Snippet) -> Int? {
         snippets.firstIndex { $0.id == snippet.id }.map { $0 + 1 }
+    }
+
+    static func memoryProgress(createdAt: Date, now: Date = Date()) -> Double {
+        min(max(now.timeIntervalSince(createdAt) / fishMemoryDuration, 0), 1)
+    }
+
+    static func shouldMoveToMemoryShore(createdAt: Date, now: Date = Date()) -> Bool {
+        now.timeIntervalSince(createdAt) >= fishMemoryDuration
     }
 
     func toggleTagFilter(_ tag: String) {
@@ -116,13 +162,42 @@ final class SnippetStore: ObservableObject {
             .appendingPathComponent("Attachments", isDirectory: true)
         try? FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
 
-        let state = persistentStore.load()
+        fishMemoryTimer = Timer.publish(every: 3600, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.expireFishMemory()
+            }
+        refreshRuntimeStatus(shortcutListening: false)
+        loadPersistedStateInBackground()
+    }
+
+    private func loadPersistedStateInBackground() {
+        let persistentStore = persistentStore
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let state = persistentStore.loadIfAvailable()
+            let apiKey = KeychainCredentials.read(account: "ai-api-key")
+            await self?.finishInitialLoad(state: state, apiKey: apiKey)
+        }
+    }
+
+    private func finishInitialLoad(state: PersistedState?, apiKey: String) {
+        guard let state else {
+            showToast("本地资料尚未解锁；允许钥匙串访问后请重启 App")
+            return
+        }
+
+        isApplyingInitialLoad = true
         snippets = state.snippets.sorted { $0.createdAt > $1.createdAt }
+        deletedSnippets = state.deletedSnippets.sorted { $0.deletedAt > $1.deletedAt }
         settings = state.settings
-        aiAPIKey = KeychainCredentials.read(account: "ai-api-key")
+        aiAPIKey = apiKey
+        isApplyingInitialLoad = false
+        didFinishInitialLoad = true
+
         repairOpenHotkeyIfNeeded()
         repairDeepSeekSettingsIfNeeded()
-        refreshRuntimeStatus(shortcutListening: false)
+        expireFishMemory()
+        settingsChanged?(settings)
     }
 
     func add(text rawText: String, source: SnippetSource, force: Bool = false) {
@@ -243,7 +318,7 @@ final class SnippetStore: ObservableObject {
             showToast("剪贴板没有可保存内容")
             return
         }
-        if Self.looksLikeSpreadsheet(text) {
+        if PasteboardContentClassifier.looksLikeSpreadsheet(text) {
             addSpreadsheetText(text, source: source)
         } else {
             add(text: text, source: source, force: true)
@@ -262,20 +337,44 @@ final class SnippetStore: ObservableObject {
     }
 
     func delete(_ snippet: Snippet) {
-        snippets.removeAll { $0.id == snippet.id }
+        moveToMemoryShore([snippet])
         draftSnippetIDs.removeAll { $0 == snippet.id }
         persist()
-        showToast("已删除")
+        showToast("已移到回忆浅滩")
     }
 
     func delete(ids: Set<UUID>) {
         guard !ids.isEmpty else {
             return
         }
-        snippets.removeAll { ids.contains($0.id) }
+        let removed = snippets.filter { ids.contains($0.id) }
+        moveToMemoryShore(removed)
         draftSnippetIDs.removeAll { ids.contains($0) }
         persist()
-        showToast("已删除 \(ids.count) 条")
+        showToast("已将 \(ids.count) 条移到回忆浅滩")
+    }
+
+    func restoreFromMemoryShore(_ item: DeletedSnippet) {
+        guard let index = deletedSnippets.firstIndex(where: { $0.id == item.id }) else { return }
+        let restored = deletedSnippets.remove(at: index).snippet
+        snippets.insert(restored, at: 0)
+        persist()
+        showToast("已找回“\(restored.title)”")
+    }
+
+    func permanentlyDelete(_ item: DeletedSnippet) {
+        guard let index = deletedSnippets.firstIndex(where: { $0.id == item.id }) else { return }
+        let removed = deletedSnippets.remove(at: index).snippet
+        AttachmentCleanup.removeAttachments(for: [removed], in: attachmentsDirectory)
+        persist()
+        showToast("已永久删除")
+    }
+
+    func emptyMemoryShore() {
+        AttachmentCleanup.removeAttachments(for: deletedSnippets.map(\.snippet), in: attachmentsDirectory)
+        deletedSnippets.removeAll()
+        persist()
+        showToast("回忆浅滩已清空")
     }
 
     func moveSnippet(id: UUID, before targetID: UUID?) {
@@ -348,6 +447,13 @@ final class SnippetStore: ObservableObject {
         draftTextSlots.removeValue(forKey: draftSlotKey(before: id))
     }
 
+    func clearDraft() {
+        draftSnippetIDs.removeAll()
+        draftTextSlots.removeAll()
+        draftExtraText = ""
+        showToast("已取消组合框全部内容")
+    }
+
     func copyDraftText() {
         var parts: [String] = []
         for snippet in draftSnippets {
@@ -361,7 +467,6 @@ final class SnippetStore: ObservableObject {
         if let after = draftSlotTextAfterAll(), !after.isEmpty {
             parts.append(after)
         }
-        parts.append(draftExtraText.trimmingCharacters(in: .whitespacesAndNewlines))
         let text = parts.filter { !$0.isEmpty }.joined(separator: "\n\n")
         guard !text.isEmpty else {
             showToast("组合框没有可复制的文字")
@@ -388,10 +493,29 @@ final class SnippetStore: ObservableObject {
     }
 
     func clear() {
+        moveToMemoryShore(snippets)
         snippets.removeAll()
         draftSnippetIDs.removeAll()
+        draftTextSlots.removeAll()
+        draftExtraText = ""
         persist()
-        showToast("已清空")
+        showToast("全部内容已移到回忆浅滩")
+    }
+
+    func clearLocalData() {
+        AttachmentCleanup.removeAttachments(
+            for: snippets + deletedSnippets.map(\.snippet),
+            in: attachmentsDirectory
+        )
+        snippets.removeAll()
+        deletedSnippets.removeAll()
+        draftSnippetIDs.removeAll()
+        draftTextSlots.removeAll()
+        draftExtraText = ""
+        try? FileManager.default.removeItem(at: attachmentsDirectory)
+        try? FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
+        persist()
+        showToast("已清除本地片段和附件")
     }
 
     func testAIConnection() {
@@ -433,7 +557,7 @@ final class SnippetStore: ObservableObject {
         isAccessibilityTrusted = AccessibilityService.isTrusted(prompt: false)
     }
 
-    func enrichAllMissingTags() {
+    func enrichAllMissingTags(in scopeIDs: Set<UUID>? = nil) {
         let key = aiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
         let model = settings.aiModel.trimmingCharacters(in: .whitespacesAndNewlines)
         let baseURL = settings.aiBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -444,7 +568,8 @@ final class SnippetStore: ObservableObject {
 
         let ids = snippets
             .filter { snippet in
-                snippet.tags.isEmpty
+                (scopeIDs?.contains(snippet.id) ?? true)
+                    && snippet.tags.isEmpty
                     && !snippet.isEnriching
                     && !snippet.enrichmentFailed
                     && !(exportText(for: snippet) ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -487,24 +612,10 @@ final class SnippetStore: ObservableObject {
     }
 
     func copy(_ snippet: Snippet) {
-        NSPasteboard.general.clearContents()
-        if snippet.kind == .screenshot,
-           let text = screenshotText(for: snippet),
-           !text.isEmpty {
-            NSPasteboard.general.setString(text, forType: .string)
-        } else if snippet.kind == .screenshot,
-           let attachmentPath = snippet.attachmentPath {
-            if !writeImageToPasteboard(path: attachmentPath) {
-                showToast("图片复制失败")
-                return
-            }
-        } else if let attachmentPath = snippet.attachmentPath {
-            let url = URL(fileURLWithPath: attachmentPath)
-            NSPasteboard.general.writeObjects([url as NSURL])
-        } else {
-            NSPasteboard.general.setString(snippet.text, forType: .string)
+        guard writeSnippetToPasteboard(snippet) else {
+            showToast("内容复制失败")
+            return
         }
-        markInternalPasteboardWrite()
         showToast("已复制")
     }
 
@@ -527,8 +638,152 @@ final class SnippetStore: ObservableObject {
         }
     }
 
+    func copyAndPaste(_ selectedSnippets: [Snippet]) {
+        guard !selectedSnippets.isEmpty else {
+            showToast("请先选择要复制粘贴的内容")
+            return
+        }
+        let shouldPrompt = !didPromptForPasteAccessibility
+        didPromptForPasteAccessibility = true
+        guard AccessibilityService.isTrusted(prompt: shouldPrompt) else {
+            showToast("需要开启辅助功能权限才能自动粘贴")
+            return
+        }
+
+        NSApp.keyWindow?.orderOut(nil)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            var pastedCount = 0
+            for (index, snippet) in selectedSnippets.enumerated() {
+                let isLast = index == selectedSnippets.count - 1
+                if let text = exportText(for: snippet), !text.isEmpty {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(text + (isLast ? "" : "\n\n"), forType: .string)
+                    markInternalPasteboardWrite()
+                } else if !writeSnippetToPasteboard(snippet) {
+                    continue
+                }
+                try? await Task.sleep(for: .milliseconds(snippet.kind == .screenshot ? 300 : 130))
+                AccessibilityService.sendCommandV()
+                pastedCount += 1
+                try? await Task.sleep(for: .milliseconds(snippet.kind == .screenshot ? 520 : 120))
+            }
+            showToast("已按当前顺序复制粘贴 \(pastedCount) 条")
+        }
+    }
+
     func importCurrentPasteboard() {
         addPasteboardContents(source: .manualPasteboardImport)
+    }
+
+    func copyDiagnostics() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(makeDiagnostics().rendered, forType: .string)
+        markInternalPasteboardWrite()
+        showToast("已复制诊断信息")
+    }
+
+    func makeDiagnostics() -> SupportDiagnostics {
+        SupportDiagnostics(
+            appVersion: AppMetadata.version,
+            appBuild: AppMetadata.build,
+            macOSVersion: ProcessInfo.processInfo.operatingSystemVersionString,
+            snippetCount: snippets.count,
+            filteredSnippetCount: filteredSnippets.count,
+            draftBlockCount: draftSnippetIDs.count,
+            monitorClipboard: settings.monitorClipboard,
+            autoPaste: settings.autoPaste,
+            persistSnippets: settings.persistSnippets,
+            launchAtLogin: settings.launchAtLogin,
+            aiEnrichment: settings.aiEnrichment,
+            aiProviderHost: SupportDiagnostics.providerHost(from: settings.aiBaseURL),
+            aiModel: settings.aiModel,
+            shortcutStatus: shortcutStatusText,
+            accessibilityTrusted: isAccessibilityTrusted
+        )
+    }
+
+    func loadDemoSnippets() {
+        let existingDemoTitles = Set(DemoContent.makeSnippets().map(\.title))
+        snippets.removeAll { existingDemoTitles.contains($0.title) }
+        snippets.insert(contentsOf: DemoContent.makeSnippets(), at: 0)
+        persist()
+        showToast("已载入示例片段")
+    }
+
+    func exportBackup() {
+        let panel = NSSavePanel()
+        panel.title = "导出灵感悬浮球备份"
+        panel.nameFieldStringValue = "linggan-floating-ball-backup-\(Self.fileDateFormatter.string(from: Date())).json"
+        panel.allowedContentTypes = [.json]
+        guard panel.runModal() == .OK,
+              let url = panel.url else {
+            return
+        }
+
+        do {
+            let backup = ClipboardBackupCodec.makeBackup(
+                snippets: snippets,
+                settings: settings,
+                appVersion: AppMetadata.version
+            )
+            let data = try ClipboardBackupCodec.encode(backup)
+            try data.write(to: url, options: [.atomic])
+            showToast("已导出 \(backup.snippets.count) 条片段")
+        } catch {
+            showToast("备份导出失败")
+        }
+    }
+
+    func importBackup() {
+        let panel = NSOpenPanel()
+        panel.title = "导入灵感悬浮球备份"
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK,
+              let url = panel.url else {
+            return
+        }
+
+        do {
+            let backup = try ClipboardBackupCodec.decode(try Data(contentsOf: url))
+            let restoredSnippets = try restoreBackupAttachments(backup)
+            var importedSettings = backup.settings
+            importedSettings.persistSnippets = true
+            snippets = restoredSnippets.sorted { $0.createdAt > $1.createdAt }
+            settings = importedSettings
+            persist()
+            showToast("已导入 \(snippets.count) 条片段")
+        } catch ClipboardBackupError.unsupportedVersion {
+            showToast("备份版本过新，无法导入")
+        } catch {
+            showToast("备份导入失败")
+        }
+    }
+
+    func exportMarkdown() {
+        let snippetsToExport = filteredSnippets
+        guard !snippetsToExport.isEmpty else {
+            showToast("没有可导出的片段")
+            return
+        }
+
+        let panel = NSSavePanel()
+        panel.title = "导出 Markdown"
+        panel.nameFieldStringValue = "linggan-floating-ball-\(Self.fileDateFormatter.string(from: Date())).md"
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        guard panel.runModal() == .OK,
+              let url = panel.url else {
+            return
+        }
+
+        do {
+            let markdown = MarkdownExport.render(snippets: snippetsToExport)
+            try markdown.write(to: url, atomically: true, encoding: .utf8)
+            showToast("已导出 \(snippetsToExport.count) 条 Markdown")
+        } catch {
+            showToast("Markdown 导出失败")
+        }
     }
 
     func shouldIgnorePasteboardChange(_ changeCount: Int) -> Bool {
@@ -557,6 +812,60 @@ final class SnippetStore: ObservableObject {
         if ignoredPasteboardChangeCounts.count > 12 {
             ignoredPasteboardChangeCounts.remove(ignoredPasteboardChangeCounts.min() ?? 0)
         }
+    }
+
+    private func writeSnippetToPasteboard(_ snippet: Snippet) -> Bool {
+        NSPasteboard.general.clearContents()
+        let didWrite: Bool
+        if snippet.kind == .screenshot,
+           let text = screenshotText(for: snippet),
+           !text.isEmpty {
+            didWrite = NSPasteboard.general.setString(text, forType: .string)
+        } else if snippet.kind == .screenshot,
+                  let attachmentPath = snippet.attachmentPath {
+            didWrite = writeImageToPasteboard(path: attachmentPath)
+        } else if let attachmentPath = snippet.attachmentPath {
+            let url = URL(fileURLWithPath: attachmentPath)
+            didWrite = NSPasteboard.general.writeObjects([url as NSURL])
+        } else {
+            didWrite = NSPasteboard.general.setString(snippet.text, forType: .string)
+        }
+        if didWrite {
+            markInternalPasteboardWrite()
+        }
+        return didWrite
+    }
+
+    private func restoreBackupAttachments(_ backup: ClipboardBackup) throws -> [Snippet] {
+        try FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
+        let attachmentMap = Dictionary(uniqueKeysWithValues: backup.attachments.map { ($0.snippetID, $0) })
+        return try backup.snippets.map { snippet in
+            var restored = snippet
+            restored.isEnriching = false
+            if let attachment = attachmentMap[snippet.id] {
+                let fileName = uniqueBackupFileName(attachment.fileName)
+                let url = attachmentsDirectory.appendingPathComponent(fileName)
+                try attachment.data.write(to: url, options: [.atomic])
+                restored.attachmentPath = url.path
+                restored.fileName = fileName
+            } else if snippet.attachmentPath != nil {
+                restored.attachmentPath = nil
+            }
+            return restored
+        }
+    }
+
+    private func uniqueBackupFileName(_ fileName: String) -> String {
+        let fallback = "attachment-\(UUID().uuidString)"
+        let safeName = fileName.isEmpty ? fallback : URL(fileURLWithPath: fileName).lastPathComponent
+        let candidate = attachmentsDirectory.appendingPathComponent(safeName)
+        guard FileManager.default.fileExists(atPath: candidate.path) else {
+            return safeName
+        }
+        let ext = candidate.pathExtension
+        let stem = candidate.deletingPathExtension().lastPathComponent
+        let unique = "\(stem)-\(UUID().uuidString.prefix(8))"
+        return ext.isEmpty ? unique : "\(unique).\(ext)"
     }
 
     private func draftSlotKey(before id: UUID) -> String {
@@ -621,8 +930,37 @@ final class SnippetStore: ObservableObject {
     }
 
     private func persist() {
+        guard didFinishInitialLoad else { return }
         let persistedSnippets = settings.persistSnippets ? snippets : []
-        persistentStore.save(PersistedState(snippets: persistedSnippets, settings: settings))
+        let persistedDeletedSnippets = settings.persistSnippets ? deletedSnippets : []
+        persistentStore.save(PersistedState(
+            snippets: persistedSnippets,
+            deletedSnippets: persistedDeletedSnippets,
+            settings: settings
+        ))
+    }
+
+    private func expireFishMemory(now: Date = Date()) {
+        let expired = snippets.filter { Self.shouldMoveToMemoryShore(createdAt: $0.createdAt, now: now) }
+        guard !expired.isEmpty else { return }
+        let ids = Set(expired.map(\.id))
+        moveToMemoryShore(expired, deletedAt: now)
+        draftSnippetIDs.removeAll { ids.contains($0) }
+        persist()
+        showToast("\(expired.count) 条记忆已进入回忆浅滩")
+    }
+
+    private func moveToMemoryShore(_ removed: [Snippet], deletedAt: Date = Date()) {
+        guard !removed.isEmpty else { return }
+        let existingIDs = Set(deletedSnippets.map(\.id))
+        deletedSnippets.insert(
+            contentsOf: removed
+                .filter { !existingIDs.contains($0.id) }
+                .map { DeletedSnippet(snippet: $0, deletedAt: deletedAt) },
+            at: 0
+        )
+        let ids = Set(removed.map(\.id))
+        snippets.removeAll { ids.contains($0.id) }
     }
 
     @discardableResult
@@ -670,34 +1008,6 @@ final class SnippetStore: ObservableObject {
         case .text:
             return fileName
         }
-    }
-
-    static func looksLikeSpreadsheet(_ text: String) -> Bool {
-        let lines = text.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        guard !lines.isEmpty else {
-            return false
-        }
-
-        if lines.contains(where: { $0.contains("\t") }) {
-            return lines.contains { line in
-                line.split(separator: "\t", omittingEmptySubsequences: false).count >= 2
-            }
-        }
-
-        guard lines.count >= 2,
-              lines.allSatisfy({ $0.contains(",") }) else {
-            return false
-        }
-
-        let columnCounts = lines.map {
-            $0.split(separator: ",", omittingEmptySubsequences: false).count
-        }
-        guard let firstCount = columnCounts.first, firstCount >= 2 else {
-            return false
-        }
-        return columnCounts.allSatisfy { $0 == firstCount }
     }
 
     private func enrichSnippetIfNeeded(_ id: UUID, force: Bool = false, retryFailed: Bool = false) {

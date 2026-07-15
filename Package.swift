@@ -17,11 +17,16 @@ let package = Package(
                 .linkedFramework("AppKit"),
                 .linkedFramework("Carbon"),
                 .linkedFramework("CryptoKit"),
+                .linkedFramework("Network"),
                 .linkedFramework("Security"),
                 .linkedFramework("ServiceManagement"),
                 .linkedFramework("SwiftUI"),
                 .linkedFramework("Vision")
             ]
+        ),
+        .testTarget(
+            name: "ClipboardStationTests",
+            dependencies: ["ClipboardStation"]
         )
     ]
 )

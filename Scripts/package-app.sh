@@ -18,5 +18,6 @@ chmod +x "$MACOS_DIR/ClipboardStation"
 cp "$ROOT_DIR/BundleResources/Info.plist" "$CONTENTS_DIR/Info.plist"
 printf "APPL????" > "$CONTENTS_DIR/PkgInfo"
 cp "$ROOT_DIR/BundleResources/InspirationBubble.icns" "$RESOURCES_DIR/InspirationBubble.icns"
+codesign --force --deep --sign - --identifier com.local.clipboard-station "$APP_DIR"
 
 echo "Built $APP_DIR"

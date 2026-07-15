@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest a product improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The best feature requests describe the workflow, not just the button.
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow
+      description: What are you trying to do across AI chats or clipboard snippets?
+      placeholder: I often collect fragments from...
+    validations:
+      required: true
+  - type: textarea
+    id: pain
+    attributes:
+      label: Current pain
+      description: What is awkward, slow, risky, or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposed solution
+      description: What would make the workflow feel simpler?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds
+      description: Optional. What do you use today, and why is it not enough?
+  - type: dropdown
+    id: privacy
+    attributes:
+      label: Privacy impact
+      options:
+        - Local-only
+        - Sends data only when user opts in
+        - Requires network or cloud behavior
+        - Not sure
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Product fit
+      options:
+        - label: This supports collecting, filtering, composing, or pasting fragments while working across AI chats.
+          required: true
+        - label: This does not require cloud sync or telemetry.
+          required: false

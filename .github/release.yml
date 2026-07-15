@@ -1,0 +1,31 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot
+  categories:
+    - title: User-facing changes
+      labels:
+        - enhancement
+        - bug
+        - ai-tags
+        - composer
+        - permissions
+        - install
+    - title: Documentation and demos
+      labels:
+        - documentation
+        - question
+        - good first issue
+    - title: Privacy and security
+      labels:
+        - privacy
+        - security
+    - title: Maintenance
+      labels:
+        - maintenance
+        - dependencies
+    - title: Other changes
+      labels:
+        - "*"

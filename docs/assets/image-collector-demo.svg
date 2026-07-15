@@ -1,0 +1,122 @@
+<svg width="1400" height="760" viewBox="0 0 1400 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Linggan Demo Plus image collector</title>
+  <desc id="desc">A privacy-safe product demo showing one post becoming a selectable stack of images that can be saved as PNG files.</desc>
+  <rect width="1400" height="760" rx="24" fill="#F4F9FD"/>
+  <rect x="40" y="36" width="1320" height="688" rx="16" fill="white" stroke="#D9E8F3" stroke-width="2"/>
+
+  <rect x="72" y="66" width="112" height="30" rx="8" fill="#DDF2FF"/>
+  <text x="92" y="87" fill="#1674B8" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="800">DEMO+</text>
+  <text x="72" y="145" fill="#142033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="48" font-weight="850">One bubble. The whole post.</text>
+  <text x="72" y="184" fill="#5F6F82" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20">Turn an image-heavy post into a clean, selectable PNG pack.</text>
+
+  <g transform="translate(72 226)">
+    <rect width="468" height="382" rx="10" fill="#F8FAFC" stroke="#D7E3EC" stroke-width="2"/>
+    <rect width="468" height="48" rx="10" fill="#EEF3F7"/>
+    <circle cx="24" cy="24" r="6" fill="#FF6861"/>
+    <circle cx="44" cy="24" r="6" fill="#FFBE3D"/>
+    <circle cx="64" cy="24" r="6" fill="#33C95B"/>
+    <rect x="92" y="14" width="340" height="20" rx="8" fill="white"/>
+    <text x="108" y="29" fill="#758195" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11">xiaohongshu.com/explore/current-post</text>
+
+    <text x="24" y="88" fill="#142033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="800">Four ideas worth keeping</text>
+    <text x="24" y="112" fill="#758195" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13">Current post • 4 images</text>
+
+    <rect x="24" y="136" width="198" height="104" rx="8" fill="#DDF2FF"/>
+    <circle cx="74" cy="186" r="27" fill="#72C7FA"/>
+    <rect x="112" y="164" width="82" height="10" rx="5" fill="#1674B8"/>
+    <rect x="112" y="184" width="64" height="8" rx="4" fill="#74A8C8"/>
+    <rect x="112" y="201" width="76" height="8" rx="4" fill="#A5C8DD"/>
+
+    <rect x="246" y="136" width="198" height="104" rx="8" fill="#FFF2C7"/>
+    <rect x="270" y="162" width="62" height="54" rx="8" fill="#FFCC4A"/>
+    <rect x="346" y="164" width="72" height="10" rx="5" fill="#B66A00"/>
+    <rect x="346" y="184" width="52" height="8" rx="4" fill="#D59A3C"/>
+    <rect x="346" y="201" width="66" height="8" rx="4" fill="#E6BD76"/>
+
+    <rect x="24" y="258" width="198" height="100" rx="8" fill="#E6F8EC"/>
+    <path d="M48 328L82 278L112 328H48Z" fill="#47B86E"/>
+    <circle cx="102" cy="286" r="13" fill="#A4E0B7"/>
+    <rect x="128" y="280" width="66" height="9" rx="4" fill="#24864A"/>
+    <rect x="128" y="299" width="48" height="8" rx="4" fill="#64AD7D"/>
+    <rect x="128" y="316" width="58" height="8" rx="4" fill="#99C9AA"/>
+
+    <rect x="246" y="258" width="198" height="100" rx="8" fill="#FFE7EA"/>
+    <circle cx="297" cy="308" r="26" fill="#FF8895"/>
+    <path d="M288 308L296 316L309 297" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="342" y="280" width="76" height="9" rx="4" fill="#B93E50"/>
+    <rect x="342" y="299" width="52" height="8" rx="4" fill="#D67A87"/>
+    <rect x="342" y="316" width="68" height="8" rx="4" fill="#E7AAB2"/>
+  </g>
+
+  <g transform="translate(570 334)">
+    <circle cx="70" cy="70" r="46" fill="#79C9FA"/>
+    <circle cx="56" cy="54" r="8" fill="#DFF4FF"/>
+    <path d="M70 43L79 62L100 70L80 79L70 100L61 80L40 70L60 61L70 43Z" fill="white"/>
+    <path d="M121 70H174" stroke="#79C9FA" stroke-width="6" stroke-linecap="round"/>
+    <path d="M160 54L181 70L160 86" stroke="#79C9FA" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="4" y="132" width="132" height="32" rx="8" fill="#E8F5FD"/>
+    <text x="21" y="153" fill="#1674B8" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800">CMD + CLICK</text>
+  </g>
+
+  <g transform="translate(760 226)">
+    <rect width="568" height="382" rx="10" fill="#F8FBFE" stroke="#A7D8F8" stroke-width="2"/>
+    <text x="24" y="42" fill="#142033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="850">Inspiration image stack</text>
+    <text x="24" y="66" fill="#758195" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13">Exact post list • visual de-dup • title preserved</text>
+    <rect x="454" y="20" width="88" height="36" rx="8" fill="#E8F1F7"/>
+    <text x="475" y="43" fill="#405267" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800">Collapse</text>
+
+    <rect x="24" y="88" width="520" height="66" rx="8" fill="white" stroke="#D7E7F2"/>
+    <rect x="38" y="101" width="72" height="40" rx="6" fill="#DDF2FF"/>
+    <rect x="44" y="107" width="72" height="40" rx="6" fill="#FFF2C7" stroke="white" stroke-width="2"/>
+    <rect x="50" y="113" width="72" height="40" rx="6" fill="#E6F8EC" stroke="white" stroke-width="2"/>
+    <text x="146" y="118" fill="#142033" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="800">Four ideas worth keeping</text>
+    <text x="146" y="140" fill="#758195" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12">4 images • 3 selected</text>
+
+    <rect x="24" y="174" width="78" height="34" rx="8" fill="#E8F1F7"/>
+    <text x="46" y="196" fill="#405267" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800">Select all</text>
+    <rect x="112" y="174" width="88" height="34" rx="8" fill="#142033"/>
+    <text x="131" y="196" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800">Save PNG</text>
+
+    <g transform="translate(24 228)">
+      <rect width="116" height="124" rx="8" fill="#EAF7FF" stroke="#2B94DB" stroke-width="3"/>
+      <rect x="8" y="8" width="100" height="86" rx="6" fill="#DDF2FF"/>
+      <circle cx="42" cy="50" r="20" fill="#72C7FA"/>
+      <path d="M92 12H104V24" stroke="#1674B8" stroke-width="3"/>
+      <path d="M92 18L97 23L106 13" stroke="#1674B8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="12" y="114" fill="#405267" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12">01.png</text>
+    </g>
+    <g transform="translate(153 228)">
+      <rect width="116" height="124" rx="8" fill="#FFF9E7" stroke="#E7B62C" stroke-width="3"/>
+      <rect x="8" y="8" width="100" height="86" rx="6" fill="#FFF2C7"/>
+      <rect x="26" y="26" width="45" height="49" rx="6" fill="#FFCC4A"/>
+      <path d="M92 12H104V24" stroke="#B66A00" stroke-width="3"/>
+      <path d="M92 18L97 23L106 13" stroke="#B66A00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="12" y="114" fill="#405267" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12">02.png</text>
+    </g>
+    <g transform="translate(282 228)">
+      <rect width="116" height="124" rx="8" fill="#F0FAF3" stroke="#3FA968" stroke-width="3"/>
+      <rect x="8" y="8" width="100" height="86" rx="6" fill="#E6F8EC"/>
+      <path d="M22 78L49 30L80 78H22Z" fill="#47B86E"/>
+      <path d="M92 12H104V24" stroke="#24864A" stroke-width="3"/>
+      <path d="M92 18L97 23L106 13" stroke="#24864A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="12" y="114" fill="#405267" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12">03.png</text>
+    </g>
+    <g transform="translate(411 228)">
+      <rect width="116" height="124" rx="8" fill="white" stroke="#D7E3EC" stroke-width="2"/>
+      <rect x="8" y="8" width="100" height="86" rx="6" fill="#FFE7EA"/>
+      <circle cx="58" cy="51" r="24" fill="#FF8895"/>
+      <text x="12" y="114" fill="#758195" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12">04.png</text>
+    </g>
+  </g>
+
+  <g transform="translate(72 646)">
+    <rect width="248" height="42" rx="8" fill="#E6F8EC"/>
+    <text x="22" y="27" fill="#24864A" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="800">Exact current-post images</text>
+    <rect x="262" width="202" height="42" rx="8" fill="#DDF2FF"/>
+    <text x="284" y="27" fill="#1674B8" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="800">Pick images individually</text>
+    <rect x="478" width="184" height="42" rx="8" fill="#FFF2C7"/>
+    <text x="500" y="27" fill="#9A6500" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="800">Real PNG export</text>
+    <rect x="676" width="216" height="42" rx="8" fill="#FFE7EA"/>
+    <text x="698" y="27" fill="#B93E50" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="800">No screen monitoring</text>
+  </g>
+</svg>
