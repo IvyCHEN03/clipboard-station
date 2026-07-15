@@ -8,7 +8,8 @@ Experimental Chrome/Edge extension for collecting image-heavy web pages into one
 - Scans the current post/article/dialog first, then falls back to the page when no post container is detected.
 - Keeps each capture as a separate temporary image row.
 - Double-clicks a row to expand a selectable grid.
-- Saves selected images into a local Downloads subfolder.
+- Uses the post title for each temporary row and its local Downloads subfolder.
+- Converts selected images to real PNG files before saving.
 
 This is designed for pages such as image-heavy articles, inspiration boards, and social posts where the page itself does not provide a reliable "download all" button.
 
@@ -30,10 +31,10 @@ browser-extension/image-collector
 2. Click the Linggan Image Collector button in the browser toolbar, or `Cmd` + click the native Linggan floating bubble when the macOS app is running.
 3. Repeat on other posts to keep multiple temporary image rows.
 4. Double-click one row to expand its images.
-5. Use `全选`, `取消`, or individual checkboxes.
+5. Click `全选` once to select everything, double-click it to clear the selection, or click individual image cards.
 6. Click `保存选中`.
 
-Images are saved through the browser download manager under a `LingganImages/...` folder.
+Images are saved as PNG through the browser download manager under a `LingganImages/...` folder.
 
 Native app bridge: `Cmd` + clicking the macOS Linggan floating bubble sends `Ctrl+Shift+L` to the active browser page.
 If `Cmd` + click still opens the station window, quit the old app instance and reinstall/reopen the latest build.

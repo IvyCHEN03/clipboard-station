@@ -6,7 +6,23 @@ For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUN
 
 ## One-Sentence Pitch
 
-Linggan Floating Ball is a local-first macOS clipboard station for collecting text, screenshots, and table snippets while working across many AI chats.
+Linggan Floating Ball is a local-first macOS inspiration station for collecting text, screenshots, table snippets, and entire image-heavy posts.
+
+## Demo+ Image Collector
+
+Target length: 10-15 seconds.
+
+Hook: `One bubble. The whole post.`
+
+1. Open a synthetic or fully redacted multi-image post.
+2. `Cmd` + click the small blue Linggan bubble.
+3. Show one titled temporary image row appear.
+4. Double-click the row to expand all post images.
+5. Click two individual image cards to change the selection.
+6. Click `Save PNG` and show the clean local image set.
+7. Click the Linggan bubble once to collapse the image panel.
+
+Do not show browser tabs, account avatars, usernames, tokens, or real saved content. Use [image-collector-demo.svg](assets/image-collector-demo.svg) as the README fallback until a real recording passes the privacy checklist.
 
 ## README Hero GIF
 
@@ -47,6 +63,7 @@ Keep the GIF focused. Do not show Settings, AI provider setup, or long menus in 
 Capture these still images for a polished GitHub README:
 
 - `workflow-preview.svg`: synthetic overview diagram used until a real GIF exists.
+- `image-collector-demo.svg`: synthetic Demo+ preview for whole-post image capture.
 - `01-empty-onboarding.png`: first-run empty state with the quick-start steps.
 - `02-collected-snippets.png`: text, screenshot, and table snippets in one list.
 - `03-filtered-tags.png`: time filter plus multiple selected tag chips.

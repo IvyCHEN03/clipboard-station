@@ -1,6 +1,6 @@
 # Linggan Floating Ball
 
-> A local-first macOS clipboard station for people working with many AI chats at once.
+> One floating bubble for everything worth keeping: text, screenshots, tables, and now entire image-heavy posts.
 
 [![CI](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/ci.yml/badge.svg)](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/ci.yml)
 [![Release](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/release.yml/badge.svg)](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/release.yml)
@@ -8,19 +8,36 @@
 ![Swift](https://img.shields.io/badge/Swift-6-compatible-f05138)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Linggan Floating Ball, formerly AI Clipboard Station, is a tiny macOS menu bar app for collecting useful text, screenshots, and table snippets while you work across ChatGPT, Claude, Codex, browsers, notes, and spreadsheets.
+**Copy chaos in. A reusable prompt or a clean PNG pack out.**
+
+Linggan Floating Ball, formerly AI Clipboard Station, is a tiny macOS menu bar app for collecting useful text, screenshots, table snippets, and post images while you work across ChatGPT, Claude, Codex, browsers, notes, and spreadsheets.
 
 It is designed for one very specific workflow: grab many fragments fast, keep them visible, tag them, reorder them like blocks, and paste a composed answer back into any AI input box.
 
-The repo also includes an experimental browser companion extension for collecting image-heavy web pages into one selectable stack.
+Its browser companion can turn one image-heavy post into a named, selectable stack: `Cmd` + click the bubble, choose the images you want, and save a de-duplicated PNG set.
 
 ![Linggan Floating Ball app preview](docs/assets/hero-preview.svg)
 
 ## 10-Second Pitch
 
-Use Linggan Floating Ball when the normal clipboard is too small for AI-heavy work.
+**One bubble. Two superpowers.**
 
-It gives copied fragments a local, visible place to land, then lets you filter and compose them into one final prompt.
+| Collect ideas | Collect images |
+| --- | --- |
+| Keep repeated text, screenshots, and table cells visible, searchable, and reorderable. | Capture the current multi-image post, select the keepers, and export real PNG files. |
+
+Everything stays local by default. Optional AI tagging only runs after you configure it.
+
+## Demo+: Capture A Whole Post
+
+**Stop right-clicking twenty images one by one.** `Cmd` + click the Linggan bubble to collect the current post as one temporary image row. Double-click the row, pick individual images, and save a clean PNG pack.
+
+![Linggan Demo Plus image collector](docs/assets/image-collector-demo.svg)
+
+- Reads the current post's own image list on supported sites instead of scraping unrelated page images.
+- Preserves the post title as the temporary-row and export name.
+- Retries alternate original-image URLs and filters avatars, stickers, logos, and visual duplicates.
+- Requires no continuous screen sharing or screen monitoring.
 
 ## Best Fit
 
@@ -82,11 +99,9 @@ The app is usable today, but still pre-1.0:
 | Configure the GitHub profile | [Repository Profile](docs/REPOSITORY_PROFILE.md) |
 | Plan a public launch | [Open Source Growth Plan](docs/OPEN_SOURCE_GROWTH.md) |
 
-## Demo
+## Demo: Build A Better Prompt
 
-The README currently uses a synthetic hero preview so the workflow is visible without exposing private clipboard content. A real redacted GIF is the top launch asset still needed.
-
-The GIF should show the core loop: copy fragments, open the floating bubble, filter snippets, drag useful ones into the composer, add text between blocks, and copy the final prompt.
+The privacy-safe product previews show both core loops without exposing private clipboard or browser content: collect fragments into a final prompt, or collect a whole image post into a selectable PNG stack.
 
 See [docs/DEMO.md](docs/DEMO.md) for the recording script, screenshot checklist, privacy rules, and release-note copy.
 
@@ -120,13 +135,18 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Search by title, source, body, tag, or time window.
 - Use AI-generated titles and tags with any OpenAI-compatible chat completions API.
 - Select multiple snippets and delete them in one action.
+- Select snippets inside the current filtered view and paste them in the exact visible order.
+- Use `Rewind` to reverse only the current filtered results; double-click to restore the normal order.
+- Run batch tagging and deletion only against the active filtered scope, never hidden snippets.
 - Reorder snippets with up/down buttons or a numeric position field.
 - Compose a prompt in the bottom block editor with colored snippet blocks and custom text between blocks.
+- Clear the block composer in one click without deleting the original snippets.
 - Copy or paste a snippet into the current input box.
 - Export the current filtered list as readable Markdown.
 - Export and import local JSON backups for snippets, settings, and attachments.
 - Clear local snippets, composer text, and attachment files from Settings.
-- Use the experimental browser image collector to stack, expand, select, and save images from image-heavy pages.
+- Use `Cmd` + click on the floating bubble to capture the current image-heavy post as a titled stack.
+- Expand a post stack, select images individually, de-duplicate them visually, and save real PNG files.
 - Store data locally with Keychain-backed AES-GCM encryption.
 - No cloud sync and no uploads unless you explicitly enable AI tagging.
 
@@ -173,13 +193,13 @@ Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipelin
 
 ## Browser Image Collector
 
-The repo includes an experimental Chrome/Edge companion extension for pages with many images and no convenient "download selected" flow.
+The repo includes a Chrome/Edge companion extension for posts with many images and no convenient "download selected" flow.
 
-It gathers current post or article images into temporary image rows, expands a row on double-click, and saves the selected images through the browser download manager. When the browser extension is installed, `Cmd` + clicking the native Linggan floating bubble sends a capture signal to the active browser page.
+It gathers the current post into a titled temporary row, expands that row on double-click, and saves individually selected images as PNG through the browser download manager. On supported post pages such as Xiaohongshu, it reads the post's structured image list, retries alternate source URLs, and removes URL-level and visual duplicates. When the extension is installed, `Cmd` + clicking the native Linggan floating bubble starts capture; clicking the bubble again can collapse the open image panel.
 
 To try it locally, load [browser-extension/image-collector](browser-extension/image-collector/README.md) as an unpacked extension from `chrome://extensions`.
 
-The extension does not bypass paywalls, authentication, DRM, or platform permissions. Some lazy-loaded pages need you to scroll first, then refresh the image stack.
+The extension does not bypass paywalls, authentication, DRM, or platform permissions. Generic article pages use a scoped DOM fallback, while supported post pages use their structured post image list.
 
 For development, run directly from source:
 

@@ -42,8 +42,14 @@ cat > "$LAUNCH_AGENT" <<PLIST
 PLIST
 
 launchctl bootout "gui/$(id -u)" "$LAUNCH_AGENT" >/dev/null 2>&1 || true
-pkill -f "ClipboardStation.app/Contents/MacOS/ClipboardStation" >/dev/null 2>&1 || true
-launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENT"
+# Multiple installed app names share this executable. Stop every stale copy so
+# Finder, the menu bar, and the launch agent cannot keep an older binary alive.
+pkill -x "ClipboardStation" >/dev/null 2>&1 || true
+launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENT" >/dev/null 2>&1 || true
+sleep 1
+if ! pgrep -x "ClipboardStation" >/dev/null 2>&1; then
+    open -na "$INSTALLED_APP"
+fi
 
 echo "Installed $INSTALLED_APP"
 echo "Launch agent: $LAUNCH_AGENT"

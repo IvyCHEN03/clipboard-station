@@ -1,15 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Linggan Image Collector",
-  "version": "0.1.0",
+  "version": "0.4.1",
   "description": "Collect image-heavy web pages into a selectable stack and save chosen images locally.",
   "permissions": [
     "activeTab",
     "downloads",
+    "offscreen",
+    "tabs",
     "scripting"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "<all_urls>",
+    "http://127.0.0.1:47831/*"
   ],
   "background": {
     "service_worker": "background.js"

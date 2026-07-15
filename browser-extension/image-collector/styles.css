@@ -43,9 +43,9 @@
 }
 
 .lic-panel {
-  position: absolute;
-  right: 0;
-  top: 58px;
+  position: fixed;
+  right: 18px;
+  top: 18vh;
   width: 380px;
   max-height: 72vh;
   padding: 14px;
@@ -67,6 +67,17 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.lic-header.lic-dragging {
+  cursor: grabbing;
+}
+
+.lic-header button {
+  cursor: pointer;
 }
 
 .lic-title {
@@ -214,6 +225,7 @@
 }
 
 .lic-item {
+  position: relative;
   display: grid;
   gap: 6px;
   min-width: 0;
@@ -222,10 +234,24 @@
   border-radius: 14px;
   background: white;
   cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.lic-item:hover {
+  border-color: #93c5fd;
+}
+
+.lic-item-selected {
+  border-color: #2382d9;
+  background: #eff8ff;
+  box-shadow: 0 0 0 2px rgba(35, 130, 217, 0.14);
 }
 
 .lic-item input {
-  justify-self: start;
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
   width: 16px;
   height: 16px;
   accent-color: #2382d9;

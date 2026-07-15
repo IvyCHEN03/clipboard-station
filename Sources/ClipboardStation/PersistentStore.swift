@@ -25,7 +25,7 @@ struct PersistedState: Codable {
     }
 }
 
-final class PersistentStore {
+final class PersistentStore: @unchecked Sendable {
     private let crypto = KeychainCrypto()
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
@@ -40,10 +40,17 @@ final class PersistentStore {
     }
 
     func load() -> PersistedState {
+        loadIfAvailable() ?? PersistedState(snippets: [], deletedSnippets: [], settings: .defaults)
+    }
+
+    func loadIfAvailable() -> PersistedState? {
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return PersistedState(snippets: [], deletedSnippets: [], settings: .defaults)
+        }
         guard let encrypted = try? Data(contentsOf: fileURL),
               let decrypted = try? crypto.decrypt(encrypted),
               let state = try? decoder.decode(PersistedState.self, from: decrypted) else {
-            return PersistedState(snippets: [], deletedSnippets: [], settings: .defaults)
+            return nil
         }
         return state
     }

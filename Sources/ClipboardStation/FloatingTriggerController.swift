@@ -311,6 +311,9 @@ private struct FloatingTriggerMouseCapture: NSViewRepresentable {
 
         override func rightMouseDown(with event: NSEvent) {
             let menu = NSMenu(title: "灵感悬浮球")
+            let captureItem = NSMenuItem(title: "收取当前帖子图片", action: #selector(captureCurrentPost), keyEquivalent: "")
+            captureItem.target = self
+            menu.addItem(captureItem)
             let openItem = NSMenuItem(title: "打开灵感悬浮球", action: #selector(openStation), keyEquivalent: "")
             openItem.target = self
             menu.addItem(openItem)
@@ -326,6 +329,10 @@ private struct FloatingTriggerMouseCapture: NSViewRepresentable {
 
         @objc private func openStation() {
             action()
+        }
+
+        @objc private func captureCurrentPost() {
+            commandAction()
         }
 
         @objc private func restartStation() {

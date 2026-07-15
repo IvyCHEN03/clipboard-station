@@ -12,7 +12,7 @@ final class SnippetStore: ObservableObject {
     @Published var deletedSnippets: [DeletedSnippet] = []
     @Published var settings: StationSettings = .defaults {
         didSet {
-            if oldValue != settings {
+            if oldValue != settings, didFinishInitialLoad, !isApplyingInitialLoad {
                 persist()
                 settingsChanged?(settings)
             }
@@ -26,7 +26,7 @@ final class SnippetStore: ObservableObject {
     @Published var draftTextSlots: [String: String] = [:]
     @Published var aiAPIKey: String = "" {
         didSet {
-            if oldValue != aiAPIKey {
+            if oldValue != aiAPIKey, didFinishInitialLoad, !isApplyingInitialLoad {
                 KeychainCredentials.save(aiAPIKey, account: "ai-api-key")
             }
         }
@@ -46,6 +46,8 @@ final class SnippetStore: ObservableObject {
     private var didPromptForPasteAccessibility = false
     private var ignoredPasteboardChangeCounts = Set<Int>()
     private var fishMemoryTimer: AnyCancellable?
+    private var didFinishInitialLoad = false
+    private var isApplyingInitialLoad = false
 
     static let fishMemoryDuration: TimeInterval = 7 * 24 * 60 * 60
 
@@ -160,20 +162,42 @@ final class SnippetStore: ObservableObject {
             .appendingPathComponent("Attachments", isDirectory: true)
         try? FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
 
-        let state = persistentStore.load()
-        snippets = state.snippets.sorted { $0.createdAt > $1.createdAt }
-        deletedSnippets = state.deletedSnippets.sorted { $0.deletedAt > $1.deletedAt }
-        settings = state.settings
-        aiAPIKey = KeychainCredentials.read(account: "ai-api-key")
-        repairOpenHotkeyIfNeeded()
-        repairDeepSeekSettingsIfNeeded()
-        expireFishMemory()
         fishMemoryTimer = Timer.publish(every: 3600, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 self?.expireFishMemory()
             }
         refreshRuntimeStatus(shortcutListening: false)
+        loadPersistedStateInBackground()
+    }
+
+    private func loadPersistedStateInBackground() {
+        let persistentStore = persistentStore
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let state = persistentStore.loadIfAvailable()
+            let apiKey = KeychainCredentials.read(account: "ai-api-key")
+            await self?.finishInitialLoad(state: state, apiKey: apiKey)
+        }
+    }
+
+    private func finishInitialLoad(state: PersistedState?, apiKey: String) {
+        guard let state else {
+            showToast("本地资料尚未解锁；允许钥匙串访问后请重启 App")
+            return
+        }
+
+        isApplyingInitialLoad = true
+        snippets = state.snippets.sorted { $0.createdAt > $1.createdAt }
+        deletedSnippets = state.deletedSnippets.sorted { $0.deletedAt > $1.deletedAt }
+        settings = state.settings
+        aiAPIKey = apiKey
+        isApplyingInitialLoad = false
+        didFinishInitialLoad = true
+
+        repairOpenHotkeyIfNeeded()
+        repairDeepSeekSettingsIfNeeded()
+        expireFishMemory()
+        settingsChanged?(settings)
     }
 
     func add(text rawText: String, source: SnippetSource, force: Bool = false) {
@@ -423,6 +447,13 @@ final class SnippetStore: ObservableObject {
         draftTextSlots.removeValue(forKey: draftSlotKey(before: id))
     }
 
+    func clearDraft() {
+        draftSnippetIDs.removeAll()
+        draftTextSlots.removeAll()
+        draftExtraText = ""
+        showToast("已取消组合框全部内容")
+    }
+
     func copyDraftText() {
         var parts: [String] = []
         for snippet in draftSnippets {
@@ -526,7 +557,7 @@ final class SnippetStore: ObservableObject {
         isAccessibilityTrusted = AccessibilityService.isTrusted(prompt: false)
     }
 
-    func enrichAllMissingTags() {
+    func enrichAllMissingTags(in scopeIDs: Set<UUID>? = nil) {
         let key = aiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
         let model = settings.aiModel.trimmingCharacters(in: .whitespacesAndNewlines)
         let baseURL = settings.aiBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -537,7 +568,8 @@ final class SnippetStore: ObservableObject {
 
         let ids = snippets
             .filter { snippet in
-                snippet.tags.isEmpty
+                (scopeIDs?.contains(snippet.id) ?? true)
+                    && snippet.tags.isEmpty
                     && !snippet.isEnriching
                     && !snippet.enrichmentFailed
                     && !(exportText(for: snippet) ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -580,24 +612,10 @@ final class SnippetStore: ObservableObject {
     }
 
     func copy(_ snippet: Snippet) {
-        NSPasteboard.general.clearContents()
-        if snippet.kind == .screenshot,
-           let text = screenshotText(for: snippet),
-           !text.isEmpty {
-            NSPasteboard.general.setString(text, forType: .string)
-        } else if snippet.kind == .screenshot,
-           let attachmentPath = snippet.attachmentPath {
-            if !writeImageToPasteboard(path: attachmentPath) {
-                showToast("图片复制失败")
-                return
-            }
-        } else if let attachmentPath = snippet.attachmentPath {
-            let url = URL(fileURLWithPath: attachmentPath)
-            NSPasteboard.general.writeObjects([url as NSURL])
-        } else {
-            NSPasteboard.general.setString(snippet.text, forType: .string)
+        guard writeSnippetToPasteboard(snippet) else {
+            showToast("内容复制失败")
+            return
         }
-        markInternalPasteboardWrite()
         showToast("已复制")
     }
 
@@ -617,6 +635,40 @@ final class SnippetStore: ObservableObject {
             try? await Task.sleep(for: .milliseconds(snippet.kind == .screenshot ? 260 : 120))
             AccessibilityService.sendCommandV()
             showToast("已粘贴")
+        }
+    }
+
+    func copyAndPaste(_ selectedSnippets: [Snippet]) {
+        guard !selectedSnippets.isEmpty else {
+            showToast("请先选择要复制粘贴的内容")
+            return
+        }
+        let shouldPrompt = !didPromptForPasteAccessibility
+        didPromptForPasteAccessibility = true
+        guard AccessibilityService.isTrusted(prompt: shouldPrompt) else {
+            showToast("需要开启辅助功能权限才能自动粘贴")
+            return
+        }
+
+        NSApp.keyWindow?.orderOut(nil)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            var pastedCount = 0
+            for (index, snippet) in selectedSnippets.enumerated() {
+                let isLast = index == selectedSnippets.count - 1
+                if let text = exportText(for: snippet), !text.isEmpty {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(text + (isLast ? "" : "\n\n"), forType: .string)
+                    markInternalPasteboardWrite()
+                } else if !writeSnippetToPasteboard(snippet) {
+                    continue
+                }
+                try? await Task.sleep(for: .milliseconds(snippet.kind == .screenshot ? 300 : 130))
+                AccessibilityService.sendCommandV()
+                pastedCount += 1
+                try? await Task.sleep(for: .milliseconds(snippet.kind == .screenshot ? 520 : 120))
+            }
+            showToast("已按当前顺序复制粘贴 \(pastedCount) 条")
         }
     }
 
@@ -762,6 +814,28 @@ final class SnippetStore: ObservableObject {
         }
     }
 
+    private func writeSnippetToPasteboard(_ snippet: Snippet) -> Bool {
+        NSPasteboard.general.clearContents()
+        let didWrite: Bool
+        if snippet.kind == .screenshot,
+           let text = screenshotText(for: snippet),
+           !text.isEmpty {
+            didWrite = NSPasteboard.general.setString(text, forType: .string)
+        } else if snippet.kind == .screenshot,
+                  let attachmentPath = snippet.attachmentPath {
+            didWrite = writeImageToPasteboard(path: attachmentPath)
+        } else if let attachmentPath = snippet.attachmentPath {
+            let url = URL(fileURLWithPath: attachmentPath)
+            didWrite = NSPasteboard.general.writeObjects([url as NSURL])
+        } else {
+            didWrite = NSPasteboard.general.setString(snippet.text, forType: .string)
+        }
+        if didWrite {
+            markInternalPasteboardWrite()
+        }
+        return didWrite
+    }
+
     private func restoreBackupAttachments(_ backup: ClipboardBackup) throws -> [Snippet] {
         try FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
         let attachmentMap = Dictionary(uniqueKeysWithValues: backup.attachments.map { ($0.snippetID, $0) })
@@ -856,6 +930,7 @@ final class SnippetStore: ObservableObject {
     }
 
     private func persist() {
+        guard didFinishInitialLoad else { return }
         let persistedSnippets = settings.persistSnippets ? snippets : []
         let persistedDeletedSnippets = settings.persistSnippets ? deletedSnippets : []
         persistentStore.save(PersistedState(

@@ -11,6 +11,7 @@ struct StationView: View {
     @State private var draggingSnippetID: UUID?
     @State private var draggingDraftID: UUID?
     @State private var selectedSnippetIDs = Set<UUID>()
+    @State private var isRewound = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,6 +47,9 @@ struct StationView: View {
             }
         }
         .animation(.easeOut(duration: 0.18), value: store.toast)
+        .onChange(of: store.filteredSnippets.map(\.id)) { visibleIDs in
+            selectedSnippetIDs.formIntersection(Set(visibleIDs))
+        }
     }
 
     private var header: some View {
@@ -126,7 +130,7 @@ struct StationView: View {
     }
 
     private func filterRow<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        HStack(spacing: 8) {
+        return HStack(spacing: 8) {
             Text(title)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
@@ -243,45 +247,94 @@ struct StationView: View {
     }
 
     private var selectionBar: some View {
-        HStack(spacing: 8) {
-            Spacer()
-            Button {
-                selectedSnippetIDs = Set(store.filteredSnippets.map(\.id))
-                store.showToast("已全选当前 \(selectedSnippetIDs.count) 条")
-            } label: {
-                Label("全选", systemImage: "checkmark.square")
-            }
-            .buttonStyle(.borderless)
-            .disabled(store.filteredSnippets.isEmpty)
+        let visibleIDs = Set(store.filteredSnippets.map(\.id))
+        let visibleSelection = selectedSnippetIDs.intersection(visibleIDs)
+        let allVisibleSelected = !visibleIDs.isEmpty && visibleSelection == visibleIDs
+        let actionScope = visibleSelection.isEmpty ? visibleIDs : visibleSelection
 
-            Button {
-                selectedSnippetIDs.removeAll()
-                store.showToast("已取消选择")
-            } label: {
-                Label("取消", systemImage: "xmark.square")
-            }
-            .buttonStyle(.borderless)
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                Spacer(minLength: 0)
+                Button {
+                    if allVisibleSelected {
+                        selectedSnippetIDs.subtract(visibleIDs)
+                        store.showToast("已取消当前选择")
+                    } else {
+                        selectedSnippetIDs = visibleIDs
+                        store.showToast("已全选当前 \(visibleIDs.count) 条")
+                    }
+                } label: {
+                    Label(
+                        allVisibleSelected ? "取消" : "全选",
+                        systemImage: allVisibleSelected ? "xmark.square" : "checkmark.square"
+                    )
+                }
+                .buttonStyle(.borderless)
+                .disabled(store.filteredSnippets.isEmpty)
 
-            Button {
-                store.enrichAllMissingTags()
-            } label: {
-                Label("Tag", systemImage: "tag")
-            }
-            .buttonStyle(.borderless)
-            .help("待处理 \(store.pendingTagCount) · 进行中 \(store.runningTagCount) · 失败 \(store.failedTagCount)")
+                Button {
+                    selectedSnippetIDs.subtract(visibleIDs)
+                    store.showToast("已取消当前筛选中的选择")
+                } label: {
+                    Label("取消", systemImage: "xmark.square")
+                }
+                .buttonStyle(.borderless)
+                .disabled(visibleSelection.isEmpty)
 
-            Button(role: .destructive) {
-                store.delete(ids: selectedSnippetIDs)
-                selectedSnippetIDs.removeAll()
-            } label: {
-                Label("删除", systemImage: "trash")
+                Button {
+                    let selected = displayedSnippets.filter { visibleSelection.contains($0.id) }
+                    store.copyAndPaste(selected)
+                } label: {
+                    Label("复制粘贴", systemImage: "doc.on.clipboard")
+                }
+                .buttonStyle(.borderless)
+                .disabled(visibleSelection.isEmpty)
+                .help("按当前显示顺序复制并粘贴已选的 \(visibleSelection.count) 条")
+
+                Button {
+                    store.enrichAllMissingTags(in: actionScope)
+                } label: {
+                    Label("Tag", systemImage: "tag")
+                }
+                .buttonStyle(.borderless)
+                .help("仅处理当前范围 \(actionScope.count) 条 · 全局进行中 \(store.runningTagCount) · 失败 \(store.failedTagCount)")
+
+                RewindControl(
+                    isRewound: isRewound,
+                    isEnabled: store.filteredSnippets.count >= 2,
+                    onRewind: rewindResults,
+                    onRestore: restoreNormalOrder
+                )
+                .frame(width: 52, height: 20)
+                .fixedSize()
+
+                Button(role: .destructive) {
+                    store.delete(ids: visibleSelection)
+                    selectedSnippetIDs.subtract(visibleSelection)
+                } label: {
+                    Label("删除", systemImage: "trash")
+                }
+                .buttonStyle(.borderless)
+                .disabled(visibleSelection.isEmpty)
             }
-            .buttonStyle(.borderless)
-            .disabled(selectedSnippetIDs.isEmpty)
         }
-        .font(.system(size: 12))
+        .font(.system(size: 11))
         .padding(.horizontal, 14)
         .padding(.bottom, 8)
+    }
+
+    private var displayedSnippets: [Snippet] {
+        isRewound ? Array(store.filteredSnippets.reversed()) : store.filteredSnippets
+    }
+
+    private func rewindResults() {
+        isRewound = true
+        store.showToast("已倒带当前筛选结果；双击恢复")
+    }
+
+    private func restoreNormalOrder() {
+        isRewound = false
+        store.showToast("已恢复正常顺序")
     }
 
     @ViewBuilder
@@ -295,7 +348,7 @@ struct StationView: View {
         } else {
             ScrollView {
                 LazyVStack(spacing: 8) {
-                    ForEach(store.filteredSnippets) { snippet in
+                    ForEach(displayedSnippets) { snippet in
                         SnippetRow(
                             snippet: snippet,
                             store: store,
@@ -632,6 +685,10 @@ private struct SnippetRow: View {
         .overlay {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(isSelected ? orderColor.opacity(0.35) : Color.clear)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 8))
+        .onTapGesture {
+            toggleSelection()
         }
         .onChange(of: snippet.title) { newValue in
             title = newValue
@@ -1011,6 +1068,11 @@ private struct DraftDock: View {
                 Text("组合框")
                     .font(.system(size: 12, weight: .semibold))
                 Spacer()
+                IconButton(systemName: "xmark.circle", help: "一键取消组合框全部内容") {
+                    activeDraftSlot = nil
+                    store.clearDraft()
+                }
+                .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
                 IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
                     store.copyDraftText()
                 }
@@ -1224,6 +1286,100 @@ private struct IconButton: View {
         .buttonStyle(.borderless)
         .help(help)
     }
+}
+
+private struct RewindControl: NSViewRepresentable {
+    let isRewound: Bool
+    let isEnabled: Bool
+    let onRewind: () -> Void
+    let onRestore: () -> Void
+
+    func makeNSView(context: Context) -> RewindButton {
+        let button = RewindButton()
+        button.isBordered = false
+        button.setButtonType(.momentaryChange)
+        button.imagePosition = .imageLeading
+        button.font = .systemFont(ofSize: 11)
+        button.focusRingType = .none
+        button.toolTip = "单击倒序当前筛选结果，双击恢复正常顺序"
+        button.setAccessibilityLabel("倒带")
+        update(button)
+        return button
+    }
+
+    func updateNSView(_ button: RewindButton, context: Context) {
+        update(button)
+    }
+
+    private func update(_ button: RewindButton) {
+        button.title = "倒带"
+        button.image = NSImage(
+            systemSymbolName: isRewound ? "backward.end.fill" : "backward.end",
+            accessibilityDescription: nil
+        )
+        button.isEnabled = isEnabled
+        button.onSingleClick = onRewind
+        button.onDoubleClick = onRestore
+    }
+}
+
+private final class RewindButton: NSButton, NSGestureRecognizerDelegate {
+    var onSingleClick: (() -> Void)?
+    var onDoubleClick: (() -> Void)?
+    private var singleClickRecognizer: NSClickGestureRecognizer?
+    private var doubleClickRecognizer: NSClickGestureRecognizer?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        configureClickRecognizers()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configureClickRecognizers()
+    }
+
+    private func configureClickRecognizers() {
+        let doubleClick = NSClickGestureRecognizer(target: self, action: #selector(handleDoubleClick))
+        doubleClick.numberOfClicksRequired = 2
+        doubleClick.delegate = self
+
+        let singleClick = NSClickGestureRecognizer(target: self, action: #selector(handleSingleClick))
+        singleClick.numberOfClicksRequired = 1
+        singleClick.delegate = self
+
+        addGestureRecognizer(doubleClick)
+        addGestureRecognizer(singleClick)
+        doubleClickRecognizer = doubleClick
+        singleClickRecognizer = singleClick
+    }
+
+    @objc private func handleSingleClick() {
+        guard isEnabled else { return }
+        onSingleClick?()
+    }
+
+    @objc private func handleDoubleClick() {
+        guard isEnabled else { return }
+        onDoubleClick?()
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: NSGestureRecognizer,
+        shouldRequireFailureOf otherGestureRecognizer: NSGestureRecognizer
+    ) -> Bool {
+        gestureRecognizer === singleClickRecognizer
+            && otherGestureRecognizer === doubleClickRecognizer
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 49 {
+            onSingleClick?()
+        } else {
+            super.keyDown(with: event)
+        }
+    }
+
 }
 
 private enum ProjectLinks {

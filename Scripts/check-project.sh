@@ -50,6 +50,8 @@ node --check browser-extension/image-collector/background.js
 echo "ok: browser-extension/image-collector/background.js"
 node --check browser-extension/image-collector/content.js
 echo "ok: browser-extension/image-collector/content.js"
+node --check browser-extension/image-collector/offscreen.js
+echo "ok: browser-extension/image-collector/offscreen.js"
 
 echo
 echo "== Bundle plist =="
