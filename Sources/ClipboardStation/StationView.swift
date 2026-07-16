@@ -285,7 +285,7 @@ struct StationView: View {
                     let selected = displayedSnippets.filter { visibleSelection.contains($0.id) }
                     store.copyAndPaste(selected)
                 } label: {
-                    Label("复制粘贴", systemImage: "doc.on.clipboard")
+                    Label("复制", systemImage: "doc.on.clipboard")
                 }
                 .buttonStyle(.borderless)
                 .disabled(visibleSelection.isEmpty)
@@ -302,7 +302,7 @@ struct StationView: View {
                 RewindControl(
                     isRewound: isRewound,
                     isEnabled: store.filteredSnippets.count >= 2,
-                    onRewind: rewindResults,
+                    onToggle: toggleRewindOrder,
                     onRestore: restoreNormalOrder
                 )
                 .frame(width: 52, height: 20)
@@ -327,9 +327,9 @@ struct StationView: View {
         isRewound ? Array(store.filteredSnippets.reversed()) : store.filteredSnippets
     }
 
-    private func rewindResults() {
-        isRewound = true
-        store.showToast("已倒带当前筛选结果；双击恢复")
+    private func toggleRewindOrder() {
+        isRewound.toggle()
+        store.showToast(isRewound ? "已倒带当前筛选结果" : "已恢复正常顺序")
     }
 
     private func restoreNormalOrder() {
@@ -672,7 +672,6 @@ private struct SnippetRow: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.secondary.opacity(0.12), in: Capsule())
-                    Label(snippet.source.label, systemImage: sourceIcon)
                     Text(Self.dateFormatter.string(from: snippet.createdAt))
                     Text("\(snippet.charCount) 字")
                 }
@@ -695,19 +694,6 @@ private struct SnippetRow: View {
         }
         .onChange(of: store.snippets) { _ in
             syncOrderText()
-        }
-    }
-
-    private var sourceIcon: String {
-        switch snippet.source {
-        case .hotkeySelection:
-            return "keyboard"
-        case .clipboardCopy:
-            return "doc.on.clipboard"
-        case .manualPasteboardImport:
-            return "square.and.arrow.down"
-        case .screenshot:
-            return "camera.viewfinder"
         }
     }
 
@@ -1291,95 +1277,65 @@ private struct IconButton: View {
 private struct RewindControl: NSViewRepresentable {
     let isRewound: Bool
     let isEnabled: Bool
-    let onRewind: () -> Void
+    let onToggle: () -> Void
     let onRestore: () -> Void
 
-    func makeNSView(context: Context) -> RewindButton {
-        let button = RewindButton()
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeNSView(context: Context) -> NSButton {
+        let button = NSButton()
         button.isBordered = false
         button.setButtonType(.momentaryChange)
         button.imagePosition = .imageLeading
         button.font = .systemFont(ofSize: 11)
         button.focusRingType = .none
-        button.toolTip = "单击倒序当前筛选结果，双击恢复正常顺序"
+        button.toolTip = "单击切换倒序，双击恢复正常顺序"
         button.setAccessibilityLabel("倒带")
-        update(button)
+        button.target = context.coordinator
+        button.action = #selector(Coordinator.handleClick(_:))
+        update(button, coordinator: context.coordinator)
         return button
     }
 
-    func updateNSView(_ button: RewindButton, context: Context) {
-        update(button)
+    func updateNSView(_ button: NSButton, context: Context) {
+        update(button, coordinator: context.coordinator)
     }
 
-    private func update(_ button: RewindButton) {
+    private func update(_ button: NSButton, coordinator: Coordinator) {
         button.title = "倒带"
         button.image = NSImage(
             systemSymbolName: isRewound ? "backward.end.fill" : "backward.end",
             accessibilityDescription: nil
         )
         button.isEnabled = isEnabled
-        button.onSingleClick = onRewind
-        button.onDoubleClick = onRestore
-    }
-}
-
-private final class RewindButton: NSButton, NSGestureRecognizerDelegate {
-    var onSingleClick: (() -> Void)?
-    var onDoubleClick: (() -> Void)?
-    private var singleClickRecognizer: NSClickGestureRecognizer?
-    private var doubleClickRecognizer: NSClickGestureRecognizer?
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        configureClickRecognizers()
+        coordinator.onToggle = onToggle
+        coordinator.onRestore = onRestore
     }
 
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        configureClickRecognizers()
-    }
+    @MainActor
+    final class Coordinator: NSObject {
+        var onToggle: (() -> Void)?
+        var onRestore: (() -> Void)?
+        private var lastClickTime: TimeInterval = 0
 
-    private func configureClickRecognizers() {
-        let doubleClick = NSClickGestureRecognizer(target: self, action: #selector(handleDoubleClick))
-        doubleClick.numberOfClicksRequired = 2
-        doubleClick.delegate = self
+        @objc func handleClick(_ sender: NSButton) {
+            guard sender.isEnabled else { return }
+            let event = NSApp.currentEvent
+            let timestamp = event?.timestamp ?? ProcessInfo.processInfo.systemUptime
+            let isDoubleClick = (event?.clickCount ?? 0) >= 2
+                || timestamp - lastClickTime <= NSEvent.doubleClickInterval
 
-        let singleClick = NSClickGestureRecognizer(target: self, action: #selector(handleSingleClick))
-        singleClick.numberOfClicksRequired = 1
-        singleClick.delegate = self
-
-        addGestureRecognizer(doubleClick)
-        addGestureRecognizer(singleClick)
-        doubleClickRecognizer = doubleClick
-        singleClickRecognizer = singleClick
-    }
-
-    @objc private func handleSingleClick() {
-        guard isEnabled else { return }
-        onSingleClick?()
-    }
-
-    @objc private func handleDoubleClick() {
-        guard isEnabled else { return }
-        onDoubleClick?()
-    }
-
-    func gestureRecognizer(
-        _ gestureRecognizer: NSGestureRecognizer,
-        shouldRequireFailureOf otherGestureRecognizer: NSGestureRecognizer
-    ) -> Bool {
-        gestureRecognizer === singleClickRecognizer
-            && otherGestureRecognizer === doubleClickRecognizer
-    }
-
-    override func keyDown(with event: NSEvent) {
-        if event.keyCode == 49 {
-            onSingleClick?()
-        } else {
-            super.keyDown(with: event)
+            if isDoubleClick {
+                lastClickTime = 0
+                onRestore?()
+            } else {
+                lastClickTime = timestamp
+                onToggle?()
+            }
         }
     }
-
 }
 
 private enum ProjectLinks {
