@@ -103,6 +103,12 @@ The app is usable today, but still pre-1.0:
 
 The privacy-safe product previews show both core loops without exposing private clipboard or browser content: collect fragments into a final prompt, or collect a whole image post into a selectable PNG stack.
 
+### 15-Second Motion Demo
+
+[![Watch the Linggan Floating Ball motion demo](docs/assets/social/linggan-x-cover.png)](docs/assets/social/linggan-x-demo.mp4)
+
+Watch the cursor collect and drag a snippet into the block composer, copy the result, then `Cmd`-click the floating bubble to select post images and save a clean PNG pack. The synthetic demo contains no private clipboard content, accounts, or API keys.
+
 See [docs/DEMO.md](docs/DEMO.md) for the recording script, screenshot checklist, privacy rules, and release-note copy.
 
 ![Workflow preview](docs/assets/workflow-preview.svg)
