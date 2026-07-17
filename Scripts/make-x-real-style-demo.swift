@@ -10,13 +10,15 @@ private let canvasSize = CGSize(width: 1920, height: 1080)
 private let fps: Int32 = 30
 private let arguments = Set(CommandLine.arguments.dropFirst())
 private let isTeaser = arguments.contains("teaser")
-private let duration: Double = isTeaser ? 15 : 32
+private let duration: Double = isTeaser ? 26 : 32
 private let frameCount = Int(duration * Double(fps))
 private let repo = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 private let language = arguments.contains("en") ? "en" : "cn"
 private let assetKind = isTeaser ? "teaser" : "demo"
 private let outputURL = repo.appendingPathComponent("docs/assets/social/linggan-x-\(assetKind)-\(language)-1080p.mp4")
 private let coverURL = repo.appendingPathComponent("docs/assets/social/linggan-x-\(assetKind)-\(language)-1080p-cover.png")
+private let silentVideoURL = FileManager.default.temporaryDirectory.appendingPathComponent("linggan-\(assetKind)-\(language)-silent.mp4")
+private let musicURL = FileManager.default.temporaryDirectory.appendingPathComponent("linggan-\(assetKind)-\(language)-music.wav")
 
 private let ink = NSColor(calibratedRed: 0.09, green: 0.13, blue: 0.20, alpha: 1)
 private let muted = NSColor(calibratedRed: 0.39, green: 0.45, blue: 0.54, alpha: 1)
@@ -548,12 +550,12 @@ private func render(time: Double) -> NSImage {
 private func storyTime(for outputTime: Double) -> Double {
     guard isTeaser else { return outputTime }
     let segments: [(Range<Double>, Range<Double>)] = [
-        (0.0..<1.5, 0.0..<1.7),
-        (1.5..<4.0, 2.0..<6.5),
-        (4.0..<7.3, 7.0..<13.6),
-        (7.3..<8.6, 13.8..<16.6),
-        (8.6..<13.2, 17.6..<26.8),
-        (13.2..<15.0, 28.0..<31.8),
+        (0.0..<2.6, 0.0..<1.8),
+        (2.6..<7.2, 2.0..<6.5),
+        (7.2..<13.2, 7.0..<13.6),
+        (13.2..<15.7, 13.8..<16.6),
+        (15.7..<22.6, 17.6..<26.8),
+        (22.6..<26.0, 28.0..<31.8),
     ]
     guard let segment = segments.first(where: { $0.0.contains(outputTime) }) else {
         return 31.8
@@ -562,6 +564,110 @@ private func storyTime(for outputTime: Double) -> Double {
     let target = segment.1
     let progress = (outputTime - source.lowerBound) / (source.upperBound - source.lowerBound)
     return target.lowerBound + progress * (target.upperBound - target.lowerBound)
+}
+
+private func makeMusic(at url: URL, duration: Double) throws {
+    try? FileManager.default.removeItem(at: url)
+    let sampleRate = 48_000.0
+    let channelCount: AVAudioChannelCount = 2
+    let frameTotal = AVAudioFrameCount(duration * sampleRate)
+    guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: channelCount),
+          let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameTotal),
+          let channels = buffer.floatChannelData
+    else { fatalError("Could not create music buffer") }
+    buffer.frameLength = frameTotal
+
+    let tempo = 100.0
+    let beatLength = 60.0 / tempo
+    let chords: [[Double]] = [
+        [261.63, 329.63, 392.00, 493.88],
+        [220.00, 261.63, 329.63, 392.00],
+        [174.61, 220.00, 261.63, 329.63],
+        [196.00, 246.94, 293.66, 440.00],
+    ]
+
+    for frame in 0..<Int(frameTotal) {
+        let time = Double(frame) / sampleRate
+        let beat = time / beatLength
+        let chordIndex = Int(beat / 4) % chords.count
+        let chord = chords[chordIndex]
+        let chordPhase = beat.truncatingRemainder(dividingBy: 4) / 4
+        let chordEnvelope = min(1, chordPhase * 8) * min(1, (1 - chordPhase) * 5)
+
+        var left = 0.0
+        var right = 0.0
+        for (noteIndex, frequency) in chord.enumerated() {
+            let pan = Double(noteIndex) / Double(chord.count - 1)
+            let pad = sin(2 * Double.pi * frequency * time) * 0.018 * chordEnvelope
+            let air = sin(2 * Double.pi * frequency * 2 * time + 0.35) * 0.004 * chordEnvelope
+            left += (pad + air) * (1.15 - pan * 0.3)
+            right += (pad + air) * (0.85 + pan * 0.3)
+        }
+
+        let halfBeat = beat * 2
+        let step = Int(floor(halfBeat))
+        let stepTime = halfBeat - floor(halfBeat)
+        let pluckFrequency = chord[step % chord.count] * (step % 8 == 7 ? 2 : 1)
+        let pluckEnvelope = exp(-stepTime * 7.5)
+        let pluck = (
+            sin(2 * Double.pi * pluckFrequency * time) +
+            0.28 * sin(2 * Double.pi * pluckFrequency * 2 * time)
+        ) * 0.052 * pluckEnvelope
+        left += pluck * (step % 2 == 0 ? 1.0 : 0.72)
+        right += pluck * (step % 2 == 0 ? 0.72 : 1.0)
+
+        let twoBeatPhase = (beat.truncatingRemainder(dividingBy: 2)) * beatLength
+        if twoBeatPhase < 0.32 {
+            let kickEnvelope = exp(-twoBeatPhase * 13)
+            let kickFrequency = 72 - 24 * min(twoBeatPhase / 0.32, 1)
+            let kick = sin(2 * Double.pi * kickFrequency * time) * 0.075 * kickEnvelope
+            left += kick
+            right += kick
+        }
+
+        let offBeatPhase = (halfBeat + 1).truncatingRemainder(dividingBy: 2)
+        if offBeatPhase < 0.22 {
+            let shimmerEnvelope = exp(-offBeatPhase * 18)
+            let shimmer = sin(time * 12_347) * sin(time * 7_919) * 0.008 * shimmerEnvelope
+            left += shimmer
+            right -= shimmer * 0.65
+        }
+
+        let fadeIn = min(1, time / 0.9)
+        let fadeOut = min(1, max(0, duration - time) / 1.5)
+        let master = fadeIn * fadeOut * 0.92
+        channels[0][frame] = Float(tanh(left) * master)
+        channels[1][frame] = Float(tanh(right) * master)
+    }
+
+    var fileSettings = format.settings
+    fileSettings[AVLinearPCMIsNonInterleaved] = false
+    let file = try AVAudioFile(forWriting: url, settings: fileSettings)
+    try file.write(from: buffer)
+}
+
+private func combine(videoURL: URL, musicURL: URL, outputURL: URL) async throws {
+    let videoAsset = AVURLAsset(url: videoURL)
+    let musicAsset = AVURLAsset(url: musicURL)
+    let videoDuration = try await videoAsset.load(.duration)
+    guard let sourceVideo = try await videoAsset.loadTracks(withMediaType: .video).first,
+          let sourceMusic = try await musicAsset.loadTracks(withMediaType: .audio).first
+    else { fatalError("Could not load generated media tracks") }
+
+    let composition = AVMutableComposition()
+    guard let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
+          let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+    else { fatalError("Could not create composition tracks") }
+
+    try videoTrack.insertTimeRange(CMTimeRange(start: .zero, duration: videoDuration), of: sourceVideo, at: .zero)
+    try audioTrack.insertTimeRange(CMTimeRange(start: .zero, duration: videoDuration), of: sourceMusic, at: .zero)
+    videoTrack.preferredTransform = try await sourceVideo.load(.preferredTransform)
+
+    try? FileManager.default.removeItem(at: outputURL)
+    guard let exporter = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality) else {
+        fatalError("Could not create final exporter")
+    }
+    try await exporter.export(to: outputURL, as: .mp4)
 }
 
 private func pixelBuffer(from image: NSImage, pool: CVPixelBufferPool) -> CVPixelBuffer {
@@ -587,8 +693,8 @@ private func pixelBuffer(from image: NSImage, pool: CVPixelBufferPool) -> CVPixe
     return buffer
 }
 
-try? FileManager.default.removeItem(at: outputURL)
-let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
+try? FileManager.default.removeItem(at: silentVideoURL)
+let writer = try AVAssetWriter(outputURL: silentVideoURL, fileType: .mp4)
 let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
     AVVideoCodecKey: AVVideoCodecType.h264,
     AVVideoWidthKey: Int(canvasSize.width),
@@ -610,7 +716,9 @@ guard writer.startWriting() else { fatalError(writer.error?.localizedDescription
 writer.startSession(atSourceTime: .zero)
 
 for frame in 0..<frameCount {
-    while !input.isReadyForMoreMediaData { Thread.sleep(forTimeInterval: 0.002) }
+    while !input.isReadyForMoreMediaData {
+        try await Task.sleep(for: .milliseconds(2))
+    }
     let time = Double(frame) / Double(fps)
     let image = render(time: storyTime(for: time))
     let buffer = pixelBuffer(from: image, pool: adaptor.pixelBufferPool!)
@@ -618,10 +726,13 @@ for frame in 0..<frameCount {
     if frame % 120 == 0 { print("Rendering \(frame)/\(frameCount)") }
 }
 input.markAsFinished()
-let completion = DispatchSemaphore(value: 0)
-writer.finishWriting { completion.signal() }
-completion.wait()
+await writer.finishWriting()
 guard writer.status == .completed else { fatalError(writer.error?.localizedDescription ?? "Export failed") }
+
+try makeMusic(at: musicURL, duration: duration)
+try await combine(videoURL: silentVideoURL, musicURL: musicURL, outputURL: outputURL)
+try? FileManager.default.removeItem(at: silentVideoURL)
+try? FileManager.default.removeItem(at: musicURL)
 
 let cover = render(time: 0.8)
 guard let tiff = cover.tiffRepresentation,

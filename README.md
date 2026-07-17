@@ -12,7 +12,7 @@
 
 Linggan Floating Ball is a local-first macOS companion for collecting useful text, screenshots, table snippets, and every image from a post while you move across AI chats, browsers, notes, and spreadsheets.
 
-[Watch HD video](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [观看中文版](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-cn-1080p.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
+[Watch the 26-second demo](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [观看中文版](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-cn-1080p.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
 
 [![Linggan Floating Ball: collect scattered ideas](docs/assets/social/linggan-readme-demo.gif)](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4)
 
@@ -105,9 +105,9 @@ The app is usable today, but still pre-1.0:
 
 The privacy-safe product previews show both core loops without exposing private clipboard or browser content: collect fragments into a final prompt, or collect a whole image post into a selectable PNG stack.
 
-### 15-Second Motion Demo
+### 26-Second Motion Demo
 
-[![Watch the Linggan Floating Ball 15-second demo](docs/assets/social/linggan-readme-demo.gif)](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4)
+[![Watch the Linggan Floating Ball 26-second demo](docs/assets/social/linggan-readme-demo.gif)](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4)
 
 Watch the cursor collect and drag a snippet into the block composer, copy the result, then `Cmd`-click the floating bubble to select post images and save a clean PNG pack. The synthetic demo contains no private clipboard content, accounts, or API keys.
 

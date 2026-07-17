@@ -4,7 +4,7 @@ This kit keeps the launch focused on one promise: Linggan catches scattered idea
 
 ## Recommended Post Order
 
-1. Publish the English post with the 15-second English teaser attached.
+1. Publish the English post with the 26-second English teaser attached.
 2. Put the GitHub link in the first reply so the main post stays conversational.
 3. Add the longer product demo in a second reply only when someone asks for more detail.
 4. Publish the Chinese version 12-24 hours later instead of posting both languages at once.
@@ -68,7 +68,7 @@ https://github.com/IvyCHEN03/clipboard-station
 - Use the repository URL as the profile website during launch week.
 - Set the repository social preview to [`linggan-github-social-preview.png`](assets/social/linggan-github-social-preview.png).
 - Suggested topics: `macos`, `swiftui`, `clipboard-manager`, `productivity`, `ai-tools`, `image-downloader`, `local-first`.
-- Keep the README's 15-second demo above the installation instructions.
+- Keep the README's short motion demo above the installation instructions.
 
 ## Reply Material
 

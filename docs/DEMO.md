@@ -8,8 +8,8 @@ For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUN
 
 | Asset | Purpose |
 | --- | --- |
-| [`linggan-x-teaser-en-1080p.mp4`](assets/social/linggan-x-teaser-en-1080p.mp4) | 15-second English X post and README demo |
-| [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080p.mp4) | 15-second Chinese X post |
+| [`linggan-x-teaser-en-1080p.mp4`](assets/social/linggan-x-teaser-en-1080p.mp4) | 26-second English X post and README demo |
+| [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080p.mp4) | 26-second Chinese X post |
 | [`linggan-readme-demo.gif`](assets/social/linggan-readme-demo.gif) | Inline GitHub README preview |
 | [`linggan-github-social-preview.png`](assets/social/linggan-github-social-preview.png) | 1280 x 640 GitHub social preview |
 
@@ -98,7 +98,7 @@ Before adding a GIF or screenshot to the repository:
 - [ ] Shows the composer blocks, not only the snippet list.
 - [ ] Shows filtering, block composition, copying, and whole-post image collection.
 - [ ] Does not show API keys, local file paths, account names, billing pages, private browser tabs, or provider dashboards.
-- [ ] The social cut is 15 seconds or shorter and readable without sound.
+- [ ] The social cut is 30 seconds or shorter and readable without sound.
 - [ ] Still screenshots are readable at GitHub README width.
 - [ ] GitHub social preview is 1280 x 640 and under 1 MB.
 
