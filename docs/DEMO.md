@@ -10,6 +10,7 @@ For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUN
 | --- | --- |
 | [`linggan-x-teaser-en-1080p.mp4`](assets/social/linggan-x-teaser-en-1080p.mp4) | 15-second English X post and README demo |
 | [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080p.mp4) | 15-second Chinese X post |
+| [`linggan-readme-demo.gif`](assets/social/linggan-readme-demo.gif) | Inline GitHub README preview |
 | [`linggan-github-social-preview.png`](assets/social/linggan-github-social-preview.png) | 1280 x 640 GitHub social preview |
 
 The video generator uses only synthetic, redacted demo content:
@@ -17,6 +18,7 @@ The video generator uses only synthetic, redacted demo content:
 ```bash
 swift Scripts/make-x-real-style-demo.swift en teaser
 swift Scripts/make-x-real-style-demo.swift cn teaser
+swift Scripts/make-readme-gif.swift
 ```
 
 ## One-Sentence Pitch
