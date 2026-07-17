@@ -47,6 +47,7 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     }
 
     private let store = SnippetStore()
+    private let isVideoDemo = ProcessInfo.processInfo.environment["CLIPBOARD_STATION_VIDEO_DEMO"] == "1"
     private let monitor: ClipboardMonitor
     private let screenshotMonitor: ScreenshotShortcutMonitor
     private let imageCollectorBridge = ImageCollectorBridge()
@@ -59,15 +60,26 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     private var carbonHotKeyActive = false
     private var eventTapActive = false
 
+    private static let videoDemoCommand = Notification.Name("com.local.clipboard-station.video-demo-command")
+
     override init() {
         monitor = ClipboardMonitor(store: store)
         screenshotMonitor = ScreenshotShortcutMonitor(store: store)
         super.init()
         configureStatusItem()
         configureStationWindow()
-        configureFloatingTrigger()
-        configureReopenObserver()
-        configureServices()
+        if !isVideoDemo {
+            configureFloatingTrigger()
+            configureReopenObserver()
+            configureServices()
+        } else {
+            DistributedNotificationCenter.default().addObserver(
+                self,
+                selector: #selector(handleVideoDemoCommand(_:)),
+                name: Self.videoDemoCommand,
+                object: nil
+            )
+        }
         showStationWindow()
     }
 
@@ -79,6 +91,12 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         imageCollectorBridge.stop()
         floatingTrigger?.close()
         DistributedNotificationCenter.default().removeObserver(self)
+    }
+
+    @objc private func handleVideoDemoCommand(_ notification: Notification) {
+        guard isVideoDemo, let command = notification.object as? String else { return }
+        store.applyVideoDemoCommand(command)
+        showStationWindow()
     }
 
     private func configureStatusItem() {
@@ -140,7 +158,7 @@ final class StatusBarController: NSObject, NSWindowDelegate {
             defer: false
         )
         panel.contentViewController = host
-        panel.title = "灵感悬浮球"
+        panel.title = isVideoDemo ? "灵感悬浮球 Demo" : "灵感悬浮球"
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = false
