@@ -1,6 +1,6 @@
 # Linggan Floating Ball
 
-> One floating bubble for everything worth keeping: text, screenshots, tables, and now entire image-heavy posts.
+> Catch scattered ideas before your fish-memory forgets them.
 
 [![CI](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/ci.yml/badge.svg)](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/ci.yml)
 [![Release](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/release.yml/badge.svg)](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/release.yml)
@@ -8,15 +8,17 @@
 ![Swift](https://img.shields.io/badge/Swift-6-compatible-f05138)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Copy chaos in. A reusable prompt or a clean PNG pack out.**
+**An idea just popped up, and it is already running away. Linggan catches it.**
 
-Linggan Floating Ball, formerly AI Clipboard Station, is a tiny macOS menu bar app for collecting useful text, screenshots, table snippets, and post images while you work across ChatGPT, Claude, Codex, browsers, notes, and spreadsheets.
+Linggan Floating Ball is a local-first macOS companion for collecting useful text, screenshots, table snippets, and every image from a post while you move across AI chats, browsers, notes, and spreadsheets.
 
-It is designed for one very specific workflow: grab many fragments fast, keep them visible, tag them, reorder them like blocks, and paste a composed answer back into any AI input box.
+[Watch the 15-second demo](docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [观看中文版](docs/assets/social/linggan-x-teaser-cn-1080p.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
 
-Its browser companion can turn one image-heavy post into a named, selectable stack: `Cmd` + click the bubble, choose the images you want, and save a de-duplicated PNG set.
+[![Linggan Floating Ball: collect scattered ideas](docs/assets/social/linggan-github-social-preview.png)](docs/assets/social/linggan-x-teaser-en-1080p.mp4)
 
-![Linggan Floating Ball app preview](docs/assets/hero-preview.svg)
+Copy fragments as they appear, find them again with tags and search, arrange them into one reusable prompt, or `Cmd` + click the bubble to turn an image-heavy post into a selectable PNG stack.
+
+Everything stays local by default. Optional AI tagging runs only after you configure it. If Linggan catches a spark for you, a GitHub star helps shape what comes next.
 
 ## 10-Second Pitch
 
@@ -105,9 +107,11 @@ The privacy-safe product previews show both core loops without exposing private 
 
 ### 15-Second Motion Demo
 
-[![Watch the Linggan Floating Ball motion demo](docs/assets/social/linggan-x-cover.png)](docs/assets/social/linggan-x-demo.mp4)
+[![Watch the Linggan Floating Ball 15-second demo](docs/assets/social/linggan-x-teaser-en-1080p-cover.png)](docs/assets/social/linggan-x-teaser-en-1080p.mp4)
 
 Watch the cursor collect and drag a snippet into the block composer, copy the result, then `Cmd`-click the floating bubble to select post images and save a clean PNG pack. The synthetic demo contains no private clipboard content, accounts, or API keys.
+
+[English](docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [中文](docs/assets/social/linggan-x-teaser-cn-1080p.mp4)
 
 See [docs/DEMO.md](docs/DEMO.md) for the recording script, screenshot checklist, privacy rules, and release-note copy.
 

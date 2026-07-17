@@ -4,6 +4,21 @@ Use this script to record a short GIF, video, or screenshot set for README, rele
 
 For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
 
+## Current Launch Assets
+
+| Asset | Purpose |
+| --- | --- |
+| [`linggan-x-teaser-en-1080p.mp4`](assets/social/linggan-x-teaser-en-1080p.mp4) | 15-second English X post and README demo |
+| [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080p.mp4) | 15-second Chinese X post |
+| [`linggan-github-social-preview.png`](assets/social/linggan-github-social-preview.png) | 1280 x 640 GitHub social preview |
+
+The video generator uses only synthetic, redacted demo content:
+
+```bash
+swift Scripts/make-x-real-style-demo.swift en teaser
+swift Scripts/make-x-real-style-demo.swift cn teaser
+```
+
 ## One-Sentence Pitch
 
 Linggan Floating Ball is a local-first macOS inspiration station for collecting text, screenshots, table snippets, and entire image-heavy posts.
@@ -79,11 +94,11 @@ Before adding a GIF or screenshot to the repository:
 - [ ] Uses demo snippets, synthetic text, or fully redacted content.
 - [ ] Shows the floating bubble or station UI within the first two seconds.
 - [ ] Shows the composer blocks, not only the snippet list.
+- [ ] Shows filtering, block composition, copying, and whole-post image collection.
 - [ ] Does not show API keys, local file paths, account names, billing pages, private browser tabs, or provider dashboards.
-- [ ] GIF is short enough to load quickly on GitHub.
+- [ ] The social cut is 15 seconds or shorter and readable without sound.
 - [ ] Still screenshots are readable at GitHub README width.
-- [ ] File names match [assets/README.md](assets/README.md).
-- [ ] README is updated to use `docs/assets/hero.gif` only after the GIF is stronger than `hero-preview.svg`.
+- [ ] GitHub social preview is 1280 x 640 and under 1 MB.
 
 ## Release Notes Copy
 

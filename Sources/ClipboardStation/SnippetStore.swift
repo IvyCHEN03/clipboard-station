@@ -42,10 +42,13 @@ final class SnippetStore: ObservableObject {
     private let persistentStore = PersistentStore()
     private let enricher = AIEnricher()
     private let attachmentsDirectory: URL
+    private let isVideoDemo = ProcessInfo.processInfo.environment["CLIPBOARD_STATION_VIDEO_DEMO"] == "1"
     private var toastTask: Task<Void, Never>?
     private var didPromptForPasteAccessibility = false
     private var ignoredPasteboardChangeCounts = Set<Int>()
     private var fishMemoryTimer: AnyCancellable?
+    private var videoDemoCommandTimer: AnyCancellable?
+    private var lastVideoDemoCommand = ""
     private var didFinishInitialLoad = false
     private var isApplyingInitialLoad = false
 
@@ -156,6 +159,27 @@ final class SnippetStore: ObservableObject {
     }
 
     init() {
+        if isVideoDemo {
+            attachmentsDirectory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("ClipboardStationVideoDemo", isDirectory: true)
+                .appendingPathComponent("Attachments", isDirectory: true)
+            try? FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
+            settings.monitorClipboard = false
+            settings.autoPaste = false
+            settings.persistSnippets = false
+            settings.launchAtLogin = false
+            settings.aiEnrichment = false
+            snippets = DemoContent.makeSnippets()
+            didFinishInitialLoad = true
+            refreshRuntimeStatus(shortcutListening: false, detail: "视频演示模式")
+            videoDemoCommandTimer = Timer.publish(every: 0.2, on: .main, in: .common)
+                .autoconnect()
+                .sink { [weak self] _ in
+                    self?.pollVideoDemoCommand()
+                }
+            return
+        }
+
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         attachmentsDirectory = base
             .appendingPathComponent("ClipboardStation", isDirectory: true)
@@ -711,6 +735,46 @@ final class SnippetStore: ObservableObject {
         showToast("已载入示例片段")
     }
 
+    func applyVideoDemoCommand(_ command: String) {
+        guard isVideoDemo else { return }
+        switch command {
+        case "reset":
+            searchText = ""
+            selectedTags.removeAll()
+            selectedTimeFilter = nil
+            draftSnippetIDs.removeAll()
+            draftTextSlots.removeAll()
+            toast = nil
+        case "first-block":
+            guard let first = snippets.first else { return }
+            draftSnippetIDs = [first.id]
+            draftTextSlots.removeAll()
+        case "second-block":
+            guard snippets.count >= 2 else { return }
+            draftSnippetIDs = [snippets[0].id, snippets[1].id]
+            draftTextSlots.removeAll()
+        case "bridge-text":
+            guard snippets.count >= 2 else { return }
+            draftSnippetIDs = [snippets[0].id, snippets[1].id]
+            draftTextSlots["before-\(snippets[1].id.uuidString)"] = "Compare this with"
+        case "copied":
+            showToast("已复制组合内容")
+        default:
+            break
+        }
+    }
+
+    private func pollVideoDemoCommand() {
+        guard isVideoDemo else { return }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("LingganVideoDemo.command")
+        guard let raw = try? String(contentsOf: url, encoding: .utf8), raw != lastVideoDemoCommand else {
+            return
+        }
+        lastVideoDemoCommand = raw
+        let command = raw.split(separator: ":", maxSplits: 1).first.map(String.init) ?? raw
+        applyVideoDemoCommand(command)
+    }
+
     func exportBackup() {
         let panel = NSSavePanel()
         panel.title = "导出灵感悬浮球备份"
@@ -930,7 +994,7 @@ final class SnippetStore: ObservableObject {
     }
 
     private func persist() {
-        guard didFinishInitialLoad else { return }
+        guard didFinishInitialLoad, !isVideoDemo else { return }
         let persistedSnippets = settings.persistSnippets ? snippets : []
         let persistedDeletedSnippets = settings.persistSnippets ? deletedSnippets : []
         persistentStore.save(PersistedState(
@@ -941,6 +1005,7 @@ final class SnippetStore: ObservableObject {
     }
 
     private func expireFishMemory(now: Date = Date()) {
+        guard !isVideoDemo else { return }
         let expired = snippets.filter { Self.shouldMoveToMemoryShore(createdAt: $0.createdAt, now: now) }
         guard !expired.isEmpty else { return }
         let ids = Set(expired.map(\.id))

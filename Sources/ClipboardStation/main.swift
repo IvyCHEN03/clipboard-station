@@ -13,15 +13,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var instanceLock: InstanceLock?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        guard let lock = InstanceLock.acquire() else {
-            DistributedNotificationCenter.default().postNotificationName(
-                .clipboardStationReopen,
-                object: nil
-            )
-            NSApp.terminate(nil)
-            return
+        let isVideoDemo = ProcessInfo.processInfo.environment["CLIPBOARD_STATION_VIDEO_DEMO"] == "1"
+        if !isVideoDemo {
+            guard let lock = InstanceLock.acquire() else {
+                DistributedNotificationCenter.default().postNotificationName(
+                    .clipboardStationReopen,
+                    object: nil
+                )
+                NSApp.terminate(nil)
+                return
+            }
+            instanceLock = lock
         }
-        instanceLock = lock
         statusController = StatusBarController()
     }
 
