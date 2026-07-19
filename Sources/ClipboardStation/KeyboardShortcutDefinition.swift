@@ -98,7 +98,7 @@ enum KeyboardShortcutDefinition {
     }
 
     static func keyLabel(for keyCode: UInt32) -> String {
-        supportedKeys.first { $0.keyCode == keyCode }?.label ?? "Key (keyCode)"
+        supportedKeys.first { $0.keyCode == keyCode }?.label ?? "Key \(keyCode)"
     }
 
     static func isSupported(keyCode: UInt32) -> Bool {
