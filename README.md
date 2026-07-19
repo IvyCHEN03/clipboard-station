@@ -12,13 +12,13 @@
 
 Linggan Floating Ball is a local-first macOS companion for collecting useful text, screenshots, table snippets, and every image from a post while you move across AI chats, browsers, notes, and spreadsheets.
 
-[Watch the 26-second demo](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [观看中文版](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-cn-1080p.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
+[Watch the 28-second demo](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [观看中文版](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-cn-1080p.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
 
 [![Linggan Floating Ball: collect scattered ideas](docs/assets/social/linggan-readme-demo.gif)](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4)
 
-Copy fragments as they appear, find them again with tags and search, arrange them into one reusable prompt, or `Cmd` + click the bubble to turn an image-heavy post into a selectable PNG stack.
+Copy fragments as they appear, find them again with tags and search, arrange them into one reusable prompt, let AI polish the blocks into a coherent paragraph, or `Cmd` + click the bubble to turn an image-heavy post into a selectable PNG stack.
 
-Everything stays local by default. Optional AI tagging runs only after you configure it. If Linggan catches a spark for you, a GitHub star helps shape what comes next.
+Everything stays local by default. Optional AI features run only after you configure a provider; composer text is sent only when you click `Polish`. If Linggan catches a spark for you, a GitHub star helps shape what comes next.
 
 ## 10-Second Pitch
 
@@ -28,7 +28,7 @@ Everything stays local by default. Optional AI tagging runs only after you confi
 | --- | --- |
 | Keep repeated text, screenshots, and table cells visible, searchable, and reorderable. | Capture the current multi-image post, select the keepers, and export real PNG files. |
 
-Everything stays local by default. Optional AI tagging only runs after you configure it.
+Everything stays local by default. Optional AI tagging and `Polish` run only after you configure a provider.
 
 ## Demo+: Capture A Whole Post
 
@@ -58,7 +58,7 @@ Skip it if you mainly need cross-device clipboard sync, long-term note taking, o
 2. Click the small blue floating bubble to keep everything visible.
 3. Filter by search, tag, type, or recent time window.
 4. Drag snippets into the bottom composer and type text between the blocks.
-5. Copy the final composed prompt back into any AI input box.
+5. Click `Polish` to turn the blocks into a coherent paragraph, then copy it into any input box.
 
 ## Quick Start
 
@@ -79,7 +79,7 @@ For a guided five-minute walkthrough, read [Getting Started](docs/GETTING_STARTE
 The app is usable today, but still pre-1.0:
 
 - Local-first by default; no telemetry and no cloud sync.
-- AI tagging is optional and only runs after you add your own OpenAI-compatible API settings.
+- AI tagging and `Polish` are optional and only run after you add your own OpenAI-compatible API settings.
 - Local builds are currently unsigned and not notarized, so macOS may require manual approval.
 - The floating bubble is the recommended entry point because global shortcuts can conflict with other apps.
 
@@ -105,11 +105,11 @@ The app is usable today, but still pre-1.0:
 
 The privacy-safe product previews show both core loops without exposing private clipboard or browser content: collect fragments into a final prompt, or collect a whole image post into a selectable PNG stack.
 
-### 26-Second Motion Demo
+### 28-Second Motion Demo
 
-[![Watch the Linggan Floating Ball 26-second demo](docs/assets/social/linggan-readme-demo.gif)](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4)
+[![Watch the Linggan Floating Ball 28-second demo](docs/assets/social/linggan-readme-demo.gif)](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4)
 
-Watch the cursor collect and drag a snippet into the block composer, copy the result, then `Cmd`-click the floating bubble to select post images and save a clean PNG pack. The synthetic demo contains no private clipboard content, accounts, or API keys.
+Watch the cursor collect and drag snippets into the block composer, click `Polish` to generate one coherent paragraph, copy the result, then `Cmd`-click the floating bubble to select post images and save a clean PNG pack. The synthetic demo contains no private clipboard content, accounts, or API keys.
 
 [English HD](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [中文高清版](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-cn-1080p.mp4)
 
@@ -150,6 +150,7 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Run batch tagging and deletion only against the active filtered scope, never hidden snippets.
 - Reorder snippets with up/down buttons or a numeric position field.
 - Compose a prompt in the bottom block editor with colored snippet blocks and custom text between blocks.
+- Polish the current block composition into one coherent paragraph with your configured OpenAI-compatible model.
 - Clear the block composer in one click without deleting the original snippets.
 - Copy or paste a snippet into the current input box.
 - Export the current filtered list as readable Markdown.
@@ -158,7 +159,7 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Use `Cmd` + click on the floating bubble to capture the current image-heavy post as a titled stack.
 - Expand a post stack, select images individually, de-duplicate them visually, and save real PNG files.
 - Store data locally with Keychain-backed AES-GCM encryption.
-- No cloud sync and no uploads unless you explicitly enable AI tagging.
+- No cloud sync; text reaches your configured AI provider only when you run tagging or click `Polish`.
 
 ## Product Shape
 
@@ -284,7 +285,7 @@ Linggan Floating Ball is local-first:
 - Snippets are saved under `~/Library/Application Support/ClipboardStation/state.enc`.
 - The encryption key is stored in macOS Keychain.
 - Clipboard content is not uploaded by default.
-- AI providers receive snippet text only if you enable AI tagging and configure an API key.
+- AI providers receive snippet text only when tagging runs, and composer text only when you click `Polish`, after you configure an API key.
 
 Read [PRIVACY.md](PRIVACY.md) for the full data flow.
 
