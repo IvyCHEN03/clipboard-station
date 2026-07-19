@@ -32,7 +32,7 @@ private let segments: [NarrationSegment] = [
     .init(start: 7.85, end: 13.05, spokenText: "喜欢的句子拖进组合框，像拼积木一样，慢慢长成一段话。", caption: "把喜欢的句子拖进组合框。\n像拼积木一样，慢慢长成一段话。", side: .right),
     .init(start: 13.15, end: 17.45, spokenText: "再点一下 Polish，AI 帮你补好衔接，整段读起来更顺。", caption: "点一下 Polish。\nAI 补好衔接，整段读起来更顺。", side: .right),
     .init(start: 17.55, end: 21.0, spokenText: "图片直接拖进文档，放进去的就是原图。", caption: "抓住图片，直接拖进文档。\n放进去的，就是图片本身。", side: .left),
-    .init(start: 21.1, end: 25.35, spokenText: "遇到多图帖子，点一下悬浮球，整组图片一起收好。", caption: "遇到多图帖子，点一下悬浮球。\n整组图片，一起收好。", side: .left),
+    .init(start: 21.1, end: 25.35, spokenText: "遇到多图帖子，点一下悬浮球，整组图片都收好。", caption: "遇到多图帖子，点一下悬浮球。\n整组图片，一起收好。", side: .left),
     .init(start: 25.5, end: 27.9, spokenText: "灵感悬浮球，接住每个灵感。", caption: "灵感悬浮球。\n把散落的灵感，轻轻接回来。", side: .right),
 ]
 
@@ -44,7 +44,7 @@ private func makeNarrationFiles() throws -> [URL] {
         let url = tempDirectory.appendingPathComponent("voice-\(index).aiff")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/say")
-        process.arguments = ["-v", "Flo (中文（中国大陆）)", "-r", "238", "-o", url.path, segment.spokenText]
+        process.arguments = ["-v", "Tingting", "-r", "232", "-o", url.path, segment.spokenText]
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
@@ -178,27 +178,33 @@ private func avatarCameraLayer(image: CGImage, side: NarrationSegment.Side) -> C
     avatar.masksToBounds = true
     camera.addSublayer(avatar)
 
-    let mouth = CAShapeLayer()
-    mouth.frame = CGRect(x: 142, y: 138.5, width: 21, height: 8)
-    mouth.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-    mouth.position = CGPoint(x: 152.5, y: 142.5)
-    mouth.path = CGPath(ellipseIn: mouth.bounds.insetBy(dx: 1, dy: 1.5), transform: nil)
-    mouth.fillColor = NSColor(calibratedRed: 0.48, green: 0.13, blue: 0.17, alpha: 0.38).cgColor
-    mouth.strokeColor = NSColor(calibratedRed: 0.92, green: 0.38, blue: 0.43, alpha: 0.22).cgColor
-    mouth.lineWidth = 0.8
-    mouth.setAffineTransform(CGAffineTransform(scaleX: 1, y: 0.60))
-    avatar.addSublayer(mouth)
+    let avatarSize = size - 14
+    let lipRegion = CGRect(x: 136.5, y: 136.5, width: 32, height: 12)
+    let lips = CALayer()
+    lips.bounds = CGRect(origin: .zero, size: lipRegion.size)
+    lips.position = CGPoint(x: lipRegion.midX, y: lipRegion.midY)
+    lips.contents = image
+    lips.contentsGravity = .resize
+    lips.contentsRect = CGRect(
+        x: lipRegion.minX / avatarSize,
+        y: lipRegion.minY / avatarSize,
+        width: lipRegion.width / avatarSize,
+        height: lipRegion.height / avatarSize
+    )
+    lips.cornerRadius = lipRegion.height / 2
+    lips.masksToBounds = true
+    avatar.addSublayer(lips)
 
     for (index, segment) in segments.enumerated() where segment.side == side {
         let talking = CAKeyframeAnimation(keyPath: "transform.scale.y")
-        talking.values = [0.60, 0.68, 0.63, 0.74, 0.64, 0.69, 0.60]
+        talking.values = [1.0, 1.035, 1.015, 1.075, 1.02, 1.045, 1.0]
         talking.keyTimes = [0, 0.16, 0.34, 0.50, 0.68, 0.84, 1]
         talking.duration = 1.02 + Double(index % 3) * 0.08
         talking.calculationMode = .cubic
         talking.beginTime = AVCoreAnimationBeginTimeAtZero + segment.start
         talking.repeatDuration = segment.end - segment.start
         talking.isRemovedOnCompletion = true
-        mouth.add(talking, forKey: "talking-\(index)")
+        lips.add(talking, forKey: "talking-\(index)")
     }
 
     let bob = CAKeyframeAnimation(keyPath: "transform.translation.y")
@@ -228,18 +234,6 @@ private func avatarCameraLayer(image: CGImage, side: NarrationSegment.Side) -> C
         ),
         forKey: "reaction-cuts"
     )
-
-    let cameraBadge = CALayer()
-    cameraBadge.frame = CGRect(x: 18, y: size - 48, width: 98, height: 30)
-    cameraBadge.backgroundColor = NSColor(calibratedRed: 0.09, green: 0.13, blue: 0.20, alpha: 0.90).cgColor
-    cameraBadge.cornerRadius = 15
-    let dot = CALayer()
-    dot.frame = CGRect(x: 11, y: 10, width: 10, height: 10)
-    dot.cornerRadius = 5
-    dot.backgroundColor = NSColor.systemRed.cgColor
-    cameraBadge.addSublayer(dot)
-    cameraBadge.addSublayer(textLayer("CAM 2", frame: CGRect(x: 28, y: 5, width: 62, height: 20), size: 14, color: .white))
-    camera.addSublayer(cameraBadge)
 
     return camera
 }
