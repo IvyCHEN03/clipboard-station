@@ -179,21 +179,22 @@ private func avatarCameraLayer(image: CGImage, side: NarrationSegment.Side) -> C
     camera.addSublayer(avatar)
 
     let mouth = CAShapeLayer()
-    mouth.frame = CGRect(x: 137, y: 136, width: 31, height: 13)
+    mouth.frame = CGRect(x: 142, y: 138.5, width: 21, height: 8)
     mouth.anchorPoint = CGPoint(x: 0.5, y: 0.5)
     mouth.position = CGPoint(x: 152.5, y: 142.5)
-    mouth.path = CGPath(ellipseIn: mouth.bounds.insetBy(dx: 1.5, dy: 2), transform: nil)
-    mouth.fillColor = NSColor(calibratedRed: 0.48, green: 0.13, blue: 0.17, alpha: 0.72).cgColor
-    mouth.strokeColor = NSColor(calibratedRed: 0.92, green: 0.38, blue: 0.43, alpha: 0.72).cgColor
-    mouth.lineWidth = 1.4
-    mouth.setAffineTransform(CGAffineTransform(scaleX: 1, y: 0.42))
+    mouth.path = CGPath(ellipseIn: mouth.bounds.insetBy(dx: 1, dy: 1.5), transform: nil)
+    mouth.fillColor = NSColor(calibratedRed: 0.48, green: 0.13, blue: 0.17, alpha: 0.38).cgColor
+    mouth.strokeColor = NSColor(calibratedRed: 0.92, green: 0.38, blue: 0.43, alpha: 0.22).cgColor
+    mouth.lineWidth = 0.8
+    mouth.setAffineTransform(CGAffineTransform(scaleX: 1, y: 0.60))
     avatar.addSublayer(mouth)
 
     for (index, segment) in segments.enumerated() where segment.side == side {
         let talking = CAKeyframeAnimation(keyPath: "transform.scale.y")
-        talking.values = [0.42, 0.78, 0.54, 0.94, 0.61, 0.84, 0.42]
-        talking.keyTimes = [0, 0.14, 0.31, 0.48, 0.66, 0.83, 1]
-        talking.duration = 0.68 + Double(index % 3) * 0.05
+        talking.values = [0.60, 0.68, 0.63, 0.74, 0.64, 0.69, 0.60]
+        talking.keyTimes = [0, 0.16, 0.34, 0.50, 0.68, 0.84, 1]
+        talking.duration = 1.02 + Double(index % 3) * 0.08
+        talking.calculationMode = .cubic
         talking.beginTime = AVCoreAnimationBeginTimeAtZero + segment.start
         talking.repeatDuration = segment.end - segment.start
         talking.isRemovedOnCompletion = true
