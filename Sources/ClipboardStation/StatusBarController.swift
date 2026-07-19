@@ -2,12 +2,32 @@ import AppKit
 import SwiftUI
 
 final class StationPanel: NSPanel {
+    private var lockedOrigin: NSPoint?
+
     override var canBecomeKey: Bool {
         true
     }
 
     override var canBecomeMain: Bool {
         true
+    }
+
+    func setPositionLocked(_ locked: Bool) {
+        lockedOrigin = locked ? frame.origin : nil
+        isMovable = !locked
+        level = locked ? .floating : .normal
+    }
+
+    override func setFrame(_ frameRect: NSRect, display flag: Bool) {
+        var requestedFrame = frameRect
+        if let lockedOrigin {
+            requestedFrame.origin = lockedOrigin
+        }
+        super.setFrame(requestedFrame, display: flag)
+    }
+
+    override func setFrameOrigin(_ point: NSPoint) {
+        super.setFrameOrigin(lockedOrigin ?? point)
     }
 
     override func keyDown(with event: NSEvent) {
@@ -145,24 +165,27 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     }
 
     private func configureStationWindow() {
-        let rootView = StationView(
-            store: store,
-            quitApp: { Self.quitCompletely() },
-            restartApp: { Self.restartApplication() }
-        )
-        let host = NSHostingController(rootView: rootView)
         let panel = StationPanel(
             contentRect: NSRect(x: 0, y: 0, width: 440, height: 620),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
+        let rootView = StationView(
+            store: store,
+            quitApp: { Self.quitCompletely() },
+            restartApp: { Self.restartApplication() },
+            setPinned: { [weak panel] pinned in
+                panel?.setPositionLocked(pinned)
+            }
+        )
+        let host = NSHostingController(rootView: rootView)
         panel.contentViewController = host
         panel.title = isVideoDemo ? "灵感悬浮球 Demo" : "灵感悬浮球"
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
         panel.isMovableByWindowBackground = false
-        panel.level = .floating
+        panel.level = .normal
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false

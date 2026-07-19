@@ -23,7 +23,15 @@ final class SnippetStore: ObservableObject {
     @Published var selectedTimeFilter: TimeFilter?
     @Published var toast: ToastMessage?
     @Published var draftExtraText = ""
-    @Published var draftTextSlots: [String: String] = [:]
+    @Published var draftTextSlots: [String: String] = [:] {
+        didSet {
+            if oldValue != draftTextSlots {
+                invalidatePolishedDraft()
+            }
+        }
+    }
+    @Published var polishedDraftText = ""
+    @Published var isPolishingDraft = false
     @Published var aiAPIKey: String = "" {
         didSet {
             if oldValue != aiAPIKey, didFinishInitialLoad, !isApplyingInitialLoad {
@@ -31,7 +39,13 @@ final class SnippetStore: ObservableObject {
             }
         }
     }
-    @Published var draftSnippetIDs: [UUID] = []
+    @Published var draftSnippetIDs: [UUID] = [] {
+        didSet {
+            if oldValue != draftSnippetIDs {
+                invalidatePolishedDraft()
+            }
+        }
+    }
     @Published var isAppRunning = true
     @Published var isShortcutListening = false
     @Published var shortcutStatusText = "未启动监听"
@@ -49,6 +63,7 @@ final class SnippetStore: ObservableObject {
     private var fishMemoryTimer: AnyCancellable?
     private var videoDemoCommandTimer: AnyCancellable?
     private var lastVideoDemoCommand = ""
+    private var polishedDraftSourceText = ""
     private var didFinishInitialLoad = false
     private var isApplyingInitialLoad = false
 
@@ -479,6 +494,67 @@ final class SnippetStore: ObservableObject {
     }
 
     func copyDraftText() {
+        let assembled = assembledDraftText()
+        let polished = polishedDraftText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = !polished.isEmpty && polishedDraftSourceText == assembled ? polished : assembled
+        guard !text.isEmpty else {
+            showToast("组合框没有可复制的文字")
+            return
+        }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        markInternalPasteboardWrite()
+        showToast(polishedDraftSourceText == assembled && !polished.isEmpty ? "已复制润色内容" : "已复制组合内容")
+    }
+
+    func polishDraft() {
+        let source = assembledDraftText()
+        guard !source.isEmpty else {
+            showToast("组合框没有可润色的文字")
+            return
+        }
+        let key = aiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let model = settings.aiModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let baseURL = settings.aiBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty, !model.isEmpty, !baseURL.isEmpty else {
+            showToast("请先在设置中填写 DeepSeek API Key、模型名和 Base URL")
+            return
+        }
+        guard !isPolishingDraft else { return }
+
+        isPolishingDraft = true
+        showToast("DeepSeek 正在润色组合内容")
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let result = try await enricher.polish(
+                    text: source,
+                    baseURL: baseURL,
+                    model: model,
+                    apiKey: key
+                )
+                guard assembledDraftText() == source else {
+                    isPolishingDraft = false
+                    showToast("组合内容已变化，未覆盖新的内容")
+                    return
+                }
+                polishedDraftSourceText = source
+                polishedDraftText = result
+                isPolishingDraft = false
+                showToast("Polish 完成")
+            } catch {
+                isPolishingDraft = false
+                handleAIError(error, prefix: "Polish 失败")
+            }
+        }
+    }
+
+    var hasCurrentPolishedDraft: Bool {
+        !polishedDraftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && polishedDraftSourceText == assembledDraftText()
+    }
+
+    private func assembledDraftText() -> String {
         var parts: [String] = []
         for snippet in draftSnippets {
             if let before = draftSlotText(before: snippet.id), !before.isEmpty {
@@ -491,15 +567,12 @@ final class SnippetStore: ObservableObject {
         if let after = draftSlotTextAfterAll(), !after.isEmpty {
             parts.append(after)
         }
-        let text = parts.filter { !$0.isEmpty }.joined(separator: "\n\n")
-        guard !text.isEmpty else {
-            showToast("组合框没有可复制的文字")
-            return
-        }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        markInternalPasteboardWrite()
-        showToast("已复制组合内容")
+        return parts.filter { !$0.isEmpty }.joined(separator: "\n\n")
+    }
+
+    private func invalidatePolishedDraft() {
+        polishedDraftText = ""
+        polishedDraftSourceText = ""
     }
 
     func bindingForDraftSlot(before id: UUID) -> Binding<String> {
