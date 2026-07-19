@@ -12,10 +12,11 @@ private let sourceURL = repo.appendingPathComponent("docs/assets/social/linggan-
 private let outputURL = repo.appendingPathComponent("docs/assets/social/linggan-x-premium-cn-1080p.mp4")
 private let coverURL = repo.appendingPathComponent("docs/assets/social/linggan-x-premium-cn-1080p-cover.png")
 
-private let nearBlack = NSColor(calibratedRed: 0.018, green: 0.027, blue: 0.047, alpha: 1)
 private let white = NSColor(calibratedWhite: 0.98, alpha: 1)
 private let coolGray = NSColor(calibratedRed: 0.60, green: 0.66, blue: 0.74, alpha: 1)
 private let electricBlue = NSColor(calibratedRed: 0.31, green: 0.70, blue: 1.00, alpha: 1)
+private let lightCanvas = NSColor(calibratedRed: 0.95, green: 0.975, blue: 0.995, alpha: 1)
+private let deepInk = NSColor(calibratedRed: 0.08, green: 0.13, blue: 0.21, alpha: 1)
 
 private func normalizedTimes(_ values: [Double]) -> [NSNumber] {
     values.map { NSNumber(value: min(max($0 / duration, 0), 1)) }
@@ -176,20 +177,20 @@ private func titleCard(
 ) -> CALayer {
     let card = CALayer()
     card.frame = CGRect(origin: .zero, size: canvasSize)
-    card.backgroundColor = nearBlack.cgColor
+    card.backgroundColor = lightCanvas.cgColor
 
     let hairline = CALayer()
     hairline.frame = CGRect(x: 92, y: 900, width: 116, height: 3)
     hairline.backgroundColor = electricBlue.cgColor
     card.addSublayer(hairline)
 
-    let mark = textLayer(marker, frame: CGRect(x: 92, y: 836, width: 360, height: 42), size: 24, weight: .semibold, color: coolGray, kern: 4)
+    let mark = textLayer(marker, frame: CGRect(x: 92, y: 836, width: 360, height: 42), size: 24, weight: .semibold, color: electricBlue, kern: 4)
     card.addSublayer(mark)
 
-    let ghost = textLayer(word, frame: CGRect(x: 78, y: 60, width: 1780, height: 350), size: 300, weight: .black, color: white.withAlphaComponent(0.045), kern: 4)
+    let ghost = textLayer(word, frame: CGRect(x: 78, y: 60, width: 1780, height: 350), size: 300, weight: .black, color: deepInk.withAlphaComponent(0.045), kern: 4)
     card.addSublayer(ghost)
 
-    let title = textLayer(statement, frame: CGRect(x: 92, y: 470, width: 1540, height: 190), size: 104, weight: .bold, color: white, kern: 0, lineHeight: 122)
+    let title = textLayer(statement, frame: CGRect(x: 92, y: 470, width: 1540, height: 190), size: 104, weight: .bold, color: deepInk, kern: 0, lineHeight: 122)
     card.addSublayer(title)
 
     let subtitle = textLayer(detail, frame: CGRect(x: 98, y: 400, width: 1250, height: 52), size: 30, weight: .medium, color: coolGray, kern: 1)
@@ -208,36 +209,25 @@ private func titleCard(
 private func featureCaption(
     number: String,
     action: String,
-    statement: String,
     start: Double,
     end: Double
 ) -> CALayer {
     let group = CALayer()
     group.frame = CGRect(origin: .zero, size: canvasSize)
 
-    let veil = CAGradientLayer()
-    veil.frame = CGRect(x: 0, y: 0, width: 1920, height: 270)
-    veil.colors = [nearBlack.withAlphaComponent(0.94).cgColor, nearBlack.withAlphaComponent(0).cgColor]
-    veil.startPoint = CGPoint(x: 0.5, y: 0)
-    veil.endPoint = CGPoint(x: 0.5, y: 1)
-    group.addSublayer(veil)
-
     let line = CALayer()
-    line.frame = CGRect(x: 74, y: 72, width: 4, height: 112)
+    line.frame = CGRect(x: 1538, y: 1007, width: 54, height: 3)
     line.backgroundColor = electricBlue.cgColor
     group.addSublayer(line)
 
-    let eyebrow = textLayer("\(number)  /  \(action)", frame: CGRect(x: 108, y: 69, width: 500, height: 34), size: 21, weight: .semibold, color: electricBlue, kern: 3)
+    let eyebrow = textLayer("\(number)  /  \(action)", frame: CGRect(x: 1538, y: 962, width: 310, height: 30), size: 17, weight: .semibold, color: electricBlue, alignment: .right, kern: 2)
     group.addSublayer(eyebrow)
 
-    let title = textLayer(statement, frame: CGRect(x: 104, y: 108, width: 1420, height: 78), size: 48, weight: .bold, color: white, kern: 0)
-    group.addSublayer(title)
-
-    let brand = textLayer("LINGGAN", frame: CGRect(x: 1600, y: 77, width: 230, height: 30), size: 18, weight: .bold, color: white.withAlphaComponent(0.78), alignment: .right, kern: 4)
+    let brand = textLayer("LINGGAN", frame: CGRect(x: 74, y: 968, width: 230, height: 28), size: 16, weight: .bold, color: deepInk.withAlphaComponent(0.54), kern: 4)
     group.addSublayer(brand)
 
     show(group, from: start, to: end, fade: 0.24)
-    rise(title, at: start + 0.05, distance: 16)
+    rise(eyebrow, at: start + 0.05, distance: 10)
     return group
 }
 
@@ -254,19 +244,19 @@ private func makeOverlay() -> CALayer {
         end: 2.72
     ))
 
-    overlay.addSublayer(featureCaption(number: "01", action: "CAPTURE + FIND", statement: "复制。搜索。一秒找回。", start: 2.48, end: 7.72))
+    overlay.addSublayer(featureCaption(number: "01", action: "CAPTURE + FIND", start: 2.48, end: 7.72))
     overlay.addSublayer(titleCard(word: "FIND", statement: "想起它，就找到它。", detail: "Search by time, tag, title, or memory.", marker: "LINGGAN / 01", start: 7.62, end: 8.48))
 
-    overlay.addSublayer(featureCaption(number: "02", action: "COMPOSE", statement: "拖进去，像积木一样拼成一句。", start: 8.28, end: 13.12))
+    overlay.addSublayer(featureCaption(number: "02", action: "COMPOSE", start: 8.28, end: 13.12))
     overlay.addSublayer(titleCard(word: "POLISH", statement: "零散想法，也能自然连起来。", detail: "One click. One coherent draft.", marker: "LINGGAN / 02", start: 12.98, end: 13.84))
 
-    overlay.addSublayer(featureCaption(number: "03", action: "AI POLISH", statement: "AI 只做一件事：让它更顺。", start: 13.62, end: 17.48))
+    overlay.addSublayer(featureCaption(number: "03", action: "AI POLISH", start: 13.62, end: 17.48))
     overlay.addSublayer(titleCard(word: "DRAG", statement: "图片，不必绕路。", detail: "Keep the original. Drag it anywhere.", marker: "LINGGAN / 03", start: 17.36, end: 18.22))
 
-    overlay.addSublayer(featureCaption(number: "04", action: "ORIGINAL IMAGE", statement: "原图，直接进入文档。", start: 18.02, end: 21.16))
+    overlay.addSublayer(featureCaption(number: "04", action: "ORIGINAL IMAGE", start: 18.02, end: 21.16))
     overlay.addSublayer(titleCard(word: "COLLECT", statement: "一个帖子，一整组图片。", detail: "Select once. Save what you need.", marker: "LINGGAN / 04", start: 21.02, end: 21.92))
 
-    overlay.addSublayer(featureCaption(number: "05", action: "IMAGE COLLECTION", statement: "点一下悬浮球，整组收好。", start: 21.72, end: 25.18))
+    overlay.addSublayer(featureCaption(number: "05", action: "IMAGE COLLECTION", start: 21.72, end: 25.18))
     overlay.addSublayer(titleCard(
         word: "LINGGAN",
         statement: "接住。连接。创造。",
@@ -347,7 +337,7 @@ videoComposition.instructions = [instruction]
 
 let parent = CALayer()
 parent.frame = CGRect(origin: .zero, size: canvasSize)
-parent.backgroundColor = nearBlack.cgColor
+parent.backgroundColor = lightCanvas.cgColor
 let videoLayer = CALayer()
 videoLayer.frame = parent.frame
 parent.addSublayer(videoLayer)
