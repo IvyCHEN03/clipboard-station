@@ -419,7 +419,7 @@ private func browserPage() {
         NSBezierPath(ovalIn: CGRect(x: x, y: 43, width: 14, height: 14)).fill()
     }
     rounded(CGRect(x: 164, y: 34, width: 760, height: 38), radius: 19, color: NSColor(calibratedWhite: 0.95, alpha: 1))
-    text("xiaohongshu.com/explore/inspiration-workflow", rect: CGRect(x: 192, y: 44, width: 700, height: 22), size: 14, color: muted)
+    text("linggan.app/web-collector", rect: CGRect(x: 192, y: 44, width: 700, height: 22), size: 14, color: muted)
     text(localized("遇到多图，\n不想把下载键敲出火星子？", "Too many images to save\none by one?"), rect: CGRect(x: 70, y: 114, width: 690, height: 78), size: 31, weight: .bold, lines: 2)
     text(localized("⌘ 点灵感球，整篇打包带走。", "⌘-click the bubble. Take the whole post with you."), rect: CGRect(x: 72, y: 198, width: 620, height: 28), size: 16, weight: .medium, color: muted)
     photo(CGRect(x: 70, y: 228, width: 310, height: 360), variant: 0)
@@ -593,7 +593,7 @@ private func storyTime(for outputTime: Double) -> Double {
         (7.2..<13.2, 7.0..<13.6),
         (13.2..<17.7, 13.8..<17.1),
         (17.7..<24.6, 17.6..<26.8),
-        (24.6..<28.0, 28.0..<31.8),
+        (24.6..<28.0, 24.6..<27.6),
     ]
     guard let segment = segments.first(where: { $0.0.contains(outputTime) }) else {
         return 31.8

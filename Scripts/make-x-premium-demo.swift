@@ -245,26 +245,15 @@ private func makeOverlay() -> CALayer {
     ))
 
     overlay.addSublayer(featureCaption(number: "01", action: "CAPTURE + FIND", start: 2.48, end: 7.72))
-    overlay.addSublayer(titleCard(word: "FIND", statement: "想起它，就找到它。", detail: "Search by time, tag, title, or memory.", marker: "LINGGAN / 01", start: 7.62, end: 8.48))
 
     overlay.addSublayer(featureCaption(number: "02", action: "COMPOSE", start: 8.28, end: 13.12))
-    overlay.addSublayer(titleCard(word: "POLISH", statement: "零散想法，也能自然连起来。", detail: "One click. One coherent draft.", marker: "LINGGAN / 02", start: 12.98, end: 13.84))
 
     overlay.addSublayer(featureCaption(number: "03", action: "AI POLISH", start: 13.62, end: 17.48))
     overlay.addSublayer(titleCard(word: "DRAG", statement: "图片，不必绕路。", detail: "Keep the original. Drag it anywhere.", marker: "LINGGAN / 03", start: 17.36, end: 18.22))
 
     overlay.addSublayer(featureCaption(number: "04", action: "ORIGINAL IMAGE", start: 18.02, end: 21.16))
-    overlay.addSublayer(titleCard(word: "COLLECT", statement: "一个帖子，一整组图片。", detail: "Select once. Save what you need.", marker: "LINGGAN / 04", start: 21.02, end: 21.92))
 
     overlay.addSublayer(featureCaption(number: "05", action: "IMAGE COLLECTION", start: 21.72, end: 25.18))
-    overlay.addSublayer(titleCard(
-        word: "LINGGAN",
-        statement: "接住。连接。创造。",
-        detail: "灵感悬浮球  ·  Open source on GitHub",
-        marker: "LINGGAN / MACOS",
-        start: 24.96,
-        end: duration
-    ))
 
     let progress = CALayer()
     progress.bounds = CGRect(x: 0, y: 0, width: canvasSize.width, height: 4)
