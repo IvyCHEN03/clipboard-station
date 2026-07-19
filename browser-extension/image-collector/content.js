@@ -308,7 +308,15 @@
   function serializePageHTML() {
     const clone = document.documentElement.cloneNode(true);
     clone.querySelector(`#${ROOT_ID}`)?.remove();
-    clone.querySelectorAll("script, meta[http-equiv='Content-Security-Policy']").forEach(element => element.remove());
+    clone.querySelectorAll("grammarly-desktop-integration, grammarly-extension, [data-grammarly-shadow-root='true']")
+      .forEach(element => element.remove());
+    clone.querySelectorAll("script, meta[charset]").forEach(element => element.remove());
+    clone.querySelectorAll("meta[http-equiv]").forEach(element => {
+      const directive = String(element.getAttribute("http-equiv") || "").toLowerCase();
+      if (directive === "content-security-policy" || directive === "content-type") {
+        element.remove();
+      }
+    });
     clone.querySelectorAll("input").forEach(input => {
       input.removeAttribute("value");
       input.removeAttribute("checked");
@@ -316,14 +324,28 @@
     clone.querySelectorAll("textarea").forEach(textarea => {
       textarea.textContent = "";
     });
+    for (const element of [clone, clone.querySelector("body")].filter(Boolean)) {
+      const classes = [...element.classList].filter(name => !/(?:preloader|is-loading|page-loading)/i.test(name));
+      element.setAttribute("class", classes.join(" "));
+      element.removeAttribute("data-new-gr-c-s-check-loaded");
+      element.removeAttribute("data-gr-ext-installed");
+    }
     const head = clone.querySelector("head") || clone.insertBefore(document.createElement("head"), clone.firstChild);
+    const charset = document.createElement("meta");
+    charset.setAttribute("charset", "utf-8");
+    head.prepend(charset);
     const base = document.createElement("base");
     base.href = location.href;
-    head.prepend(base);
+    charset.after(base);
     const source = document.createElement("meta");
     source.name = "linggan-source-url";
     source.content = location.href;
-    head.prepend(source);
+    base.after(source);
+    const archiveStyle = document.createElement("style");
+    archiveStyle.setAttribute("data-linggan-archive-style", "true");
+    archiveStyle.textContent = "html, body { visibility: visible !important; opacity: 1 !important; }";
+    source.after(archiveStyle);
+    clone.setAttribute("data-linggan-archive", "utf-8");
     return {
       title: document.title,
       url: location.href,

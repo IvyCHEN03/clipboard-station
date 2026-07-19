@@ -45,10 +45,10 @@ Images are saved as PNG through the browser download manager under a `LingganIma
 
 The extension briefly walks the page to wake lazy-loaded images, restores your original scroll position, and saves two files under `Downloads/LingganPages/<time>-<page-title>/`:
 
-- `<page-title>.html`: a static, searchable HTML snapshot with relative links resolved against the original URL.
-- `<page-title>-full-page.png`: a full-page screenshot from the top of the document to the bottom.
+- `<page-title>.html`: a static, searchable UTF-8 HTML snapshot with relative links resolved against the original URL.
+- `<page-title>-full-page.png`: a high-resolution full-page screenshot from the top of the document to the bottom. The capture scale adapts to the page length so text stays as crisp as Chrome's maximum image size allows.
 
-The panel is hidden from the screenshot. Page scripts, Content Security Policy metadata, and form field values are removed from the HTML snapshot. The extension attaches Chrome's page debugger only while making the full-page screenshot and detaches immediately afterward; it does not continuously record or monitor the page.
+The panel is hidden from the screenshot. Page scripts, conflicting encoding metadata, Content Security Policy metadata, and form field values are removed from the HTML snapshot. A single UTF-8 declaration is written first in the saved document. The extension attaches Chrome's page debugger only while making the full-page screenshot and detaches immediately afterward; it does not continuously record or monitor the page.
 
 Native app bridge: `Cmd` + clicking the macOS Linggan floating bubble sends `Ctrl+Shift+L` to the active browser page.
 If `Cmd` + click still opens the station window, quit the old app instance and reinstall/reopen the latest build.

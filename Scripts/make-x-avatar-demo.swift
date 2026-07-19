@@ -27,13 +27,13 @@ private let outputURL = repo.appendingPathComponent("docs/assets/social/linggan-
 private let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("linggan-avatar-demo", isDirectory: true)
 
 private let segments: [NarrationSegment] = [
-    .init(start: 0.35, end: 3.0, spokenText: "灵感一复制就消失？这谁受得了。", caption: "灵感一复制就消失？\n这谁受得了。", side: .right),
-    .init(start: 3.15, end: 7.7, spokenText: "标签一筛，刚才那句话自己回来了。", caption: "标签一筛，\n刚才那句话自己回来了。", side: .right),
-    .init(start: 7.85, end: 13.05, spokenText: "拖进组合框，想法开始拼成一段。", caption: "拖进组合框，\n想法开始拼成一段。", side: .right),
-    .init(start: 13.15, end: 17.45, spokenText: "重点来了。点一下 Polish，AI 自动补逻辑，生成全文。", caption: "重点来了：点一下 Polish。\nAI 自动补逻辑，生成全文。", side: .right),
-    .init(start: 17.55, end: 21.0, spokenText: "截图点复制，或者直接拖出去，带走的就是图片本身。", caption: "截图可直接复制，\n也能拖进 AI 输入框。", side: .left),
-    .init(start: 21.1, end: 25.35, spokenText: "多图帖子也别一张张存。点球，一次收齐。", caption: "多图帖子也别一张张存。\n点球，一次收齐。", side: .left),
-    .init(start: 25.5, end: 27.9, spokenText: "灵感悬浮球。把散落的灵感，捞回来。", caption: "灵感悬浮球。\n把散落的灵感，捞回来。", side: .right),
+    .init(start: 0.35, end: 3.0, spokenText: "灵感一闪就不见？先接住。", caption: "灵感刚闪一下？\n先把它轻轻接住。", side: .right),
+    .init(start: 3.15, end: 7.7, spokenText: "搜索、标签和时间筛选一点，想找的内容马上回来。", caption: "搜索、标签、时间一起筛。\n想找的内容马上回来。", side: .right),
+    .init(start: 7.85, end: 13.05, spokenText: "喜欢的句子拖进组合框，像拼积木一样，慢慢长成一段话。", caption: "把喜欢的句子拖进组合框。\n像拼积木一样，慢慢长成一段话。", side: .right),
+    .init(start: 13.15, end: 17.45, spokenText: "再点一下 Polish，AI 帮你补好衔接，整段读起来更顺。", caption: "点一下 Polish。\nAI 补好衔接，整段读起来更顺。", side: .right),
+    .init(start: 17.55, end: 21.0, spokenText: "图片直接拖进文档，放进去的就是原图。", caption: "抓住图片，直接拖进文档。\n放进去的，就是图片本身。", side: .left),
+    .init(start: 21.1, end: 25.35, spokenText: "遇到多图帖子，点一下悬浮球，整组图片一起收好。", caption: "遇到多图帖子，点一下悬浮球。\n整组图片，一起收好。", side: .left),
+    .init(start: 25.5, end: 27.9, spokenText: "灵感悬浮球，接住每个灵感。", caption: "灵感悬浮球。\n把散落的灵感，轻轻接回来。", side: .right),
 ]
 
 private func makeNarrationFiles() throws -> [URL] {
@@ -44,13 +44,19 @@ private func makeNarrationFiles() throws -> [URL] {
         let url = tempDirectory.appendingPathComponent("voice-\(index).aiff")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/say")
-        process.arguments = ["-v", "Tingting", "-r", "225", "-o", url.path, segment.spokenText]
+        process.arguments = ["-v", "Flo (中文（中国大陆）)", "-r", "238", "-o", url.path, segment.spokenText]
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
             throw NSError(domain: "LingganAvatarDemo", code: Int(process.terminationStatus), userInfo: [
                 NSLocalizedDescriptionKey: "Failed to synthesize narration segment \(index)",
             ])
+        }
+        let audioFile = try AVAudioFile(forReading: url)
+        let spokenDuration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
+        let availableDuration = segment.end - segment.start
+        if spokenDuration > availableDuration {
+            print(String(format: "Warning: narration %d is %.2fs but only %.2fs is available", index, spokenDuration, availableDuration))
         }
         return url
     }
@@ -173,23 +179,30 @@ private func avatarCameraLayer(image: CGImage, side: NarrationSegment.Side) -> C
     camera.addSublayer(avatar)
 
     let mouth = CAShapeLayer()
-    mouth.path = CGPath(ellipseIn: CGRect(x: 137, y: 137, width: 31, height: 9), transform: nil)
-    mouth.fillColor = NSColor(calibratedRed: 0.55, green: 0.18, blue: 0.20, alpha: 0.82).cgColor
-    mouth.strokeColor = NSColor(calibratedRed: 0.98, green: 0.52, blue: 0.54, alpha: 0.85).cgColor
-    mouth.lineWidth = 2
+    mouth.frame = CGRect(x: 137, y: 136, width: 31, height: 13)
+    mouth.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+    mouth.position = CGPoint(x: 152.5, y: 142.5)
+    mouth.path = CGPath(ellipseIn: mouth.bounds.insetBy(dx: 1.5, dy: 2), transform: nil)
+    mouth.fillColor = NSColor(calibratedRed: 0.48, green: 0.13, blue: 0.17, alpha: 0.72).cgColor
+    mouth.strokeColor = NSColor(calibratedRed: 0.92, green: 0.38, blue: 0.43, alpha: 0.72).cgColor
+    mouth.lineWidth = 1.4
+    mouth.setAffineTransform(CGAffineTransform(scaleX: 1, y: 0.42))
     avatar.addSublayer(mouth)
 
-    let talking = CAKeyframeAnimation(keyPath: "transform.scale.y")
-    talking.values = [0.55, 1.15, 0.72, 1.0, 0.55]
-    talking.keyTimes = [0, 0.22, 0.47, 0.74, 1]
-    talking.duration = 0.42
-    talking.beginTime = AVCoreAnimationBeginTimeAtZero
-    talking.repeatCount = .infinity
-    mouth.add(talking, forKey: "talking")
+    for (index, segment) in segments.enumerated() where segment.side == side {
+        let talking = CAKeyframeAnimation(keyPath: "transform.scale.y")
+        talking.values = [0.42, 0.78, 0.54, 0.94, 0.61, 0.84, 0.42]
+        talking.keyTimes = [0, 0.14, 0.31, 0.48, 0.66, 0.83, 1]
+        talking.duration = 0.68 + Double(index % 3) * 0.05
+        talking.beginTime = AVCoreAnimationBeginTimeAtZero + segment.start
+        talking.repeatDuration = segment.end - segment.start
+        talking.isRemovedOnCompletion = true
+        mouth.add(talking, forKey: "talking-\(index)")
+    }
 
     let bob = CAKeyframeAnimation(keyPath: "transform.translation.y")
-    bob.values = [0, 4, 0, -3, 0]
-    bob.duration = 2.4
+    bob.values = [0, 1.5, 0, -1, 0]
+    bob.duration = 4.8
     bob.beginTime = AVCoreAnimationBeginTimeAtZero
     bob.repeatCount = .infinity
     camera.add(bob, forKey: "host-bob")
@@ -256,8 +269,8 @@ private func imageDragDemoLayer() -> CALayer {
     panel.shadowOffset = CGSize(width: 0, height: -10)
     addTimedOpacity(to: panel, start: 17.55, end: 21.0)
 
-    panel.addSublayer(textLayer("截图不是路径，是可以直接带走的图片", frame: CGRect(x: 34, y: 318, width: 690, height: 42), size: 29, color: NSColor(calibratedRed: 0.09, green: 0.13, blue: 0.20, alpha: 1)))
-    panel.addSublayer(textLayer("点复制，或把图片卡片拖进任意输入框", frame: CGRect(x: 34, y: 282, width: 690, height: 30), size: 18, color: NSColor(calibratedRed: 0.39, green: 0.45, blue: 0.54, alpha: 1), weight: .medium))
+    panel.addSublayer(textLayer("抓住图片，就这样拖进文档", frame: CGRect(x: 34, y: 318, width: 690, height: 42), size: 29, color: NSColor(calibratedRed: 0.09, green: 0.13, blue: 0.20, alpha: 1)))
+    panel.addSublayer(textLayer("不用绕路，放进去的就是图片本身", frame: CGRect(x: 34, y: 282, width: 690, height: 30), size: 18, color: NSColor(calibratedRed: 0.39, green: 0.45, blue: 0.54, alpha: 1), weight: .medium))
 
     let target = CALayer()
     target.frame = CGRect(x: 638, y: 52, width: 420, height: 212)
@@ -271,7 +284,7 @@ private func imageDragDemoLayer() -> CALayer {
     targetBorder.lineWidth = 3
     targetBorder.lineDashPattern = [10, 8]
     target.addSublayer(targetBorder)
-    target.addSublayer(textLayer("AI 输入框", frame: CGRect(x: 28, y: 142, width: 180, height: 34), size: 23, color: NSColor(calibratedRed: 0.20, green: 0.27, blue: 0.35, alpha: 1)))
+    target.addSublayer(textLayer("文档正文", frame: CGRect(x: 28, y: 142, width: 180, height: 34), size: 23, color: NSColor(calibratedRed: 0.20, green: 0.27, blue: 0.35, alpha: 1)))
     target.addSublayer(textLayer("把图片拖到这里", frame: CGRect(x: 28, y: 104, width: 250, height: 30), size: 18, color: NSColor(calibratedRed: 0.46, green: 0.52, blue: 0.60, alpha: 1), weight: .medium))
     panel.addSublayer(target)
 
@@ -300,23 +313,7 @@ private func imageDragDemoLayer() -> CALayer {
     let star = textLayer("✦", frame: CGRect(x: 78, y: 30, width: 68, height: 70), size: 50, color: .white)
     preview.addSublayer(star)
     card.addSublayer(preview)
-    card.addSublayer(textLayer("截图片段.png", frame: CGRect(x: 16, y: 31, width: 150, height: 25), size: 16, color: NSColor(calibratedRed: 0.24, green: 0.30, blue: 0.39, alpha: 1), weight: .medium))
-
-    let copyButton = CALayer()
-    copyButton.frame = CGRect(x: 157, y: 18, width: 80, height: 36)
-    copyButton.backgroundColor = NSColor(calibratedRed: 0.91, green: 0.96, blue: 1, alpha: 1).cgColor
-    copyButton.cornerRadius = 11
-    copyButton.addSublayer(textLayer("复制图片", frame: CGRect(x: 10, y: 8, width: 64, height: 21), size: 14, color: NSColor.systemBlue))
-    copyButton.add(
-        holdAnimation(
-            keyPath: "transform.scale",
-            values: [1, 1, 1.12, 1, 1],
-            times: [0, 17.65, 18.0, 18.25, duration],
-            calculationMode: .cubic
-        ),
-        forKey: "copy-pulse"
-    )
-    card.addSublayer(copyButton)
+    card.addSublayer(textLayer("图片片段.png", frame: CGRect(x: 16, y: 31, width: 180, height: 25), size: 16, color: NSColor(calibratedRed: 0.24, green: 0.30, blue: 0.39, alpha: 1), weight: .medium))
     panel.addSublayer(card)
 
     card.add(
@@ -328,7 +325,7 @@ private func imageDragDemoLayer() -> CALayer {
                 NSValue(point: CGPoint(x: 846, y: 147)),
                 NSValue(point: CGPoint(x: 846, y: 147)),
             ],
-            times: [0, 18.4, 20.15, duration],
+            times: [0, 18.0, 20.15, duration],
             calculationMode: .cubic
         ),
         forKey: "drag-card"
@@ -337,7 +334,7 @@ private func imageDragDemoLayer() -> CALayer {
         holdAnimation(
             keyPath: "transform.scale",
             values: [1, 1, 0.72, 0.72],
-            times: [0, 18.4, 20.15, duration],
+            times: [0, 18.0, 20.15, duration],
             calculationMode: .cubic
         ),
         forKey: "drop-scale"

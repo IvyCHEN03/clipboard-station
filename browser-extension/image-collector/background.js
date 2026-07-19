@@ -252,13 +252,20 @@ async function captureFullPagePNG(tab) {
     const content = metrics?.cssContentSize || metrics?.contentSize;
     const width = Math.max(1, Math.ceil(content?.width || tab.width || 1));
     const height = Math.max(1, Math.ceil(content?.height || tab.height || 1));
-    const result = await debuggerCommand(target, "Page.captureScreenshot", {
-      format: "png",
-      fromSurface: true,
-      captureBeyondViewport: true,
-      optimizeForSpeed: false,
-      clip: { x: 0, y: 0, width, height, scale: 1 }
+    const evaluatedScale = await debuggerCommand(target, "Runtime.evaluate", {
+      expression: "window.devicePixelRatio || 1",
+      returnByValue: true
     });
+    const deviceScale = Math.max(1, Number(evaluatedScale?.result?.value) || 1);
+    const scale = fullPageCaptureScale(width, height, deviceScale);
+    let result;
+    try {
+      result = await capturePageScreenshot(target, width, height, scale);
+    } catch (error) {
+      if (scale <= 1) throw error;
+      console.warn("Linggan high-resolution page capture failed, retrying at native scale:", error?.message || error);
+      result = await capturePageScreenshot(target, width, height, 1);
+    }
     if (!result?.data) throw new Error("浏览器没有返回完整网页截图");
     return result.data;
   } catch (error) {
@@ -276,6 +283,28 @@ async function captureFullPagePNG(tab) {
       }
     }
   }
+}
+
+function fullPageCaptureScale(width, height, deviceScale) {
+  const basePixelWidth = Math.max(1, width * deviceScale);
+  const basePixelHeight = Math.max(1, height * deviceScale);
+  const preferredWidth = 4_000;
+  const safeLongestEdge = 60_000;
+  return Math.max(1, Math.min(
+    2,
+    preferredWidth / basePixelWidth,
+    safeLongestEdge / basePixelHeight
+  ));
+}
+
+function capturePageScreenshot(target, width, height, scale) {
+  return debuggerCommand(target, "Page.captureScreenshot", {
+    format: "png",
+    fromSurface: true,
+    captureBeyondViewport: true,
+    optimizeForSpeed: false,
+    clip: { x: 0, y: 0, width, height, scale }
+  });
 }
 
 function attachDebugger(target) {
@@ -309,7 +338,7 @@ function debuggerCommand(target, method, parameters = undefined) {
 }
 
 function textToDataURL(value) {
-  return bytesToDataURL(new TextEncoder().encode(`\uFEFF${value}`), "text/html;charset=utf-8");
+  return bytesToDataURL(new TextEncoder().encode(value), "text/html;charset=utf-8");
 }
 
 async function downloadImagesAsPNG(images, folder, title) {
