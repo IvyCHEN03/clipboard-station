@@ -85,19 +85,8 @@ struct AIEnricher {
     }
 
     func enrich(text: String, baseURL: String, model: String, apiKey: String) async throws -> AIEnrichment {
-        guard let url = chatCompletionsURL(from: baseURL), !model.isEmpty, !apiKey.isEmpty else {
-            throw AIEnrichmentError.invalidConfiguration
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 20
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-
-        let body: [String: Any] = [
-            "model": model,
-            "messages": [
+        let content = try await complete(
+            messages: [
                 [
                     "role": "system",
                     "content": "你只返回严格 JSON，不要 markdown，不要解释。格式：{\"title\":\"不超过18个中文字符的标题\",\"tags\":[\"3到5个中文短标签\"]}"
@@ -107,9 +96,88 @@ struct AIEnricher {
                     "content": String(text.prefix(2200))
                 ]
             ],
-            "temperature": 0.1,
-            "max_tokens": 300
+            baseURL: baseURL,
+            model: model,
+            apiKey: apiKey,
+            temperature: 0.1,
+            maxTokens: 300
+        )
+        return parse(content: content)
+    }
+
+    func polish(text: String, baseURL: String, model: String, apiKey: String) async throws -> String {
+        let content = try await complete(
+            messages: [
+                [
+                    "role": "system",
+                    "content": """
+                    你是严谨的文字编辑。把用户提供的多个内容块整理成一段逻辑连贯、自然流畅的正文。
+                    忠实保留原意和关键细节，不新增事实；去掉重复，补充必要的过渡和指代。
+                    如果原文主要是英文，就保持英文；否则使用中文。
+                    只返回润色后的正文，不要标题、说明、列表标记或 Markdown 代码块。
+                    """
+                ],
+                [
+                    "role": "user",
+                    "content": String(text.prefix(12_000))
+                ]
+            ],
+            baseURL: baseURL,
+            model: model,
+            apiKey: apiKey,
+            temperature: 0.25,
+            maxTokens: 1_800
+        )
+        let polished = Self.cleanPolishedContent(content)
+        guard !polished.isEmpty else {
+            throw AIEnrichmentError.emptyResponse
+        }
+        return polished
+    }
+
+    static func cleanPolishedContent(_ content: String) -> String {
+        var result = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        if result.hasPrefix("```") {
+            let lines = result.components(separatedBy: .newlines)
+            if lines.count >= 2 {
+                result = lines.dropFirst().joined(separator: "\n")
+            }
+            if result.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("```") {
+                result = String(result.trimmingCharacters(in: .whitespacesAndNewlines).dropLast(3))
+            }
+        }
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func complete(
+        messages: [[String: String]],
+        baseURL: String,
+        model: String,
+        apiKey: String,
+        temperature: Double,
+        maxTokens: Int
+    ) async throws -> String {
+        guard let url = chatCompletionsURL(from: baseURL), !model.isEmpty, !apiKey.isEmpty else {
+            throw AIEnrichmentError.invalidConfiguration
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 45
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+
+        var body: [String: Any] = [
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": maxTokens,
+            "stream": false
         ]
+        if url.host?.localizedCaseInsensitiveContains("api.deepseek.com") == true,
+           model.localizedCaseInsensitiveContains("v4") {
+            body["thinking"] = ["type": "disabled"]
+        }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -128,7 +196,7 @@ struct AIEnricher {
         guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw AIEnrichmentError.emptyResponse
         }
-        return parse(content: content)
+        return content
     }
 
     private func parse(content: String) -> AIEnrichment {

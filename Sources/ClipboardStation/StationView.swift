@@ -5,6 +5,7 @@ struct StationView: View {
     @ObservedObject var store: SnippetStore
     let quitApp: () -> Void
     let restartApp: () -> Void
+    let setPinned: (Bool) -> Void
     @State private var isPinned = false
     @State private var showSettings = false
     @State private var showMemoryShore = false
@@ -90,9 +91,9 @@ struct StationView: View {
             .buttonStyle(.plain)
             .help("回忆浅滩：找回已删除内容")
 
-            IconButton(systemName: isPinned ? "pin.fill" : "pin", help: "置顶浮窗") {
+            IconButton(systemName: isPinned ? "pin.fill" : "pin", help: isPinned ? "解除窗口固定" : "固定窗口位置并置顶") {
                 isPinned.toggle()
-                NSApp.windows.first(where: { $0.isVisible })?.level = isPinned ? .floating : .normal
+                setPinned(isPinned)
             }
 
             IconButton(systemName: "gearshape", help: "设置") {
@@ -1059,6 +1060,26 @@ private struct DraftDock: View {
                     store.clearDraft()
                 }
                 .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
+                Button {
+                    activeDraftSlot = nil
+                    store.polishDraft()
+                } label: {
+                    if store.isPolishingDraft {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(width: 54)
+                    } else {
+                        Label("Polish", systemImage: "wand.and.stars")
+                            .frame(width: 54)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(
+                    store.isPolishingDraft
+                        || (store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
+                )
+                .help("使用 DeepSeek 将积木整理成连贯正文")
                 IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
                     store.copyDraftText()
                 }
@@ -1125,6 +1146,19 @@ private struct DraftDock: View {
                     store: store
                 )
             )
+
+            if store.hasCurrentPolishedDraft {
+                TextEditor(text: $store.polishedDraftText)
+                    .font(.system(size: 12))
+                    .frame(minHeight: 64, maxHeight: 100)
+                    .padding(6)
+                    .scrollContentBackground(.hidden)
+                    .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color.accentColor.opacity(0.28))
+                    }
+            }
 
         }
         .padding(.horizontal, 14)

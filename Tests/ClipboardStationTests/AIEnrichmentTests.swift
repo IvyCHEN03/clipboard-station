@@ -33,4 +33,17 @@ final class AIEnrichmentTests: XCTestCase {
 
         XCTAssertEqual(enrichment.tags, ["AI", "剪贴板", "截图", "表格", "prompt"])
     }
+
+    func testCleansMarkdownFenceFromPolishedContent() {
+        let content = """
+        ```text
+        第一段与第二段已经自然衔接。
+        ```
+        """
+
+        XCTAssertEqual(
+            AIEnricher.cleanPolishedContent(content),
+            "第一段与第二段已经自然衔接。"
+        )
+    }
 }
