@@ -1,6 +1,6 @@
 # Linggan Image Collector
 
-Experimental Chrome/Edge extension for collecting image-heavy web pages into one selectable stack.
+Experimental Chrome/Edge extension for collecting image-heavy posts and archiving complete web pages.
 
 ## What It Does
 
@@ -10,6 +10,7 @@ Experimental Chrome/Edge extension for collecting image-heavy web pages into one
 - Double-clicks a row to expand a selectable grid.
 - Uses the post title for each temporary row and its local Downloads subfolder.
 - Converts selected images to real PNG files before saving.
+- Saves the current page as both a searchable static HTML snapshot and a full-page PNG screenshot.
 
 This is designed for pages such as image-heavy articles, inspiration boards, and social posts where the page itself does not provide a reliable "download all" button.
 
@@ -36,6 +37,19 @@ browser-extension/image-collector
 
 Images are saved as PNG through the browser download manager under a `LingganImages/...` folder.
 
+### Archive A Complete Web Page
+
+1. Open the Linggan image panel on any normal `http` or `https` page.
+2. Click `存网页`.
+3. Wait for the status line to confirm the archive.
+
+The extension briefly walks the page to wake lazy-loaded images, restores your original scroll position, and saves two files under `Downloads/LingganPages/<time>-<page-title>/`:
+
+- `<page-title>.html`: a static, searchable HTML snapshot with relative links resolved against the original URL.
+- `<page-title>-full-page.png`: a full-page screenshot from the top of the document to the bottom.
+
+The panel is hidden from the screenshot. Page scripts, Content Security Policy metadata, and form field values are removed from the HTML snapshot. The extension attaches Chrome's page debugger only while making the full-page screenshot and detaches immediately afterward; it does not continuously record or monitor the page.
+
 Native app bridge: `Cmd` + clicking the macOS Linggan floating bubble sends `Ctrl+Shift+L` to the active browser page.
 If `Cmd` + click still opens the station window, quit the old app instance and reinstall/reopen the latest build.
 
@@ -47,6 +61,8 @@ Keyboard fallback while the page is focused: `Ctrl+Shift+L`.
 - Post detection is heuristic. If a site changes its DOM, the extension may need a selector update.
 - The current version is browser-side only. Direct capture from the native macOS floating ball needs a native messaging bridge.
 - Blob URLs and protected images may not be downloadable.
+- Very tall pages may exceed Chrome's maximum single-image dimensions. In that case the HTML file is still the more complete archive.
+- The HTML file is a static snapshot, not an offline clone of server-side behavior. Videos, canvases, login state, and script-driven interactions may not replay.
 - Very small icons, avatars, logos, and sprites are filtered out when possible.
 - The extension does not bypass paywalls, authentication, DRM, or site permissions.
 - Keep copyright and platform rules in mind before saving or reusing images.

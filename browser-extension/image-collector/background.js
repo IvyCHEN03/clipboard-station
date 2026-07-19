@@ -1,4 +1,4 @@
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "nativeCaptureRequested") {
     captureFocusedPost()
       .then(result => sendResponse(result))
@@ -17,6 +17,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     reportPanelState(Boolean(message.open));
     sendResponse({ ok: true });
     return false;
+  }
+
+  if (message?.type === "archiveCurrentPage") {
+    archiveCurrentPage(sender.tab)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
   }
 
   if (message?.type !== "downloadImages") {
@@ -193,6 +200,118 @@ function isDownloadableURL(url) {
   return /^https?:\/\//i.test(url) || /^data:image\//i.test(url);
 }
 
+async function archiveCurrentPage(senderTab) {
+  const tab = senderTab?.id
+    ? senderTab
+    : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+  if (!tab?.id || !/^https?:/i.test(tab.url || "")) {
+    throw new Error("请先打开一个普通网页");
+  }
+
+  await ensureCollectorInjected(tab.id);
+  let prepared = null;
+  try {
+    prepared = await chrome.tabs.sendMessage(tab.id, { type: "preparePageArchive" });
+    if (!prepared?.ok) {
+      throw new Error(prepared?.error || "网页还没有准备好，请稍后重试");
+    }
+    const snapshot = await chrome.tabs.sendMessage(tab.id, { type: "serializePageHTML" });
+    if (!snapshot?.ok || !snapshot.html) {
+      throw new Error(snapshot?.error || "无法读取当前网页 HTML");
+    }
+    const screenshot = await captureFullPagePNG(tab);
+    const title = sanitizePathSegment(snapshot.title || prepared?.title || tab.title || "web-page");
+    const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const folder = `LingganPages/${date}-${title}`;
+    await startDownload(textToDataURL(snapshot.html), `${folder}/${title}.html`);
+    await startDownload(`data:image/png;base64,${screenshot}`, `${folder}/${title}-full-page.png`);
+    return {
+      ok: true,
+      saved: 2,
+      folder,
+      title,
+      message: `已保存 ${title} 的 HTML 与完整网页截图`
+    };
+  } finally {
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: "restorePageArchive" });
+    } catch {
+      // Navigation may have replaced the page while capture was running.
+    }
+  }
+}
+
+async function captureFullPagePNG(tab) {
+  const target = { tabId: tab.id };
+  let attached = false;
+  try {
+    await attachDebugger(target);
+    attached = true;
+    await debuggerCommand(target, "Page.enable");
+    const metrics = await debuggerCommand(target, "Page.getLayoutMetrics");
+    const content = metrics?.cssContentSize || metrics?.contentSize;
+    const width = Math.max(1, Math.ceil(content?.width || tab.width || 1));
+    const height = Math.max(1, Math.ceil(content?.height || tab.height || 1));
+    const result = await debuggerCommand(target, "Page.captureScreenshot", {
+      format: "png",
+      fromSurface: true,
+      captureBeyondViewport: true,
+      optimizeForSpeed: false,
+      clip: { x: 0, y: 0, width, height, scale: 1 }
+    });
+    if (!result?.data) throw new Error("浏览器没有返回完整网页截图");
+    return result.data;
+  } catch (error) {
+    const detail = error?.message || String(error);
+    if (/already attached|another debugger|target closed/i.test(detail)) {
+      throw new Error("无法截取完整网页：请关闭当前页面的开发者工具后重试");
+    }
+    throw new Error(`完整网页截图失败：${detail}`);
+  } finally {
+    if (attached) {
+      try {
+        await detachDebugger(target);
+      } catch {
+        // The tab may already be closed.
+      }
+    }
+  }
+}
+
+function attachDebugger(target) {
+  return new Promise((resolve, reject) => {
+    chrome.debugger.attach(target, "1.3", () => {
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve();
+    });
+  });
+}
+
+function detachDebugger(target) {
+  return new Promise((resolve, reject) => {
+    chrome.debugger.detach(target, () => {
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve();
+    });
+  });
+}
+
+function debuggerCommand(target, method, parameters = undefined) {
+  return new Promise((resolve, reject) => {
+    chrome.debugger.sendCommand(target, method, parameters, result => {
+      const error = chrome.runtime.lastError;
+      if (error) reject(new Error(error.message));
+      else resolve(result);
+    });
+  });
+}
+
+function textToDataURL(value) {
+  return bytesToDataURL(new TextEncoder().encode(`\uFEFF${value}`), "text/html;charset=utf-8");
+}
+
 async function downloadImagesAsPNG(images, folder, title) {
   let saved = 0;
   let failed = 0;
@@ -294,13 +413,13 @@ function hammingDistance(left, right) {
   return distance;
 }
 
-function bytesToDataURL(bytes) {
+function bytesToDataURL(bytes, mimeType = "image/png") {
   let binary = "";
   const chunkSize = 0x8000;
   for (let offset = 0; offset < bytes.length; offset += chunkSize) {
     binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
   }
-  return `data:image/png;base64,${btoa(binary)}`;
+  return `data:${mimeType};base64,${btoa(binary)}`;
 }
 
 function startDownload(url, filename) {

@@ -55,6 +55,12 @@ When clipboard monitoring is enabled, the app polls the macOS pasteboard change 
 
 Internal writes made by the app are ignored where possible to avoid repeatedly importing the app's own copied content.
 
+## Browser Page Archives
+
+The optional browser extension can save the current page as a static HTML file and a full-page PNG screenshot. Both files may contain whatever is visible on that page, so review sensitive or account-only pages before archiving them.
+
+Archives are written through the browser download manager under `Downloads/LingganPages/`. They are not uploaded by Linggan. The HTML snapshot removes scripts, Content Security Policy metadata, and form field values. Chrome's page debugger is attached only for the requested full-page screenshot and is detached as soon as capture finishes.
+
 ## Permissions
 
 Accessibility permission is used to simulate copy/paste keyboard events. It does not grant the app permission to upload content.

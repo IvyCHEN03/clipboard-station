@@ -10,7 +10,7 @@
 
 **An idea just popped up, and it is already running away. Linggan catches it.**
 
-Linggan Floating Ball is a local-first macOS companion for collecting useful text, screenshots, table snippets, and every image from a post while you move across AI chats, browsers, notes, and spreadsheets.
+Linggan Floating Ball is a local-first macOS companion for collecting useful text, screenshots, table snippets, every image from a post, and complete web-page archives while you move across AI chats, browsers, notes, and spreadsheets.
 
 [Watch the 28-second demo](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [观看中文版](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-cn-1080p.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
 
@@ -90,7 +90,7 @@ The app is usable today, but still pre-1.0:
 | Try the app quickly | [Getting Started](docs/GETTING_STARTED.md) |
 | Install, repair, or uninstall | [Install Guide](docs/INSTALL.md) |
 | Learn the full workflow | [User Guide](docs/USER_GUIDE.md) |
-| Collect many web images | [Browser Image Collector](browser-extension/image-collector/README.md) |
+| Collect many web images or archive a complete page | [Browser Image Collector](browser-extension/image-collector/README.md) |
 | Understand privacy and AI tagging | [Privacy](PRIVACY.md) and [FAQ](docs/FAQ.md) |
 | Compare product positioning | [Product Positioning](docs/POSITIONING.md) |
 | Contribute a small fix | [Contributing](CONTRIBUTING.md), [Development Guide](docs/DEVELOPMENT.md), and [Good First Issues](docs/GOOD_FIRST_ISSUES.md) |
@@ -158,6 +158,7 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Clear local snippets, composer text, and attachment files from Settings.
 - Use `Cmd` + click on the floating bubble to capture the current image-heavy post as a titled stack.
 - Expand a post stack, select images individually, de-duplicate them visually, and save real PNG files.
+- Save the current web page as a searchable static HTML file plus a top-to-bottom PNG screenshot.
 - Store data locally with Keychain-backed AES-GCM encryption.
 - No cloud sync; text reaches your configured AI provider only when you run tagging or click `Polish`.
 

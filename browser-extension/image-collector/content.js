@@ -49,6 +49,7 @@
           <div class="lic-subtitle">每个帖子一行，双击展开</div>
         </div>
         <div class="lic-actions">
+          <button class="lic-small" type="button" data-action="archive-page" title="保存 HTML 与完整网页截图">存网页</button>
           <button class="lic-small" type="button" data-action="capture">收图</button>
           <button class="lic-small" type="button" data-action="close">收起</button>
         </div>
@@ -74,6 +75,25 @@
     }
     if (message?.type === "hideCollectorPanel") {
       setPanelVisible(false);
+      sendResponse({ ok: true });
+      return false;
+    }
+    if (message?.type === "preparePageArchive") {
+      void preparePageArchive()
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+      return true;
+    }
+    if (message?.type === "serializePageHTML") {
+      try {
+        sendResponse({ ok: true, ...serializePageHTML() });
+      } catch (error) {
+        sendResponse({ ok: false, error: error?.message || String(error) });
+      }
+      return false;
+    }
+    if (message?.type === "restorePageArchive") {
+      restorePageArchive();
       sendResponse({ ok: true });
       return false;
     }
@@ -162,6 +182,8 @@
 
     if (action === "capture") {
       void captureBatch();
+    } else if (action === "archive-page") {
+      archiveCurrentPage();
     } else if (action === "close") {
       setPanelVisible(false);
     } else if (action === "select-all") {
@@ -238,6 +260,75 @@
     runtime.sendMessage({ type: "collectorPanelState", open: visible }, () => {
       void runtime.lastError;
     });
+  }
+
+  function archiveCurrentPage() {
+    state.status = "正在保存 HTML 与完整网页截图…";
+    renderStatus();
+    runtime.sendMessage({ type: "archiveCurrentPage" }, response => {
+      if (runtime.lastError) {
+        state.status = `网页保存失败：${runtime.lastError.message}`;
+      } else if (response?.ok) {
+        state.status = response.message || "已保存 HTML 与完整网页截图";
+      } else {
+        state.status = response?.error || "网页保存失败";
+      }
+      renderStatus();
+    });
+  }
+
+  let archiveScrollPosition;
+
+  async function preparePageArchive() {
+    archiveScrollPosition = { x: window.scrollX, y: window.scrollY };
+    root.style.visibility = "hidden";
+    await prepareLazyImages(document);
+
+    const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight || 0);
+    const maxScroll = Math.max(0, scrollHeight - window.innerHeight);
+    const sampleCount = Math.min(20, Math.max(1, Math.ceil(scrollHeight / Math.max(window.innerHeight, 1))));
+    for (let index = 0; index < sampleCount; index += 1) {
+      const y = sampleCount === 1 ? 0 : Math.round(maxScroll * index / (sampleCount - 1));
+      window.scrollTo(archiveScrollPosition.x, y);
+      await new Promise(resolve => window.setTimeout(resolve, 90));
+    }
+    window.scrollTo(archiveScrollPosition.x, archiveScrollPosition.y);
+    await new Promise(resolve => window.setTimeout(resolve, 180));
+    return { ok: true, title: document.title, url: location.href };
+  }
+
+  function restorePageArchive() {
+    root.style.visibility = "";
+    if (archiveScrollPosition) {
+      window.scrollTo(archiveScrollPosition.x, archiveScrollPosition.y);
+      archiveScrollPosition = undefined;
+    }
+  }
+
+  function serializePageHTML() {
+    const clone = document.documentElement.cloneNode(true);
+    clone.querySelector(`#${ROOT_ID}`)?.remove();
+    clone.querySelectorAll("script, meta[http-equiv='Content-Security-Policy']").forEach(element => element.remove());
+    clone.querySelectorAll("input").forEach(input => {
+      input.removeAttribute("value");
+      input.removeAttribute("checked");
+    });
+    clone.querySelectorAll("textarea").forEach(textarea => {
+      textarea.textContent = "";
+    });
+    const head = clone.querySelector("head") || clone.insertBefore(document.createElement("head"), clone.firstChild);
+    const base = document.createElement("base");
+    base.href = location.href;
+    head.prepend(base);
+    const source = document.createElement("meta");
+    source.name = "linggan-source-url";
+    source.content = location.href;
+    head.prepend(source);
+    return {
+      title: document.title,
+      url: location.href,
+      html: `<!doctype html>\n${clone.outerHTML}`
+    };
   }
 
   function render() {
@@ -413,8 +504,7 @@
     };
   }
 
-  async function prepareLazyImages() {
-    const scope = findBestImageScope().element;
+  async function prepareLazyImages(scope = findBestImageScope().element) {
     for (const img of scope.querySelectorAll("img")) {
       img.loading = "eager";
       const lazyURL = ["data-original", "data-src", "data-lazy-src", "data-actualsrc"]
