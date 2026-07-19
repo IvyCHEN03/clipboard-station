@@ -70,11 +70,15 @@ AI tagging is optional and off by default.
 
 Existing tags are preserved. Failed snippets show a failure state and can be retried individually.
 
+## AI Polish
+
+After arranging blocks and bridge text in the composer, click `Polish` to ask the configured model for one coherent paragraph. Only the current composer text is sent. The original snippets and block order remain unchanged, and the generated paragraph can be edited before copying.
+
 ## Privacy
 
 - Clipboard data is stored locally.
 - Persistent data is encrypted with a Keychain-backed key.
-- Nothing is uploaded unless AI tagging is enabled and configured.
+- Nothing is uploaded by default. Snippet text is sent only when AI tagging runs, and composer text is sent only when you click `Polish`.
 - API keys are stored in macOS Keychain.
 
 ## Local Backup

@@ -8,8 +8,8 @@ For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUN
 
 | Asset | Purpose |
 | --- | --- |
-| [`linggan-x-teaser-en-1080p.mp4`](assets/social/linggan-x-teaser-en-1080p.mp4) | 26-second English X post and README demo |
-| [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080p.mp4) | 26-second Chinese X post |
+| [`linggan-x-teaser-en-1080p.mp4`](assets/social/linggan-x-teaser-en-1080p.mp4) | 28-second English X post and README demo |
+| [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080p.mp4) | 28-second Chinese X post |
 | [`linggan-readme-demo.gif`](assets/social/linggan-readme-demo.gif) | Inline GitHub README preview |
 | [`linggan-github-social-preview.png`](assets/social/linggan-github-social-preview.png) | 1280 x 640 GitHub social preview |
 
@@ -55,9 +55,11 @@ Recommended sequence:
 4. Show the new snippet appear in the station.
 5. Drag two or three snippets into the composer.
 6. Click between blocks and type a short bridge phrase.
-7. Click copy on the composed output.
+7. Click `Polish` and show the AI processing state.
+8. Hold on the generated full paragraph long enough to read it.
+9. Click copy on the polished output.
 
-Keep the GIF focused. Do not show Settings, AI provider setup, or long menus in the README hero. Those details belong in screenshots or docs, not the first visual.
+Keep the GIF focused. Do not show Settings, API keys, provider setup, or long menus in the README hero. The synthetic Polish result must use redacted demo content only.
 
 ## 60-Second Flow
 
@@ -72,8 +74,8 @@ Keep the GIF focused. Do not show Settings, AI provider setup, or long menus in 
 9. Click a time filter and two tag chips. Show the filtered count in the header.
 10. Drag three snippets into the bottom composer.
 11. Click between blocks and add a short custom sentence.
-12. Copy the composed output.
-13. Open Settings and show local status, launch-at-login, and optional AI tagging.
+12. Click `Polish`, show AI turning the blocks into one coherent paragraph, and copy the result.
+13. Open Settings and show local status, launch-at-login, and optional AI features.
 
 ## Screenshot Set
 
@@ -97,6 +99,7 @@ Before adding a GIF or screenshot to the repository:
 - [ ] Shows the floating bubble or station UI within the first two seconds.
 - [ ] Shows the composer blocks, not only the snippet list.
 - [ ] Shows filtering, block composition, copying, and whole-post image collection.
+- [ ] Shows `Polish` processing and a readable generated paragraph without exposing real content.
 - [ ] Does not show API keys, local file paths, account names, billing pages, private browser tabs, or provider dashboards.
 - [ ] The social cut is 30 seconds or shorter and readable without sound.
 - [ ] Still screenshots are readable at GitHub README width.
@@ -113,7 +116,7 @@ Linggan Floating Ball v0.4.0 turns your clipboard into a small local station for
 Use this line whenever sharing the app publicly:
 
 ```text
-Local-first by default: clipboard content is encrypted on disk and never uploaded unless optional AI tagging is enabled.
+Local-first by default: clipboard content is encrypted on disk. Composer text is sent to your configured provider only when you click Polish; snippet text is sent only when optional AI tagging is enabled.
 ```
 
 ## What Not To Show
