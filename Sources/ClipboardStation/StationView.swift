@@ -67,10 +67,6 @@ struct StationView: View {
 
             Spacer()
 
-            IconButton(systemName: "questionmark.circle", help: "打开使用指南") {
-                ProjectLinks.open(.gettingStarted)
-            }
-
             Button {
                 showMemoryShore.toggle()
                 showSettings = false
@@ -99,6 +95,10 @@ struct StationView: View {
             IconButton(systemName: "gearshape", help: "设置") {
                 showSettings.toggle()
                 showMemoryShore = false
+            }
+
+            IconButton(systemName: "questionmark.circle", help: "打开使用指南") {
+                ProjectLinks.open(.gettingStarted)
             }
         }
         .padding(.horizontal, 14)
@@ -638,7 +638,7 @@ private struct SnippetRow: View {
                 SnippetBody(snippet: snippet)
 
                 if snippet.isEnriching || !snippet.tags.isEmpty || snippet.enrichmentFailed {
-                    HStack(spacing: 6) {
+                    SnippetTagFlowLayout(spacing: 6) {
                         if snippet.isEnriching {
                             ProgressView()
                                 .controlSize(.small)
@@ -651,6 +651,7 @@ private struct SnippetRow: View {
                                 .padding(.vertical, 3)
                                 .background(Color.accentColor.opacity(0.12), in: Capsule())
                                 .foregroundStyle(Color.accentColor)
+                                .lineLimit(1)
                         }
                         if snippet.enrichmentFailed {
                             Label("打标失败", systemImage: "exclamationmark.triangle.fill")
@@ -760,7 +761,7 @@ private struct SnippetBody: View {
             Text(snippet.text)
                 .font(.system(size: 12, design: .monospaced))
                 .lineLimit(5)
-                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else if snippet.kind == .screenshot {
@@ -794,6 +795,68 @@ private struct SnippetBody: View {
             .font(.system(size: 12, weight: .medium))
             .foregroundStyle(.secondary)
         }
+    }
+}
+
+private struct SnippetTagFlowLayout: Layout {
+    let spacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let maxWidth = proposal.width ?? .greatestFiniteMagnitude
+        let result = arrangement(maxWidth: maxWidth, subviews: subviews)
+        return CGSize(width: proposal.width ?? result.width, height: result.height)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > bounds.minX, x + size.width > bounds.maxX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            subview.place(
+                at: CGPoint(x: x, y: y),
+                anchor: .topLeading,
+                proposal: ProposedViewSize(size)
+            )
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+    }
+
+    private func arrangement(maxWidth: CGFloat, subviews: Subviews) -> CGSize {
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var usedWidth: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > maxWidth {
+                y += rowHeight + spacing
+                x = 0
+                rowHeight = 0
+            }
+            usedWidth = max(usedWidth, x + size.width)
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+
+        return CGSize(width: usedWidth, height: y + rowHeight)
     }
 }
 
@@ -1055,11 +1118,6 @@ private struct DraftDock: View {
                 Text("组合框")
                     .font(.system(size: 12, weight: .semibold))
                 Spacer()
-                IconButton(systemName: "xmark.circle", help: "一键取消组合框全部内容") {
-                    activeDraftSlot = nil
-                    store.clearDraft()
-                }
-                .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
                 Button {
                     activeDraftSlot = nil
                     store.polishDraft()
@@ -1080,6 +1138,11 @@ private struct DraftDock: View {
                         || (store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
                 )
                 .help("使用 DeepSeek 将积木整理成连贯正文")
+                IconButton(systemName: "xmark.circle", help: "一键取消组合框全部内容") {
+                    activeDraftSlot = nil
+                    store.clearDraft()
+                }
+                .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
                 IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
                     store.copyDraftText()
                 }
