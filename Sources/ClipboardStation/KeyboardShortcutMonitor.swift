@@ -10,14 +10,23 @@ final class KeyboardShortcutMonitor {
     private var openHandler: (() -> Void)?
     private var copyHandler: (() -> Void)?
     private var quitHandler: (() -> Void)?
+    private var openKeyCode = KeyboardShortcutDefinition.defaultKeyCode
+    private var openModifiers = KeyboardShortcutDefinition.defaultModifiers
 
     var isEventTapActive: Bool {
         eventTap != nil
     }
 
     @discardableResult
-    func start(openHandler: @escaping () -> Void, copyHandler: @escaping () -> Void, quitHandler: @escaping () -> Void) -> Bool {
+    func start(
+        settings: StationSettings,
+        openHandler: @escaping () -> Void,
+        copyHandler: @escaping () -> Void,
+        quitHandler: @escaping () -> Void
+    ) -> Bool {
         stop()
+        openKeyCode = settings.hotkeyKeyCode
+        openModifiers = settings.hotkeyModifiers
         self.openHandler = openHandler
         self.copyHandler = copyHandler
         self.quitHandler = quitHandler
@@ -60,15 +69,21 @@ final class KeyboardShortcutMonitor {
     @discardableResult
     private func handle(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        let key = event.charactersIgnoringModifiers?.lowercased()
+        let keyCode = UInt32(event.keyCode)
+        let modifiers = KeyboardShortcutDefinition.carbonModifiers(from: flags)
 
-        if flags == [.command, .shift], key == "c" {
+        if matchesOpenShortcut(keyCode: keyCode, modifiers: modifiers) {
             openHandler?()
             return true
-        } else if flags == [.command, .shift], key == "z" {
+        } else if KeyboardShortcutDefinition.matches(
+            keyCode: keyCode,
+            modifiers: modifiers,
+            expectedKeyCode: KeyboardShortcutDefinition.quitKeyCode,
+            expectedModifiers: KeyboardShortcutDefinition.quitModifiers
+        ) {
             quitHandler?()
             return true
-        } else if flags == .command, key == "c" {
+        } else if keyCode == UInt32(kVK_ANSI_C), modifiers == UInt32(cmdKey) {
             copyHandler?()
         }
         return false
@@ -129,23 +144,39 @@ final class KeyboardShortcutMonitor {
     }
 
     private func handle(keyCode: UInt32, flags: CGEventFlags) {
-        let command = flags.contains(.maskCommand)
-        let shift = flags.contains(.maskShift)
+        let modifiers = KeyboardShortcutDefinition.carbonModifiers(from: flags)
 
-        if command && shift && keyCode == UInt32(kVK_ANSI_C) {
+        if matchesOpenShortcut(keyCode: keyCode, modifiers: modifiers) {
             openHandler?()
-        } else if command && shift && keyCode == UInt32(kVK_ANSI_Z) {
+        } else if KeyboardShortcutDefinition.matches(
+            keyCode: keyCode,
+            modifiers: modifiers,
+            expectedKeyCode: KeyboardShortcutDefinition.quitKeyCode,
+            expectedModifiers: KeyboardShortcutDefinition.quitModifiers
+        ) {
             quitHandler?()
-        } else if command && !shift && keyCode == UInt32(kVK_ANSI_C) {
+        } else if keyCode == UInt32(kVK_ANSI_C), modifiers == UInt32(cmdKey) {
             copyHandler?()
         }
     }
 
     private func shouldConsume(keyCode: UInt32, flags: CGEventFlags) -> Bool {
-        let command = flags.contains(.maskCommand)
-        let shift = flags.contains(.maskShift)
-        return command
-            && shift
-            && (keyCode == UInt32(kVK_ANSI_C) || keyCode == UInt32(kVK_ANSI_Z))
+        let modifiers = KeyboardShortcutDefinition.carbonModifiers(from: flags)
+        return matchesOpenShortcut(keyCode: keyCode, modifiers: modifiers)
+            || KeyboardShortcutDefinition.matches(
+                keyCode: keyCode,
+                modifiers: modifiers,
+                expectedKeyCode: KeyboardShortcutDefinition.quitKeyCode,
+                expectedModifiers: KeyboardShortcutDefinition.quitModifiers
+            )
+    }
+
+    private func matchesOpenShortcut(keyCode: UInt32, modifiers: UInt32) -> Bool {
+        KeyboardShortcutDefinition.matches(
+            keyCode: keyCode,
+            modifiers: modifiers,
+            expectedKeyCode: openKeyCode,
+            expectedModifiers: openModifiers
+        )
     }
 }
