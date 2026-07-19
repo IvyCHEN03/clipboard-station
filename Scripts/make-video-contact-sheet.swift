@@ -11,9 +11,15 @@ guard CommandLine.arguments.count >= 3 else {
 let input = URL(fileURLWithPath: CommandLine.arguments[1])
 let output = URL(fileURLWithPath: CommandLine.arguments[2])
 let isTeaser = CommandLine.arguments.dropFirst(3).contains("teaser")
-let times: [Double] = isTeaser
-    ? [0.6, 1.8, 3.0, 4.7, 6.5, 8.0, 9.8, 11.8, 13.6, 15.0, 16.8, 18.6, 20.5, 22.0, 23.8, 25.3]
-    : [0.8, 2.4, 3.6, 5.9, 8.4, 10.8, 12.8, 15.7, 18.5, 19.8, 21.4, 22.4, 23.8, 25.2, 26.5, 29.2]
+let isAvatar = CommandLine.arguments.dropFirst(3).contains("avatar")
+let times: [Double]
+if isAvatar {
+    times = [0.8, 7.5, 16.0, 24.0, 31.0, 39.0, 46.0, 49.7, 54.5, 57.0, 65.0, 73.2, 77.0, 82.0, 90.8, 96.0]
+} else if isTeaser {
+    times = [0.6, 1.8, 3.0, 4.7, 6.5, 8.0, 9.8, 11.8, 13.6, 15.0, 16.8, 18.6, 20.5, 22.0, 23.8, 25.3]
+} else {
+    times = [0.8, 2.4, 3.6, 5.9, 8.4, 10.8, 12.8, 15.7, 18.5, 19.8, 21.4, 22.4, 23.8, 25.2, 26.5, 29.2]
+}
 let asset = AVURLAsset(url: input)
 let generator = AVAssetImageGenerator(asset: asset)
 generator.appliesPreferredTrackTransform = true
