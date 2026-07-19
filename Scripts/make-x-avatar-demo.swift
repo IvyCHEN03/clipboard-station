@@ -30,9 +30,10 @@ private let segments: [NarrationSegment] = [
     .init(start: 0.35, end: 3.0, spokenText: "灵感一复制就消失？这谁受得了。", caption: "灵感一复制就消失？\n这谁受得了。", side: .right),
     .init(start: 3.15, end: 7.7, spokenText: "标签一筛，刚才那句话自己回来了。", caption: "标签一筛，\n刚才那句话自己回来了。", side: .right),
     .init(start: 7.85, end: 13.05, spokenText: "拖进组合框，想法开始拼成一段。", caption: "拖进组合框，\n想法开始拼成一段。", side: .right),
-    .init(start: 13.15, end: 17.65, spokenText: "重点来了。点一下 Polish，AI 自动补逻辑，生成全文。", caption: "重点来了：点一下 Polish。\nAI 自动补逻辑，生成全文。", side: .right),
-    .init(start: 17.8, end: 24.25, spokenText: "多图帖子也别一张张存。点球，一次收齐。", caption: "多图帖子也别一张张存。\n点球，一次收齐。", side: .left),
-    .init(start: 24.4, end: 27.85, spokenText: "灵感悬浮球。把散落的灵感，捞回来。", caption: "灵感悬浮球。\n把散落的灵感，捞回来。", side: .right),
+    .init(start: 13.15, end: 17.45, spokenText: "重点来了。点一下 Polish，AI 自动补逻辑，生成全文。", caption: "重点来了：点一下 Polish。\nAI 自动补逻辑，生成全文。", side: .right),
+    .init(start: 17.55, end: 21.0, spokenText: "截图点复制，或者直接拖出去，带走的就是图片本身。", caption: "截图可直接复制，\n也能拖进 AI 输入框。", side: .left),
+    .init(start: 21.1, end: 25.35, spokenText: "多图帖子也别一张张存。点球，一次收齐。", caption: "多图帖子也别一张张存。\n点球，一次收齐。", side: .left),
+    .init(start: 25.5, end: 27.9, spokenText: "灵感悬浮球。把散落的灵感，捞回来。", caption: "灵感悬浮球。\n把散落的灵感，捞回来。", side: .right),
 ]
 
 private func makeNarrationFiles() throws -> [URL] {
@@ -148,11 +149,11 @@ private func captionLayer(for segment: NarrationSegment) -> CALayer {
     return container
 }
 
-private func avatarCameraLayer(image: CGImage) -> CALayer {
+private func avatarCameraLayer(image: CGImage, side: NarrationSegment.Side) -> CALayer {
     let size: CGFloat = 318
     let camera = CALayer()
     camera.bounds = CGRect(x: 0, y: 0, width: size, height: size)
-    camera.position = CGPoint(x: 1690, y: 170)
+    camera.position = side == .right ? CGPoint(x: 1690, y: 170) : CGPoint(x: 230, y: 172)
     camera.backgroundColor = NSColor.white.cgColor
     camera.cornerRadius = size / 2
     camera.borderWidth = 7
@@ -193,27 +194,22 @@ private func avatarCameraLayer(image: CGImage) -> CALayer {
     bob.repeatCount = .infinity
     camera.add(bob, forKey: "host-bob")
 
+    let rightValues: [Any] = [1, 1, 0, 0, 1, 1]
+    let leftValues: [Any] = [0, 0, 1, 1, 0, 0]
     camera.add(
         holdAnimation(
-            keyPath: "position",
-            values: [
-                NSValue(point: CGPoint(x: 1690, y: 170)),
-                NSValue(point: CGPoint(x: 1690, y: 170)),
-                NSValue(point: CGPoint(x: 230, y: 172)),
-                NSValue(point: CGPoint(x: 230, y: 172)),
-                NSValue(point: CGPoint(x: 1690, y: 170)),
-                NSValue(point: CGPoint(x: 1690, y: 170)),
-            ],
-            times: [0, 17.45, 17.85, 24.1, 24.5, duration],
+            keyPath: "opacity",
+            values: side == .right ? rightValues : leftValues,
+            times: [0, 17.45, 17.55, 25.35, 25.5, duration],
             calculationMode: .discrete
         ),
-        forKey: "side-switch"
+        forKey: "camera-cut"
     )
     camera.add(
         holdAnimation(
             keyPath: "transform.scale",
             values: [1.08, 1.08, 1.0, 1.0, 1.16, 1.16, 1.0, 1.0, 1.12, 1.0],
-            times: [0, 2.55, 2.9, 12.95, 13.18, 14.05, 17.55, 24.25, 24.45, duration],
+            times: [0, 2.55, 2.9, 12.95, 13.18, 14.05, 17.4, 25.3, 25.5, duration],
             calculationMode: .cubic
         ),
         forKey: "reaction-cuts"
@@ -243,8 +239,119 @@ private func polishBadge() -> CALayer {
     badge.shadowOpacity = 0.22
     badge.shadowRadius = 18
     badge.addSublayer(textLayer("AI POLISH  ·  碎片 → 完整全文", frame: CGRect(x: 28, y: 27, width: 424, height: 44), size: 27, color: .white))
-    addTimedOpacity(to: badge, start: 13.15, end: 17.65)
+    addTimedOpacity(to: badge, start: 13.15, end: 17.45)
     return badge
+}
+
+private func imageDragDemoLayer() -> CALayer {
+    let panel = CALayer()
+    panel.frame = CGRect(x: 690, y: 472, width: 1100, height: 382)
+    panel.backgroundColor = NSColor.white.withAlphaComponent(0.98).cgColor
+    panel.cornerRadius = 28
+    panel.borderWidth = 2
+    panel.borderColor = NSColor(calibratedRed: 0.60, green: 0.82, blue: 0.99, alpha: 0.88).cgColor
+    panel.shadowColor = NSColor.black.cgColor
+    panel.shadowOpacity = 0.18
+    panel.shadowRadius = 30
+    panel.shadowOffset = CGSize(width: 0, height: -10)
+    addTimedOpacity(to: panel, start: 17.55, end: 21.0)
+
+    panel.addSublayer(textLayer("截图不是路径，是可以直接带走的图片", frame: CGRect(x: 34, y: 318, width: 690, height: 42), size: 29, color: NSColor(calibratedRed: 0.09, green: 0.13, blue: 0.20, alpha: 1)))
+    panel.addSublayer(textLayer("点复制，或把图片卡片拖进任意输入框", frame: CGRect(x: 34, y: 282, width: 690, height: 30), size: 18, color: NSColor(calibratedRed: 0.39, green: 0.45, blue: 0.54, alpha: 1), weight: .medium))
+
+    let target = CALayer()
+    target.frame = CGRect(x: 638, y: 52, width: 420, height: 212)
+    target.backgroundColor = NSColor(calibratedRed: 0.96, green: 0.985, blue: 1, alpha: 1).cgColor
+    target.cornerRadius = 20
+    let targetBorder = CAShapeLayer()
+    targetBorder.frame = target.bounds
+    targetBorder.path = CGPath(roundedRect: target.bounds.insetBy(dx: 2, dy: 2), cornerWidth: 18, cornerHeight: 18, transform: nil)
+    targetBorder.fillColor = NSColor.clear.cgColor
+    targetBorder.strokeColor = NSColor.systemBlue.withAlphaComponent(0.62).cgColor
+    targetBorder.lineWidth = 3
+    targetBorder.lineDashPattern = [10, 8]
+    target.addSublayer(targetBorder)
+    target.addSublayer(textLayer("AI 输入框", frame: CGRect(x: 28, y: 142, width: 180, height: 34), size: 23, color: NSColor(calibratedRed: 0.20, green: 0.27, blue: 0.35, alpha: 1)))
+    target.addSublayer(textLayer("把图片拖到这里", frame: CGRect(x: 28, y: 104, width: 250, height: 30), size: 18, color: NSColor(calibratedRed: 0.46, green: 0.52, blue: 0.60, alpha: 1), weight: .medium))
+    panel.addSublayer(target)
+
+    let card = CALayer()
+    card.bounds = CGRect(x: 0, y: 0, width: 250, height: 220)
+    card.position = CGPoint(x: 178, y: 151)
+    card.backgroundColor = NSColor.white.cgColor
+    card.cornerRadius = 18
+    card.borderWidth = 3
+    card.borderColor = NSColor.systemBlue.withAlphaComponent(0.72).cgColor
+    card.shadowColor = NSColor.black.cgColor
+    card.shadowOpacity = 0.17
+    card.shadowRadius = 16
+    card.shadowOffset = CGSize(width: 0, height: -7)
+
+    let preview = CAGradientLayer()
+    preview.frame = CGRect(x: 14, y: 66, width: 222, height: 138)
+    preview.cornerRadius = 12
+    preview.colors = [
+        NSColor(calibratedRed: 0.54, green: 0.84, blue: 0.98, alpha: 1).cgColor,
+        NSColor(calibratedRed: 0.77, green: 0.72, blue: 0.98, alpha: 1).cgColor,
+        NSColor(calibratedRed: 0.99, green: 0.72, blue: 0.81, alpha: 1).cgColor,
+    ]
+    preview.startPoint = CGPoint(x: 0, y: 1)
+    preview.endPoint = CGPoint(x: 1, y: 0)
+    let star = textLayer("✦", frame: CGRect(x: 78, y: 30, width: 68, height: 70), size: 50, color: .white)
+    preview.addSublayer(star)
+    card.addSublayer(preview)
+    card.addSublayer(textLayer("截图片段.png", frame: CGRect(x: 16, y: 31, width: 150, height: 25), size: 16, color: NSColor(calibratedRed: 0.24, green: 0.30, blue: 0.39, alpha: 1), weight: .medium))
+
+    let copyButton = CALayer()
+    copyButton.frame = CGRect(x: 157, y: 18, width: 80, height: 36)
+    copyButton.backgroundColor = NSColor(calibratedRed: 0.91, green: 0.96, blue: 1, alpha: 1).cgColor
+    copyButton.cornerRadius = 11
+    copyButton.addSublayer(textLayer("复制图片", frame: CGRect(x: 10, y: 8, width: 64, height: 21), size: 14, color: NSColor.systemBlue))
+    copyButton.add(
+        holdAnimation(
+            keyPath: "transform.scale",
+            values: [1, 1, 1.12, 1, 1],
+            times: [0, 17.65, 18.0, 18.25, duration],
+            calculationMode: .cubic
+        ),
+        forKey: "copy-pulse"
+    )
+    card.addSublayer(copyButton)
+    panel.addSublayer(card)
+
+    card.add(
+        holdAnimation(
+            keyPath: "position",
+            values: [
+                NSValue(point: CGPoint(x: 178, y: 151)),
+                NSValue(point: CGPoint(x: 178, y: 151)),
+                NSValue(point: CGPoint(x: 846, y: 147)),
+                NSValue(point: CGPoint(x: 846, y: 147)),
+            ],
+            times: [0, 18.4, 20.15, duration],
+            calculationMode: .cubic
+        ),
+        forKey: "drag-card"
+    )
+    card.add(
+        holdAnimation(
+            keyPath: "transform.scale",
+            values: [1, 1, 0.72, 0.72],
+            times: [0, 18.4, 20.15, duration],
+            calculationMode: .cubic
+        ),
+        forKey: "drop-scale"
+    )
+
+    let success = CALayer()
+    success.frame = CGRect(x: 760, y: 70, width: 260, height: 48)
+    success.backgroundColor = NSColor(calibratedRed: 0.12, green: 0.57, blue: 0.34, alpha: 0.96).cgColor
+    success.cornerRadius = 24
+    success.addSublayer(textLayer("✓  图片本身已放入", frame: CGRect(x: 24, y: 12, width: 220, height: 26), size: 18, color: .white))
+    addTimedOpacity(to: success, start: 20.12, end: 21.0)
+    panel.addSublayer(success)
+
+    return panel
 }
 
 private func makeComposition(narrationURLs: [URL]) async throws -> (AVMutableComposition, AVMutableVideoComposition, AVMutableAudioMix) {
@@ -304,11 +411,13 @@ private func makeComposition(narrationURLs: [URL]) async throws -> (AVMutableCom
     parent.addSublayer(video)
 
     let avatar = try cgImage(at: avatarURL)
-    parent.addSublayer(avatarCameraLayer(image: avatar))
+    parent.addSublayer(avatarCameraLayer(image: avatar, side: .right))
+    parent.addSublayer(avatarCameraLayer(image: avatar, side: .left))
     for segment in segments {
         parent.addSublayer(captionLayer(for: segment))
     }
     parent.addSublayer(polishBadge())
+    parent.addSublayer(imageDragDemoLayer())
     videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: video, in: parent)
 
     let audioMix = AVMutableAudioMix()
