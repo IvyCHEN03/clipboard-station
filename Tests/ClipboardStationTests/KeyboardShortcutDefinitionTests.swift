@@ -11,6 +11,7 @@ final class KeyboardShortcutDefinitionTests: XCTestCase {
             ),
             "Cmd+Option+P"
         )
+        XCTAssertEqual(KeyboardShortcutDefinition.keyLabel(for: 999), "Key 999")
     }
 
     func testRejectsReservedAndUnmodifiedShortcuts() {
