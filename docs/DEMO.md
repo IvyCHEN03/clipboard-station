@@ -2,8 +2,6 @@
 
 Use this script to record a short GIF, video, or screenshot set for README, releases, and social posts.
 
-For the longer Chinese virtual-host walkthrough, including image copy/drag, multi-image post capture, AI Polish, and complete webpage archiving, use [AVATAR_DEMO_SCRIPT_CN.md](AVATAR_DEMO_SCRIPT_CN.md).
-
 For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
 
 ## Current Launch Assets
