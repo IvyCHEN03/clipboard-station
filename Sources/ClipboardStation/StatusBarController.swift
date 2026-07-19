@@ -280,7 +280,7 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     }
 
     private func restartKeyboardMonitor() {
-        eventTapActive = keyboardMonitor.start { [weak self] in
+        eventTapActive = keyboardMonitor.start(settings: store.settings) { [weak self] in
             self?.showStationWindow()
             self?.refreshShortcutStatus()
             self?.store.showToast("已打开")
@@ -295,13 +295,17 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     private func refreshShortcutStatus() {
         let accessibilityTrusted = AccessibilityService.isTrusted(prompt: false)
         let active = carbonHotKeyActive || eventTapActive
+        let shortcut = KeyboardShortcutDefinition.displayName(
+            keyCode: store.settings.hotkeyKeyCode,
+            modifiers: store.settings.hotkeyModifiers
+        )
         let detail: String
         if carbonHotKeyActive {
-            detail = "Cmd+Shift+C 全局热键正常"
+            detail = "\(shortcut) 全局热键正常"
         } else if eventTapActive {
-            detail = "Cmd+Shift+C 后备监听正常"
+            detail = "\(shortcut) 后备监听正常"
         } else if accessibilityTrusted {
-            detail = "Cmd+Shift+C 注册失败，可能被其他 App 占用"
+            detail = "\(shortcut) 注册失败，可能被其他 App 占用"
         } else {
             detail = "需要辅助功能权限或释放快捷键冲突"
         }

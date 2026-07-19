@@ -973,10 +973,56 @@ private struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            HStack {
-                Text("全局快捷键")
-                Spacer()
-                Text("Cmd+Shift+C")
+            Section("打开窗口快捷键") {
+                HStack {
+                    Text("当前")
+                    Spacer()
+                    Text(KeyboardShortcutDefinition.displayName(
+                        keyCode: store.settings.hotkeyKeyCode,
+                        modifiers: store.settings.hotkeyModifiers
+                    ))
+                    .foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 14) {
+                    ForEach(ShortcutModifier.allCases) { modifier in
+                        Toggle(
+                            modifier.symbol,
+                            isOn: Binding(
+                                get: {
+                                    store.settings.hotkeyModifiers & modifier.carbonMask != 0
+                                },
+                                set: { enabled in
+                                    store.setHotkeyModifier(modifier, enabled: enabled)
+                                }
+                            )
+                        )
+                        .toggleStyle(.checkbox)
+                        .help(modifier.displayName)
+                    }
+                }
+
+                Picker(
+                    "按键",
+                    selection: Binding(
+                        get: { store.settings.hotkeyKeyCode },
+                        set: { store.setHotkeyKeyCode($0) }
+                    )
+                ) {
+                    ForEach(KeyboardShortcutDefinition.supportedKeys) { key in
+                        Text(key.label).tag(key.keyCode)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Button {
+                    store.resetHotkey()
+                } label: {
+                    Label("恢复 Cmd+Shift+C", systemImage: "arrow.counterclockwise")
+                }
+
+                Text("修改后立即生效。至少保留一个修饰键；Cmd+C 用于复制，Cmd+Shift+Z 用于收起窗口。")
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
 
@@ -1138,14 +1184,14 @@ private struct DraftDock: View {
                         || (store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
                 )
                 .help("使用 DeepSeek 将积木整理成连贯正文")
+                IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
+                    store.copyDraftText()
+                }
                 IconButton(systemName: "xmark.circle", help: "一键取消组合框全部内容") {
                     activeDraftSlot = nil
                     store.clearDraft()
                 }
                 .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
-                IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
-                    store.copyDraftText()
-                }
             }
 
             ScrollView(.horizontal, showsIndicators: false) {

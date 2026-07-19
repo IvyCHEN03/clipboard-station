@@ -233,7 +233,7 @@ final class SnippetStore: ObservableObject {
         isApplyingInitialLoad = false
         didFinishInitialLoad = true
 
-        repairOpenHotkeyIfNeeded()
+        repairShortcutIfNeeded()
         repairDeepSeekSettingsIfNeeded()
         expireFishMemory()
         settingsChanged?(settings)
@@ -650,8 +650,48 @@ final class SnippetStore: ObservableObject {
     func refreshRuntimeStatus(shortcutListening: Bool, detail: String? = nil) {
         isAppRunning = true
         isShortcutListening = shortcutListening
-        shortcutStatusText = detail ?? (shortcutListening ? "Cmd+Shift+C 监听正常" : "Cmd+Shift+C 未注册")
+        let shortcut = KeyboardShortcutDefinition.displayName(
+            keyCode: settings.hotkeyKeyCode,
+            modifiers: settings.hotkeyModifiers
+        )
+        shortcutStatusText = detail ?? (shortcutListening ? "\(shortcut) 监听正常" : "\(shortcut) 未注册")
         isAccessibilityTrusted = AccessibilityService.isTrusted(prompt: false)
+    }
+
+    func setHotkeyKeyCode(_ keyCode: UInt32) {
+        applyHotkey(keyCode: keyCode, modifiers: settings.hotkeyModifiers)
+    }
+
+    func setHotkeyModifier(_ modifier: ShortcutModifier, enabled: Bool) {
+        var modifiers = settings.hotkeyModifiers
+        if enabled {
+            modifiers |= modifier.carbonMask
+        } else {
+            modifiers &= ~modifier.carbonMask
+        }
+        applyHotkey(keyCode: settings.hotkeyKeyCode, modifiers: modifiers)
+    }
+
+    func resetHotkey() {
+        applyHotkey(
+            keyCode: KeyboardShortcutDefinition.defaultKeyCode,
+            modifiers: KeyboardShortcutDefinition.defaultModifiers
+        )
+    }
+
+    private func applyHotkey(keyCode: UInt32, modifiers: UInt32) {
+        if let message = KeyboardShortcutDefinition.validationMessage(
+            keyCode: keyCode,
+            modifiers: modifiers
+        ) {
+            showToast(message)
+            return
+        }
+        var updatedSettings = settings
+        updatedSettings.hotkeyKeyCode = keyCode
+        updatedSettings.hotkeyModifiers = modifiers
+        settings = updatedSettings
+        showToast("快捷键已改为 \(KeyboardShortcutDefinition.displayName(keyCode: keyCode, modifiers: modifiers))")
     }
 
     func enrichAllMissingTags(in scopeIDs: Set<UUID>? = nil) {
@@ -1307,11 +1347,17 @@ final class SnippetStore: ObservableObject {
         }
     }
 
-    private func repairOpenHotkeyIfNeeded() {
-        if settings.hotkeyKeyCode == UInt32(kVK_ANSI_O),
-           settings.hotkeyModifiers == UInt32(cmdKey) {
-            settings.hotkeyKeyCode = UInt32(kVK_ANSI_C)
-            settings.hotkeyModifiers = UInt32(cmdKey | shiftKey)
+    private func repairShortcutIfNeeded() {
+        guard KeyboardShortcutDefinition.isSupported(keyCode: settings.hotkeyKeyCode),
+              KeyboardShortcutDefinition.validationMessage(
+                  keyCode: settings.hotkeyKeyCode,
+                  modifiers: settings.hotkeyModifiers
+              ) == nil else {
+            var repairedSettings = settings
+            repairedSettings.hotkeyKeyCode = KeyboardShortcutDefinition.defaultKeyCode
+            repairedSettings.hotkeyModifiers = KeyboardShortcutDefinition.defaultModifiers
+            settings = repairedSettings
+            return
         }
     }
 
