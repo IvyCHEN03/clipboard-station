@@ -1,11 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Linggan Image Collector",
-  "version": "0.5.2",
-  "description": "Collect post images or archive a complete web page as HTML and a full-page PNG.",
+  "version": "0.5.3",
+  "description": "Collect post images or archive a complete web page as searchable HTML.",
   "permissions": [
     "activeTab",
-    "debugger",
     "downloads",
     "offscreen",
     "tabs",

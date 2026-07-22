@@ -1171,18 +1171,15 @@ private struct DraftDock: View {
                     if store.isPolishingDraft {
                         ProgressView()
                             .controlSize(.small)
-                            .frame(width: 54)
+                            .frame(width: 72)
                     } else {
                         Label("Polish", systemImage: "wand.and.stars")
-                            .frame(width: 54)
+                            .frame(minWidth: 72)
                     }
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled(
-                    store.isPolishingDraft
-                        || (store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
-                )
+                .disabled(store.isPolishingDraft)
                 .help("使用 DeepSeek 将积木整理成连贯正文")
                 IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
                     store.copyDraftText()

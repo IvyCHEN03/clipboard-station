@@ -422,9 +422,10 @@ private func browserPage() {
     text("linggan.app/web-collector", rect: CGRect(x: 192, y: 44, width: 700, height: 22), size: 14, color: muted)
     text(localized("遇到多图，\n不想把下载键敲出火星子？", "Too many images to save\none by one?"), rect: CGRect(x: 70, y: 114, width: 690, height: 78), size: 31, weight: .bold, lines: 2)
     text(localized("⌘ 点灵感球，整篇打包带走。", "⌘-click the bubble. Take the whole post with you."), rect: CGRect(x: 72, y: 198, width: 620, height: 28), size: 16, weight: .medium, color: muted)
-    photo(CGRect(x: 70, y: 228, width: 310, height: 360), variant: 0)
+    photo(CGRect(x: 70, y: 228, width: 310, height: 170), variant: 0)
     photo(CGRect(x: 400, y: 228, width: 310, height: 170), variant: 1)
-    photo(CGRect(x: 400, y: 418, width: 310, height: 170), variant: 2)
+    photo(CGRect(x: 70, y: 418, width: 310, height: 170), variant: 2)
+    photo(CGRect(x: 400, y: 418, width: 310, height: 170), variant: 3)
     text(localized("双击摊开。只留下心动的画面。", "Double-click. Keep only what catches your eye."), rect: CGRect(x: 72, y: 615, width: 638, height: 52), size: 17, weight: .semibold, color: muted, lines: 2)
 }
 
@@ -447,7 +448,7 @@ private func stackPreview(_ rect: CGRect) {
     text("4", rect: CGRect(x: rect.maxX - 28, y: rect.maxY - 21, width: 24, height: 16), size: 11, weight: .bold, color: .white, alignment: .center)
 }
 
-private func collectorPanel(mode: Int, selected: Set<Int>, toast: Bool) {
+private func collectorPanel(mode: Int, selected: Set<Int>, toast: Int) {
     NSGraphicsContext.saveGraphicsState()
     let shadow = NSShadow()
     shadow.shadowColor = NSColor.black.withAlphaComponent(0.18)
@@ -460,6 +461,7 @@ private func collectorPanel(mode: Int, selected: Set<Int>, toast: Bool) {
 
     text(localized("灵感图片暂存", "Image Stash"), rect: CGRect(x: panel.minX + 14, y: panel.minY + 15, width: 190, height: 25), size: 16, weight: .bold)
     text(localized("每个帖子一行，双击展开", "One post per row. Double-click to expand."), rect: CGRect(x: panel.minX + 14, y: panel.minY + 40, width: 230, height: 20), size: 12, color: muted)
+    button(localized("存网页", "Save page"), rect: CGRect(x: panel.maxX - 216, y: panel.minY + 14, width: 76, height: 36))
     button(localized("收图", "Collect"), rect: CGRect(x: panel.maxX - 132, y: panel.minY + 14, width: 62, height: 36))
     button(localized("收起", "Hide"), rect: CGRect(x: panel.maxX - 62, y: panel.minY + 14, width: 50, height: 36))
 
@@ -495,9 +497,12 @@ private func collectorPanel(mode: Int, selected: Set<Int>, toast: Bool) {
     }
 
     text(localized("已暂存 1 行 / 4 张 · 已选 \(selected.count) 张", "1 post / 4 images · \(selected.count) selected"), rect: CGRect(x: panel.minX + 14, y: panel.maxY - 32, width: panel.width - 28, height: 20), size: 12, color: muted)
-    if toast {
-        rounded(CGRect(x: panel.minX + 68, y: panel.maxY - 78, width: 244, height: 42), radius: 21, color: ink, alpha: 0.95)
-        text(localized("已保存 3 张 PNG", "Saved 3 PNG images"), rect: CGRect(x: panel.minX + 68, y: panel.maxY - 67, width: 244, height: 22), size: 13, weight: .bold, color: .white, alignment: .center)
+    if toast > 0 {
+        let message = toast == 2
+            ? localized("网页 HTML 已保存", "Web page HTML saved")
+            : localized("已保存 3 张 PNG", "Saved 3 PNG images")
+        rounded(CGRect(x: panel.minX + 50, y: panel.maxY - 78, width: 280, height: 42), radius: 21, color: ink, alpha: 0.95)
+        text(message, rect: CGRect(x: panel.minX + 50, y: panel.maxY - 67, width: 280, height: 22), size: language == "en" ? 11.5 : 12.5, weight: .bold, color: .white, alignment: .center)
     }
 }
 
@@ -506,6 +511,7 @@ private func collectorCursor(_ t: Double) -> (CGPoint, Bool) {
     let row = CGPoint(x: panel.minX + 180, y: panel.minY + 112)
     let item = CGPoint(x: panel.minX + 287, y: panel.minY + 280)
     let save = CGPoint(x: panel.minX + 183, y: panel.minY + 185)
+    let archive = CGPoint(x: panel.maxX - 178, y: panel.minY + 32)
     if t < 18.5 { return (CGPoint(x: 760, y: 180), false) }
     if t < 19.1 { return (interpolate(CGPoint(x: 760, y: 180), collect, (t - 18.5) / 0.6), false) }
     if t < 19.35 { return (collect, true) }
@@ -517,8 +523,10 @@ private func collectorCursor(_ t: Double) -> (CGPoint, Bool) {
     if t < 23.05 { return (row, true) }
     if t < 24.15 { return (row, false) }
     if t < 24.55 { return (row, true) }
-    if t < 25.6 { return (interpolate(row, save, (t - 24.55) / 1.05), false) }
-    return (save, t < 26.1)
+    if t < 25.35 { return (interpolate(row, save, (t - 24.55) / 0.8), false) }
+    if t < 25.68 { return (save, true) }
+    if t < 26.18 { return (interpolate(save, archive, (t - 25.68) / 0.5), false) }
+    return (archive, t < 26.48)
 }
 
 private func drawCollectorScene(_ t: Double) {
@@ -530,7 +538,8 @@ private func drawCollectorScene(_ t: Double) {
     else if t < 24.65 { mode = 1 }
     else { mode = 2 }
     let selected: Set<Int> = t >= 22.0 ? [0, 1, 3] : [0, 1, 2, 3]
-    collectorPanel(mode: mode, selected: selected, toast: t >= 26.1)
+    let toast = t >= 26.48 ? 2 : t >= 25.68 ? 1 : 0
+    collectorPanel(mode: mode, selected: selected, toast: toast)
     bubble(center: CGPoint(x: 1222, y: 360), radius: 31)
     if t < 19.4 {
         rounded(CGRect(x: 1000, y: 645, width: 204, height: 38), radius: 19, color: ink, alpha: 0.9)
@@ -538,7 +547,7 @@ private func drawCollectorScene(_ t: Double) {
     }
     let (p, down) = collectorCursor(t)
     cursor(at: p, down: down)
-    for event in [19.18, 20.35, 20.52, 21.75, 22.88, 23.03, 24.35, 24.52, 25.9] {
+    for event in [19.18, 20.35, 20.52, 21.75, 22.88, 23.03, 24.35, 24.52, 25.5, 26.34] {
         clickRing(at: p, time: t, event: event)
     }
 }

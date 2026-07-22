@@ -158,7 +158,7 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Clear local snippets, composer text, and attachment files from Settings.
 - Use `Cmd` + click on the floating bubble to capture the current image-heavy post as a titled stack.
 - Expand a post stack, select images individually, de-duplicate them visually, and save real PNG files.
-- Save the current web page as a searchable static HTML file plus a top-to-bottom PNG screenshot.
+- Save the current web page as a searchable static HTML file.
 - Store data locally with Keychain-backed AES-GCM encryption.
 - No cloud sync; text reaches your configured AI provider only when you run tagging or click `Polish`.
 

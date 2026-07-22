@@ -49,7 +49,7 @@
           <div class="lic-subtitle">每个帖子一行，双击展开</div>
         </div>
         <div class="lic-actions">
-          <button class="lic-small" type="button" data-action="archive-page" title="保存 HTML 与完整网页截图">存网页</button>
+          <button class="lic-small" type="button" data-action="archive-page" title="保存当前网页为 HTML">存网页</button>
           <button class="lic-small" type="button" data-action="capture">收图</button>
           <button class="lic-small" type="button" data-action="close">收起</button>
         </div>
@@ -263,13 +263,13 @@
   }
 
   function archiveCurrentPage() {
-    state.status = "正在保存 HTML 与完整网页截图…";
+    state.status = "正在保存网页…";
     renderStatus();
     runtime.sendMessage({ type: "archiveCurrentPage" }, response => {
       if (runtime.lastError) {
         state.status = `网页保存失败：${runtime.lastError.message}`;
       } else if (response?.ok) {
-        state.status = response.message || "已保存 HTML 与完整网页截图";
+        state.status = response.message || "网页 HTML 已保存";
       } else {
         state.status = response?.error || "网页保存失败";
       }

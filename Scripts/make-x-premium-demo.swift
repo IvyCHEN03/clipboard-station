@@ -8,15 +8,20 @@ import QuartzCore
 private let duration = 28.0
 private let canvasSize = CGSize(width: 1920, height: 1080)
 private let repo = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-private let sourceURL = repo.appendingPathComponent("docs/assets/social/linggan-x-teaser-cn-1080p.mp4")
-private let outputURL = repo.appendingPathComponent("docs/assets/social/linggan-x-premium-cn-1080p.mp4")
-private let coverURL = repo.appendingPathComponent("docs/assets/social/linggan-x-premium-cn-1080p-cover.png")
+private let language = CommandLine.arguments.dropFirst().contains("en") ? "en" : "cn"
+private let sourceURL = repo.appendingPathComponent("docs/assets/social/linggan-x-teaser-\(language)-1080p.mp4")
+private let outputURL = repo.appendingPathComponent("docs/assets/social/linggan-x-premium-\(language)-1080p.mp4")
+private let coverURL = repo.appendingPathComponent("docs/assets/social/linggan-x-premium-\(language)-1080p-cover.png")
 
 private let white = NSColor(calibratedWhite: 0.98, alpha: 1)
 private let coolGray = NSColor(calibratedRed: 0.60, green: 0.66, blue: 0.74, alpha: 1)
 private let electricBlue = NSColor(calibratedRed: 0.31, green: 0.70, blue: 1.00, alpha: 1)
 private let lightCanvas = NSColor(calibratedRed: 0.95, green: 0.975, blue: 0.995, alpha: 1)
 private let deepInk = NSColor(calibratedRed: 0.08, green: 0.13, blue: 0.21, alpha: 1)
+
+private func localized(_ chinese: String, _ english: String) -> String {
+    language == "en" ? english : chinese
+}
 
 private func normalizedTimes(_ values: [Double]) -> [NSNumber] {
     values.map { NSNumber(value: min(max($0 / duration, 0), 1)) }
@@ -237,7 +242,7 @@ private func makeOverlay() -> CALayer {
 
     overlay.addSublayer(titleCard(
         word: "CAPTURE",
-        statement: "灵感，不该散落。",
+        statement: localized("灵感，不该散落。", "Ideas shouldn't scatter."),
         detail: "Collect what matters. Keep it within reach.",
         marker: "LINGGAN / 00",
         start: 0,
@@ -249,11 +254,27 @@ private func makeOverlay() -> CALayer {
     overlay.addSublayer(featureCaption(number: "02", action: "COMPOSE", start: 8.28, end: 13.12))
 
     overlay.addSublayer(featureCaption(number: "03", action: "AI POLISH", start: 13.62, end: 17.48))
-    overlay.addSublayer(titleCard(word: "DRAG", statement: "图片，不必绕路。", detail: "Keep the original. Drag it anywhere.", marker: "LINGGAN / 03", start: 17.36, end: 18.22))
+    overlay.addSublayer(titleCard(
+        word: "DRAG",
+        statement: localized("图片，不必绕路。", "Images should take the direct route."),
+        detail: "Keep the original. Drag it anywhere.",
+        marker: "LINGGAN / 03",
+        start: 17.36,
+        end: 18.22
+    ))
 
     overlay.addSublayer(featureCaption(number: "04", action: "ORIGINAL IMAGE", start: 18.02, end: 21.16))
 
     overlay.addSublayer(featureCaption(number: "05", action: "IMAGE COLLECTION", start: 21.72, end: 25.18))
+
+    overlay.addSublayer(titleCard(
+        word: "GITHUB",
+        statement: localized("灵感悬浮球，已经开源。", "Linggan is open source."),
+        detail: "github.com/IvyCHEN03/clipboard-station",
+        marker: "OPEN SOURCE / MACOS",
+        start: 26.85,
+        end: duration
+    ))
 
     let progress = CALayer()
     progress.bounds = CGRect(x: 0, y: 0, width: canvasSize.width, height: 4)

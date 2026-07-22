@@ -219,18 +219,16 @@ async function archiveCurrentPage(senderTab) {
     if (!snapshot?.ok || !snapshot.html) {
       throw new Error(snapshot?.error || "无法读取当前网页 HTML");
     }
-    const screenshot = await captureFullPagePNG(tab);
     const title = sanitizePathSegment(snapshot.title || prepared?.title || tab.title || "web-page");
     const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
     const folder = `LingganPages/${date}-${title}`;
     await startDownload(textToDataURL(snapshot.html), `${folder}/${title}.html`);
-    await startDownload(`data:image/png;base64,${screenshot}`, `${folder}/${title}-full-page.png`);
     return {
       ok: true,
-      saved: 2,
+      saved: 1,
       folder,
       title,
-      message: `已保存 ${title} 的 HTML 与完整网页截图`
+      message: `已保存 ${title} 的网页 HTML`
     };
   } finally {
     try {
@@ -239,102 +237,6 @@ async function archiveCurrentPage(senderTab) {
       // Navigation may have replaced the page while capture was running.
     }
   }
-}
-
-async function captureFullPagePNG(tab) {
-  const target = { tabId: tab.id };
-  let attached = false;
-  try {
-    await attachDebugger(target);
-    attached = true;
-    await debuggerCommand(target, "Page.enable");
-    const metrics = await debuggerCommand(target, "Page.getLayoutMetrics");
-    const content = metrics?.cssContentSize || metrics?.contentSize;
-    const width = Math.max(1, Math.ceil(content?.width || tab.width || 1));
-    const height = Math.max(1, Math.ceil(content?.height || tab.height || 1));
-    const evaluatedScale = await debuggerCommand(target, "Runtime.evaluate", {
-      expression: "window.devicePixelRatio || 1",
-      returnByValue: true
-    });
-    const deviceScale = Math.max(1, Number(evaluatedScale?.result?.value) || 1);
-    const scale = fullPageCaptureScale(width, height, deviceScale);
-    let result;
-    try {
-      result = await capturePageScreenshot(target, width, height, scale);
-    } catch (error) {
-      if (scale <= 1) throw error;
-      console.warn("Linggan high-resolution page capture failed, retrying at native scale:", error?.message || error);
-      result = await capturePageScreenshot(target, width, height, 1);
-    }
-    if (!result?.data) throw new Error("浏览器没有返回完整网页截图");
-    return result.data;
-  } catch (error) {
-    const detail = error?.message || String(error);
-    if (/already attached|another debugger|target closed/i.test(detail)) {
-      throw new Error("无法截取完整网页：请关闭当前页面的开发者工具后重试");
-    }
-    throw new Error(`完整网页截图失败：${detail}`);
-  } finally {
-    if (attached) {
-      try {
-        await detachDebugger(target);
-      } catch {
-        // The tab may already be closed.
-      }
-    }
-  }
-}
-
-function fullPageCaptureScale(width, height, deviceScale) {
-  const basePixelWidth = Math.max(1, width * deviceScale);
-  const basePixelHeight = Math.max(1, height * deviceScale);
-  const preferredWidth = 4_000;
-  const safeLongestEdge = 60_000;
-  return Math.max(1, Math.min(
-    2,
-    preferredWidth / basePixelWidth,
-    safeLongestEdge / basePixelHeight
-  ));
-}
-
-function capturePageScreenshot(target, width, height, scale) {
-  return debuggerCommand(target, "Page.captureScreenshot", {
-    format: "png",
-    fromSurface: true,
-    captureBeyondViewport: true,
-    optimizeForSpeed: false,
-    clip: { x: 0, y: 0, width, height, scale }
-  });
-}
-
-function attachDebugger(target) {
-  return new Promise((resolve, reject) => {
-    chrome.debugger.attach(target, "1.3", () => {
-      const error = chrome.runtime.lastError;
-      if (error) reject(new Error(error.message));
-      else resolve();
-    });
-  });
-}
-
-function detachDebugger(target) {
-  return new Promise((resolve, reject) => {
-    chrome.debugger.detach(target, () => {
-      const error = chrome.runtime.lastError;
-      if (error) reject(new Error(error.message));
-      else resolve();
-    });
-  });
-}
-
-function debuggerCommand(target, method, parameters = undefined) {
-  return new Promise((resolve, reject) => {
-    chrome.debugger.sendCommand(target, method, parameters, result => {
-      const error = chrome.runtime.lastError;
-      if (error) reject(new Error(error.message));
-      else resolve(result);
-    });
-  });
 }
 
 function textToDataURL(value) {

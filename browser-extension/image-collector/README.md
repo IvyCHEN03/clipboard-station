@@ -10,7 +10,7 @@ Experimental Chrome/Edge extension for collecting image-heavy posts and archivin
 - Double-clicks a row to expand a selectable grid.
 - Uses the post title for each temporary row and its local Downloads subfolder.
 - Converts selected images to real PNG files before saving.
-- Saves the current page as both a searchable static HTML snapshot and a full-page PNG screenshot.
+- Saves the current page as a searchable static HTML snapshot.
 
 This is designed for pages such as image-heavy articles, inspiration boards, and social posts where the page itself does not provide a reliable "download all" button.
 
@@ -43,12 +43,11 @@ Images are saved as PNG through the browser download manager under a `LingganIma
 2. Click `存网页`.
 3. Wait for the status line to confirm the archive.
 
-The extension briefly walks the page to wake lazy-loaded images, restores your original scroll position, and saves two files under `Downloads/LingganPages/<time>-<page-title>/`:
+The extension briefly walks the page to wake lazy-loaded images, restores your original scroll position, and saves one file under `Downloads/LingganPages/<time>-<page-title>/`:
 
 - `<page-title>.html`: a static, searchable UTF-8 HTML snapshot with relative links resolved against the original URL.
-- `<page-title>-full-page.png`: a high-resolution full-page screenshot from the top of the document to the bottom. The capture scale adapts to the page length so text stays as crisp as Chrome's maximum image size allows.
 
-The panel is hidden from the screenshot. Page scripts, conflicting encoding metadata, Content Security Policy metadata, and form field values are removed from the HTML snapshot. A single UTF-8 declaration is written first in the saved document. The extension attaches Chrome's page debugger only while making the full-page screenshot and detaches immediately afterward; it does not continuously record or monitor the page.
+Page scripts, conflicting encoding metadata, Content Security Policy metadata, and form field values are removed from the HTML snapshot. A single UTF-8 declaration is written first in the saved document.
 
 Native app bridge: `Cmd` + clicking the macOS Linggan floating bubble sends `Ctrl+Shift+L` to the active browser page.
 If `Cmd` + click still opens the station window, quit the old app instance and reinstall/reopen the latest build.
