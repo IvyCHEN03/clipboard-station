@@ -785,20 +785,25 @@ private struct BubbleLogo: View {
 
 private struct SnippetBody: View {
     let snippet: Snippet
+    @State private var showImageViewer = false
+    @State private var selectedImageIndex = 0
 
     var body: some View {
-        if snippet.effectiveRepresentation == .text {
-            Text(snippet.text.isEmpty ? "未识别到文字" : snippet.text)
-                .font(.system(size: 12, design: .monospaced))
-                .lineLimit(5)
-                .fixedSize(horizontal: false, vertical: true)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else if snippet.kind == .screenshot {
-            if !snippet.allAttachmentPaths.isEmpty {
-                ImageGroupPreview(paths: snippet.allAttachmentPaths)
-                    .help(snippet.attachmentCount > 1 ? "\(snippet.attachmentCount) 张图片" : (snippet.fileName ?? "截图"))
-            } else {
+        Group {
+            if snippet.effectiveRepresentation == .text {
+                Text(snippet.text.isEmpty ? "未识别到文字" : snippet.text)
+                    .font(.system(size: 12, design: .monospaced))
+                    .lineLimit(5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else if !previewImages.isEmpty {
+                ImageGroupPreview(images: previewImages) { index in
+                    selectedImageIndex = index
+                    showImageViewer = true
+                }
+                .help(previewImages.count > 1 ? "双击查看 \(previewImages.count) 张大图" : "双击查看大图")
+            } else if snippet.kind == .screenshot {
                 HStack(spacing: 8) {
                     Image(systemName: "photo")
                     Text(snippet.fileName ?? "截图")
@@ -806,47 +811,60 @@ private struct SnippetBody: View {
                 }
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
-            }
-        } else if let image = TextImageRenderer.image(text: snippet.text, title: snippet.title) {
-            Image(nsImage: image)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180, alignment: .leading)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(Color.secondary.opacity(0.18))
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "tablecells")
+                    Text(snippet.fileName ?? snippet.title)
+                        .lineLimit(1)
                 }
-        } else {
-            HStack(spacing: 8) {
-                Image(systemName: "tablecells")
-                Text(snippet.fileName ?? snippet.title)
-                    .lineLimit(1)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
             }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(.secondary)
         }
+        .sheet(isPresented: $showImageViewer) {
+            ImageViewer(
+                title: snippet.title,
+                images: previewImages,
+                selectedIndex: $selectedImageIndex
+            )
+        }
+    }
+
+    private var previewImages: [NSImage] {
+        if snippet.kind == .screenshot {
+            return snippet.allAttachmentPaths.compactMap(NSImage.init(contentsOfFile:))
+        }
+        if snippet.effectiveRepresentation == .image,
+           let image = TextImageRenderer.image(text: snippet.text, title: snippet.title) {
+            return [image]
+        }
+        return []
     }
 }
 
 private struct ImageGroupPreview: View {
-    let paths: [String]
+    let images: [NSImage]
+    let onOpen: (Int) -> Void
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             HStack(spacing: 4) {
-                ForEach(Array(paths.prefix(4).enumerated()), id: \.offset) { _, path in
-                    if let image = NSImage(contentsOfFile: path) {
-                        Image(nsImage: image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180)
-                            .clipped()
-                    }
+                ForEach(Array(images.prefix(4).enumerated()), id: \.offset) { index, image in
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180)
+                        .clipped()
+                        .contentShape(Rectangle())
+                        .highPriorityGesture(
+                            TapGesture(count: 2)
+                                .onEnded { onOpen(index) }
+                        )
+                        .accessibilityLabel("第 \(index + 1) 张图片，双击查看大图")
                 }
             }
-            if paths.count > 1 {
-                Text("\(paths.count) 张")
+            if images.count > 1 {
+                Text("\(images.count) 张")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
@@ -861,6 +879,129 @@ private struct ImageGroupPreview: View {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(Color.secondary.opacity(0.18))
         }
+    }
+}
+
+private struct ImageViewer: View {
+    let title: String
+    let images: [NSImage]
+    @Binding var selectedIndex: Int
+    @Environment(\.dismiss) private var dismiss
+
+    private var safeIndex: Int {
+        guard !images.isEmpty else { return 0 }
+        return min(max(selectedIndex, 0), images.count - 1)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .lineLimit(1)
+                Spacer()
+                if images.count > 1 {
+                    Text("\(safeIndex + 1) / \(images.count)")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+                IconButton(systemName: "xmark", help: "关闭大图") {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 48)
+
+            Divider()
+
+            ZStack {
+                Color(nsColor: .underPageBackgroundColor)
+
+                if images.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "photo")
+                            .font(.system(size: 30))
+                        Text("图片不可用")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundStyle(.secondary)
+                } else {
+                    Image(nsImage: images[safeIndex])
+                        .resizable()
+                        .scaledToFit()
+                        .padding(24)
+                }
+
+                if images.count > 1 {
+                    HStack {
+                        viewerArrow(systemName: "chevron.left", help: "上一张", isEnabled: safeIndex > 0) {
+                            selectedIndex = safeIndex - 1
+                        }
+                        Spacer()
+                        viewerArrow(systemName: "chevron.right", help: "下一张", isEnabled: safeIndex < images.count - 1) {
+                            selectedIndex = safeIndex + 1
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if images.count > 1 {
+                Divider()
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(images.enumerated()), id: \.offset) { index, image in
+                            Button {
+                                selectedIndex = index
+                            } label: {
+                                Image(nsImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 64, height: 48)
+                                    .clipped()
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .strokeBorder(
+                                                index == safeIndex ? Color.accentColor : Color.secondary.opacity(0.2),
+                                                lineWidth: index == safeIndex ? 2 : 1
+                                            )
+                                    }
+                                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                            }
+                            .buttonStyle(.plain)
+                            .help("查看第 \(index + 1) 张")
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+                .frame(height: 68)
+            }
+        }
+        .frame(minWidth: 680, idealWidth: 760, minHeight: 520, idealHeight: 620)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .onAppear {
+            selectedIndex = safeIndex
+        }
+    }
+
+    @ViewBuilder
+    private func viewerArrow(
+        systemName: String,
+        help: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 16, weight: .semibold))
+                .frame(width: 36, height: 36)
+                .background(.regularMaterial, in: Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .help(help)
     }
 }
 
