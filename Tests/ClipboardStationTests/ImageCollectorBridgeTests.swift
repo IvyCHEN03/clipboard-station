@@ -101,7 +101,9 @@ final class ImageCollectorBridgeTests: XCTestCase {
         var components = URLComponents(string: "http://127.0.0.1:\(port.rawValue)/save-image")!
         components.queryItems = [
             URLQueryItem(name: "title", value: title),
-            URLQueryItem(name: "index", value: "1")
+            URLQueryItem(name: "index", value: "1"),
+            URLQueryItem(name: "batch", value: "test-batch"),
+            URLQueryItem(name: "total", value: "2")
         ]
         var request = URLRequest(url: try XCTUnwrap(components.url))
         request.httpMethod = "POST"
@@ -119,6 +121,8 @@ final class ImageCollectorBridgeTests: XCTestCase {
         let saved = await box.image
         XCTAssertEqual(saved?.title, title)
         XCTAssertEqual(saved?.index, 1)
+        XCTAssertEqual(saved?.batchID, "test-batch")
+        XCTAssertEqual(saved?.total, 2)
         XCTAssertEqual(saved?.data, request.httpBody)
     }
 }

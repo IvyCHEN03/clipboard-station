@@ -64,6 +64,8 @@ struct Snippet: Identifiable, Codable, Equatable {
     var kind: SnippetKind
     var attachmentPath: String?
     var fileName: String?
+    var attachmentPaths: [String]
+    var attachmentFileNames: [String]
     var representation: SnippetRepresentation
     var tags: [String]
     var isEnriching: Bool
@@ -83,6 +85,8 @@ struct Snippet: Identifiable, Codable, Equatable {
         case kind
         case attachmentPath
         case fileName
+        case attachmentPaths
+        case attachmentFileNames
         case representation
         case tags
         case isEnriching
@@ -99,6 +103,8 @@ struct Snippet: Identifiable, Codable, Equatable {
         kind: SnippetKind = .text,
         attachmentPath: String? = nil,
         fileName: String? = nil,
+        attachmentPaths: [String] = [],
+        attachmentFileNames: [String] = [],
         representation: SnippetRepresentation = .automatic,
         tags: [String] = [],
         isEnriching: Bool = false,
@@ -113,6 +119,8 @@ struct Snippet: Identifiable, Codable, Equatable {
         self.kind = kind
         self.attachmentPath = attachmentPath
         self.fileName = fileName
+        self.attachmentPaths = attachmentPaths
+        self.attachmentFileNames = attachmentFileNames
         self.representation = representation
         self.tags = tags
         self.isEnriching = isEnriching
@@ -130,6 +138,8 @@ struct Snippet: Identifiable, Codable, Equatable {
         kind = try container.decodeIfPresent(SnippetKind.self, forKey: .kind) ?? .text
         attachmentPath = try container.decodeIfPresent(String.self, forKey: .attachmentPath)
         fileName = try container.decodeIfPresent(String.self, forKey: .fileName)
+        attachmentPaths = try container.decodeIfPresent([String].self, forKey: .attachmentPaths) ?? []
+        attachmentFileNames = try container.decodeIfPresent([String].self, forKey: .attachmentFileNames) ?? []
         representation = try container.decodeIfPresent(SnippetRepresentation.self, forKey: .representation) ?? .automatic
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
         isEnriching = false
@@ -161,6 +171,21 @@ struct Snippet: Identifiable, Codable, Equatable {
 
     var supportsRepresentationToggle: Bool {
         kind == .text || kind == .spreadsheet || kind == .screenshot
+    }
+
+    var allAttachmentPaths: [String] {
+        attachmentPaths.isEmpty ? attachmentPath.map { [$0] } ?? [] : attachmentPaths
+    }
+
+    var allAttachmentFileNames: [String] {
+        if !attachmentFileNames.isEmpty {
+            return attachmentFileNames
+        }
+        return fileName.map { [$0] } ?? []
+    }
+
+    var attachmentCount: Int {
+        allAttachmentPaths.count
     }
 }
 

@@ -6,6 +6,8 @@ struct CollectedWebImage: Sendable {
     let title: String
     let ocrText: String
     let index: Int
+    let batchID: String
+    let total: Int
 }
 
 final class ImageCollectorBridge: @unchecked Sendable {
@@ -160,7 +162,9 @@ final class ImageCollectorBridge: @unchecked Sendable {
                     data: imageData,
                     title: metadata.title,
                     ocrText: text,
-                    index: metadata.index
+                    index: metadata.index,
+                    batchID: metadata.batchID,
+                    total: metadata.total
                 ))
                 owner.queue.async {
                     owner.sendJSON([
@@ -249,14 +253,21 @@ final class ImageCollectorBridge: @unchecked Sendable {
         )
     }
 
-    private static func saveImageMetadata(from path: String) -> (title: String, index: Int) {
+    private static func saveImageMetadata(from path: String) -> (title: String, index: Int, batchID: String, total: Int) {
         guard let components = URLComponents(string: "http://127.0.0.1\(path)") else {
-            return ("网页图片", 1)
+            return ("网页图片", 1, UUID().uuidString, 1)
         }
         let values = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).map { ($0.name, $0.value ?? "") })
         let title = values["title"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let index = max(Int(values["index"] ?? "") ?? 1, 1)
-        return (title.isEmpty ? "网页图片 \(index)" : title, index)
+        let batchID = values["batch"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let total = max(Int(values["total"] ?? "") ?? 1, 1)
+        return (
+            title.isEmpty ? "网页图片" : title,
+            index,
+            batchID.isEmpty ? UUID().uuidString : batchID,
+            total
+        )
     }
 
     private func consumePendingCapture() -> Bool {

@@ -308,14 +308,11 @@ async function saveImagesToStation(images, title) {
   if (images.length === 0) throw new Error("请先选择要存入灵感球的图片");
   const fingerprints = new Set();
   const baseTitle = String(title || "网页图片").trim() || "网页图片";
-  let saved = 0;
-  let recognized = 0;
   let failed = 0;
   let duplicates = 0;
+  const prepared = [];
 
-  // The native app inserts each new snippet at the top, so send the batch in
-  // reverse to preserve the post's original top-to-bottom order in the list.
-  for (const [position, image] of [...images.entries()].reverse()) {
+  for (const [position, image] of images.entries()) {
     try {
       const urls = [...new Set([...(Array.isArray(image?.urls) ? image.urls : []), image?.url].filter(isDownloadableURL))];
       const png = await convertFirstAvailableToPNG(urls);
@@ -324,34 +321,44 @@ async function saveImagesToStation(images, title) {
         continue;
       }
       fingerprints.add(png.fingerprint);
-      const index = position + 1;
-      const itemTitle = images.length > 1 ? `${baseTitle} · ${index}/${images.length}` : baseTitle;
+      prepared.push({ index: position + 1, png });
+    } catch (error) {
+      failed += 1;
+      console.warn("Linggan station preparation failed:", error?.message || error);
+    }
+  }
+
+  if (prepared.length === 0) {
+    throw new Error("没有可存入灵感球的图片");
+  }
+
+  const batchID = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  let recognized = 0;
+  for (const item of prepared) {
+    try {
       const endpoint = new URL("http://127.0.0.1:47831/save-image");
-      endpoint.searchParams.set("title", itemTitle);
-      endpoint.searchParams.set("index", String(index));
+      endpoint.searchParams.set("title", baseTitle);
+      endpoint.searchParams.set("index", String(item.index));
+      endpoint.searchParams.set("batch", batchID);
+      endpoint.searchParams.set("total", String(prepared.length));
       const response = await fetch(endpoint.toString(), {
         method: "POST",
         headers: { "Content-Type": "image/png" },
-        body: png.bytes,
+        body: item.png.bytes,
         cache: "no-store"
       });
       const result = await response.json();
       if (!response.ok || !result?.ok) {
-        failed += 1;
-        continue;
+        throw new Error(result?.error || `HTTP ${response.status}`);
       }
-      saved += 1;
       if (result.recognized) recognized += 1;
     } catch (error) {
-      failed += 1;
       console.warn("Linggan station save failed:", error?.message || error);
+      throw new Error("图片组未完整存入。请确认灵感悬浮球正在运行后重试");
     }
   }
 
-  if (saved === 0) {
-    throw new Error("没有图片存入灵感球。请确认灵感悬浮球正在运行");
-  }
-  return { ok: true, saved, recognized, failed, duplicates };
+  return { ok: true, saved: prepared.length, groups: 1, recognized, failed, duplicates };
 }
 
 async function downloadImagesAsPNG(images, folder, title) {

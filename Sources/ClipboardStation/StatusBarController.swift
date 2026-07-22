@@ -73,12 +73,7 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     private lazy var imageCollectorBridge = ImageCollectorBridge { [weak self] image in
         guard let self else { return false }
         return await MainActor.run {
-            let saved = self.store.addWebImage(
-                data: image.data,
-                title: image.title,
-                ocrText: image.ocrText,
-                index: image.index
-            )
+            let saved = self.store.addWebImage(image)
             if saved {
                 self.showStationWindow()
             }

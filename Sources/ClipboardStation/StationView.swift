@@ -701,6 +701,9 @@ private struct SnippetRow: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.secondary.opacity(0.12), in: Capsule())
+                    if snippet.attachmentCount > 1 {
+                        Label("\(snippet.attachmentCount) 张", systemImage: "square.stack.3d.up")
+                    }
                     Text(Self.dateFormatter.string(from: snippet.createdAt))
                     Text("\(snippet.charCount) 字")
                 }
@@ -792,18 +795,9 @@ private struct SnippetBody: View {
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else if snippet.kind == .screenshot {
-            if let attachmentPath = snippet.attachmentPath,
-               let image = NSImage(contentsOfFile: attachmentPath) {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180, alignment: .leading)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.secondary.opacity(0.18))
-                    }
-                    .help(snippet.fileName ?? "截图")
+            if !snippet.allAttachmentPaths.isEmpty {
+                ImageGroupPreview(paths: snippet.allAttachmentPaths)
+                    .help(snippet.attachmentCount > 1 ? "\(snippet.attachmentCount) 张图片" : (snippet.fileName ?? "截图"))
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "photo")
@@ -831,6 +825,41 @@ private struct SnippetBody: View {
             }
             .font(.system(size: 12, weight: .medium))
             .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct ImageGroupPreview: View {
+    let paths: [String]
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            HStack(spacing: 4) {
+                ForEach(Array(paths.prefix(4).enumerated()), id: \.offset) { _, path in
+                    if let image = NSImage(contentsOfFile: path) {
+                        Image(nsImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180)
+                            .clipped()
+                    }
+                }
+            }
+            if paths.count > 1 {
+                Text("\(paths.count) 张")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.black.opacity(0.72), in: Capsule())
+                    .padding(8)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180, alignment: .leading)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color.secondary.opacity(0.18))
         }
     }
 }
@@ -1601,7 +1630,7 @@ private func snippetOrderColor(_ index: Int) -> Color {
 private func snippetDragProvider(for snippet: Snippet) -> NSItemProvider {
     let provider = NSItemProvider(object: snippet.id.uuidString as NSString)
     guard snippet.kind == .screenshot,
-          let attachmentPath = snippet.attachmentPath else {
+          let attachmentPath = snippet.allAttachmentPaths.first else {
         return provider
     }
 

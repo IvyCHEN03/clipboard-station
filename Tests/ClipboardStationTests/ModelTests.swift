@@ -86,9 +86,30 @@ final class ModelTests: XCTestCase {
 
         XCTAssertEqual(snippet.kind, .text)
         XCTAssertEqual(snippet.representation, .automatic)
+        XCTAssertEqual(snippet.attachmentPaths, [])
+        XCTAssertEqual(snippet.attachmentFileNames, [])
         XCTAssertEqual(snippet.tags, [])
         XCTAssertFalse(snippet.isEnriching)
         XCTAssertFalse(snippet.enrichmentFailed)
+    }
+
+    func testGroupedSnippetUsesAllAttachmentPaths() {
+        let snippet = Snippet(
+            id: UUID(),
+            text: "OCR one\n\nOCR two",
+            title: "Grouped images",
+            createdAt: Date(),
+            source: .webImageCollector,
+            kind: .screenshot,
+            attachmentPath: "/tmp/one.png",
+            fileName: "one.png",
+            attachmentPaths: ["/tmp/one.png", "/tmp/two.png"],
+            attachmentFileNames: ["one.png", "two.png"]
+        )
+
+        XCTAssertEqual(snippet.attachmentCount, 2)
+        XCTAssertEqual(snippet.allAttachmentPaths, ["/tmp/one.png", "/tmp/two.png"])
+        XCTAssertEqual(snippet.allAttachmentFileNames, ["one.png", "two.png"])
     }
 
     func testRepresentationDefaultsAndCanSwitchToImage() {

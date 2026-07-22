@@ -42,7 +42,7 @@ final class MarkdownExportTests: XCTestCase {
 
         let markdown = MarkdownExport.render(snippets: [snippet])
 
-        XCTAssertTrue(markdown.contains("- Attachment: screenshot.png"))
+        XCTAssertTrue(markdown.contains("- Attachments: screenshot.png"))
         XCTAssertTrue(markdown.contains("[Screenshot has no OCR text]"))
     }
 }

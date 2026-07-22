@@ -490,7 +490,7 @@
       if (chrome.runtime.lastError) {
         state.status = `存入失败：${chrome.runtime.lastError.message}`;
       } else if (response?.ok) {
-        state.status = `已存入灵感球 ${response.saved} 张 · ${response.recognized} 张带 OCR 文字${response.duplicates ? ` · 跳过 ${response.duplicates} 张重复图` : ""}${response.failed ? ` · ${response.failed} 张失败` : ""}`;
+        state.status = `已把 ${response.saved} 张图片存入同一个灵感框 · ${response.recognized} 张带 OCR 文字${response.duplicates ? ` · 跳过 ${response.duplicates} 张重复图` : ""}${response.failed ? ` · ${response.failed} 张读取失败` : ""}`;
       } else {
         state.status = response?.error || "存入灵感球失败";
       }

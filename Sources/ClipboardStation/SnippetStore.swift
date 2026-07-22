@@ -74,6 +74,12 @@ final class SnippetStore: ObservableObject {
     private var polishedDraftSourceText = ""
     private var didFinishInitialLoad = false
     private var isApplyingInitialLoad = false
+    private var pendingWebImageBatches: [String: PendingWebImageBatch] = [:]
+
+    private struct PendingWebImageBatch {
+        var images: [Int: CollectedWebImage]
+        var expiresAt: Date
+    }
 
     static let fishMemoryDuration: TimeInterval = 7 * 24 * 60 * 60
 
@@ -455,38 +461,71 @@ final class SnippetStore: ObservableObject {
     }
 
     @discardableResult
-    func addWebImage(data: Data, title rawTitle: String, ocrText: String, index: Int) -> Bool {
-        guard NSImage(data: data) != nil else {
+    func addWebImage(_ image: CollectedWebImage) -> Bool {
+        guard NSImage(data: image.data) != nil else {
             showToast("网页图片格式无效")
             return false
         }
+        let now = Date()
+        pendingWebImageBatches = pendingWebImageBatches.filter { $0.value.expiresAt > now }
+        let total = min(max(image.total, 1), 100)
+        var batch = pendingWebImageBatches[image.batchID]
+            ?? PendingWebImageBatch(images: [:], expiresAt: now.addingTimeInterval(120))
+        batch.images[image.index] = image
+        batch.expiresAt = now.addingTimeInterval(120)
+        pendingWebImageBatches[image.batchID] = batch
+
+        guard batch.images.count >= total else {
+            return true
+        }
+        pendingWebImageBatches.removeValue(forKey: image.batchID)
+        let ordered = batch.images.values.sorted { $0.index < $1.index }
+        return saveWebImageBatch(Array(ordered.prefix(total)))
+    }
+
+    private func saveWebImageBatch(_ images: [CollectedWebImage]) -> Bool {
+        guard !images.isEmpty else { return false }
         let stamp = Self.fileDateFormatter.string(from: Date())
-        let fileName = "web-image-\(stamp)-\(index)-\(UUID().uuidString.prefix(8)).png"
-        let url = attachmentsDirectory.appendingPathComponent(fileName)
-        do {
-            try data.write(to: url, options: [.atomic])
-        } catch {
-            showToast("网页图片保存失败")
-            return false
+        var paths: [String] = []
+        var fileNames: [String] = []
+        for image in images {
+            let fileName = "web-image-\(stamp)-\(image.index)-\(UUID().uuidString.prefix(8)).png"
+            let url = attachmentsDirectory.appendingPathComponent(fileName)
+            do {
+                try image.data.write(to: url, options: [.atomic])
+                paths.append(url.path)
+                fileNames.append(fileName)
+            } catch {
+                paths.forEach { try? FileManager.default.removeItem(atPath: $0) }
+                showToast("网页图片组保存失败")
+                return false
+            }
         }
 
-        let cleanTitle = rawTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cleanText = ocrText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanTitle = images[0].title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanText = images
+            .map { $0.ocrText.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
         let snippet = Snippet(
             id: UUID(),
             text: cleanText,
-            title: cleanTitle.isEmpty ? "网页图片 \(index)" : cleanTitle,
+            title: cleanTitle.isEmpty ? "网页图片组" : cleanTitle,
             createdAt: Date(),
             source: .webImageCollector,
             kind: .screenshot,
-            attachmentPath: url.path,
-            fileName: fileName,
+            attachmentPath: paths.first,
+            fileName: fileNames.first,
+            attachmentPaths: paths,
+            attachmentFileNames: fileNames,
             representation: .image
         )
         snippets.insert(snippet, at: 0)
         persist()
         enrichSnippetIfNeeded(snippet.id)
-        showToast(cleanText.isEmpty ? "图片已存入灵感球" : "图片和 OCR 文字已存入灵感球")
+        showToast(cleanText.isEmpty
+            ? "\(images.count) 张图片已存入同一个灵感框"
+            : "\(images.count) 张图片和 OCR 文字已存入同一个灵感框")
         return true
     }
 
@@ -1158,8 +1197,8 @@ final class SnippetStore: ObservableObject {
         NSPasteboard.general.clearContents()
         let didWrite: Bool
         if snippet.effectiveRepresentation == .image {
-            if snippet.kind == .screenshot, let attachmentPath = snippet.attachmentPath {
-                didWrite = writeImageToPasteboard(path: attachmentPath)
+            if snippet.kind == .screenshot, !snippet.allAttachmentPaths.isEmpty {
+                didWrite = writeImagesToPasteboard(paths: snippet.allAttachmentPaths)
             } else if let pngData = TextImageRenderer.pngData(text: snippet.text, title: snippet.title) {
                 didWrite = writeImageDataToPasteboard(pngData)
             } else {
@@ -1186,18 +1225,29 @@ final class SnippetStore: ObservableObject {
 
     private func restoreBackupAttachments(_ backup: ClipboardBackup) throws -> [Snippet] {
         try FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
-        let attachmentMap = Dictionary(uniqueKeysWithValues: backup.attachments.map { ($0.snippetID, $0) })
+        let attachmentMap = Dictionary(grouping: backup.attachments, by: \.snippetID)
         return try backup.snippets.map { snippet in
             var restored = snippet
             restored.isEnriching = false
-            if let attachment = attachmentMap[snippet.id] {
-                let fileName = uniqueBackupFileName(attachment.fileName)
-                let url = attachmentsDirectory.appendingPathComponent(fileName)
-                try attachment.data.write(to: url, options: [.atomic])
-                restored.attachmentPath = url.path
-                restored.fileName = fileName
-            } else if snippet.attachmentPath != nil {
+            if let attachments = attachmentMap[snippet.id], !attachments.isEmpty {
+                var paths: [String] = []
+                var names: [String] = []
+                for attachment in attachments {
+                    let fileName = uniqueBackupFileName(attachment.fileName)
+                    let url = attachmentsDirectory.appendingPathComponent(fileName)
+                    try attachment.data.write(to: url, options: [.atomic])
+                    paths.append(url.path)
+                    names.append(fileName)
+                }
+                restored.attachmentPath = paths.first
+                restored.fileName = names.first
+                restored.attachmentPaths = paths
+                restored.attachmentFileNames = names
+            } else if !snippet.allAttachmentPaths.isEmpty {
                 restored.attachmentPath = nil
+                restored.fileName = nil
+                restored.attachmentPaths = []
+                restored.attachmentFileNames = []
             }
             return restored
         }
@@ -1245,12 +1295,15 @@ final class SnippetStore: ObservableObject {
 
     private func screenshotText(for snippet: Snippet) -> String? {
         let existing = snippet.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !existing.isEmpty, existing != snippet.attachmentPath {
+        if !existing.isEmpty, !snippet.allAttachmentPaths.contains(existing) {
             return existing
         }
-        guard let attachmentPath = snippet.attachmentPath,
-              let recognized = Self.recognizedText(from: URL(fileURLWithPath: attachmentPath)),
-              !recognized.isEmpty else {
+        let recognized = snippet.allAttachmentPaths
+            .compactMap { Self.recognizedText(from: URL(fileURLWithPath: $0)) }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
+        guard !recognized.isEmpty else {
             return nil
         }
         if let index = snippets.firstIndex(where: { $0.id == snippet.id }) {
@@ -1263,15 +1316,21 @@ final class SnippetStore: ObservableObject {
         return recognized
     }
 
-    private func writeImageToPasteboard(path: String) -> Bool {
-        guard let image = NSImage(contentsOfFile: path),
-              let tiffData = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else {
-            return false
+    private func writeImagesToPasteboard(paths: [String]) -> Bool {
+        let items = paths.compactMap { path -> NSPasteboardItem? in
+            guard let image = NSImage(contentsOfFile: path),
+                  let tiffData = image.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiffData),
+                  let pngData = bitmap.representation(using: .png, properties: [:]) else {
+                return nil
+            }
+            let item = NSPasteboardItem()
+            item.setData(pngData, forType: NSPasteboard.PasteboardType("public.png"))
+            item.setData(tiffData, forType: NSPasteboard.PasteboardType("public.tiff"))
+            return item
         }
-
-        return writeImageDataToPasteboard(pngData, tiffData: tiffData)
+        guard !items.isEmpty else { return false }
+        return NSPasteboard.general.writeObjects(items)
     }
 
     private func writeImageDataToPasteboard(_ pngData: Data, tiffData: Data? = nil) -> Bool {

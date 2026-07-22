@@ -20,8 +20,9 @@ enum MarkdownExport {
             if !snippet.tags.isEmpty {
                 lines.append("- Tags: \(snippet.tags.joined(separator: ", "))")
             }
-            if let fileName = snippet.fileName, !fileName.isEmpty {
-                lines.append("- Attachment: \(fileName)")
+            let attachmentNames = snippet.allAttachmentFileNames.filter { !$0.isEmpty }
+            if !attachmentNames.isEmpty {
+                lines.append("- Attachments: \(attachmentNames.joined(separator: ", "))")
             }
             lines.append("")
             lines.append("```")
@@ -40,8 +41,8 @@ enum MarkdownExport {
         if snippet.kind == .screenshot {
             return "[Screenshot has no OCR text]"
         }
-        if let fileName = snippet.fileName, !fileName.isEmpty {
-            return "[Attachment: \(fileName)]"
+        if !snippet.allAttachmentFileNames.isEmpty {
+            return "[Attachments: \(snippet.allAttachmentFileNames.joined(separator: ", "))]"
         }
         return "[No text]"
     }

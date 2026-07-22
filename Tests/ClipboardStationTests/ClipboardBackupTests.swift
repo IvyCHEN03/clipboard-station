@@ -11,8 +11,11 @@ final class ClipboardBackupTests: XCTestCase {
         }
 
         let attachmentURL = directory.appendingPathComponent("screenshot.png")
+        let secondAttachmentURL = directory.appendingPathComponent("screenshot-2.png")
         let attachmentData = Data([0x89, 0x50, 0x4E, 0x47])
+        let secondAttachmentData = Data([0x89, 0x50, 0x4E, 0x48])
         try attachmentData.write(to: attachmentURL)
+        try secondAttachmentData.write(to: secondAttachmentURL)
 
         var settings = StationSettings.defaults
         settings.aiEnrichment = true
@@ -27,6 +30,8 @@ final class ClipboardBackupTests: XCTestCase {
             kind: .screenshot,
             attachmentPath: attachmentURL.path,
             fileName: "screenshot.png",
+            attachmentPaths: [attachmentURL.path, secondAttachmentURL.path],
+            attachmentFileNames: ["screenshot.png", "screenshot-2.png"],
             tags: ["ocr", "demo"]
         )
 
@@ -44,10 +49,12 @@ final class ClipboardBackupTests: XCTestCase {
         XCTAssertEqual(decoded.appVersion, "0.4.0")
         XCTAssertEqual(decoded.snippets, [snippet])
         XCTAssertEqual(decoded.settings, settings)
-        XCTAssertEqual(decoded.attachments.count, 1)
+        XCTAssertEqual(decoded.attachments.count, 2)
         XCTAssertEqual(decoded.attachments.first?.snippetID, snippet.id)
         XCTAssertEqual(decoded.attachments.first?.fileName, "screenshot.png")
         XCTAssertEqual(decoded.attachments.first?.data, attachmentData)
+        XCTAssertEqual(decoded.attachments.last?.fileName, "screenshot-2.png")
+        XCTAssertEqual(decoded.attachments.last?.data, secondAttachmentData)
     }
 
     func testRejectsUnsupportedFutureBackupVersion() throws {
