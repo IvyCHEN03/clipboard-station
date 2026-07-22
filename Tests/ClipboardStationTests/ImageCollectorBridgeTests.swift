@@ -58,4 +58,23 @@ final class ImageCollectorBridgeTests: XCTestCase {
         let second = try XCTUnwrap(JSONSerialization.jsonObject(with: secondData) as? [String: Any])
         XCTAssertEqual(second["hide"] as? Bool, false)
     }
+
+    func testOCRRouteAcceptsPostedImageBody() async throws {
+        let port: NWEndpoint.Port = 47_834
+        let bridge = ImageCollectorBridge(port: port)
+        bridge.start()
+        defer { bridge.stop() }
+
+        try await Task.sleep(for: .milliseconds(250))
+        let url = URL(string: "http://127.0.0.1:\(port.rawValue)/ocr")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("image/png", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Data("not-an-image".utf8)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        let result = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(result["ok"] as? Bool, false)
+        XCTAssertEqual(result["text"] as? String, "")
+    }
 }

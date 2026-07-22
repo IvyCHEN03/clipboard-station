@@ -198,6 +198,9 @@
     } else if (action === "download") {
       const batch = batchForButton(button);
       if (batch) downloadSelected(batch);
+    } else if (action === "ocr") {
+      const batch = batchForButton(button);
+      if (batch) saveSelectedAsText(batch);
     }
   });
 
@@ -384,6 +387,7 @@
         <div class="lic-toolbar${expanded ? "" : " lic-hidden"}">
           <button class="lic-small" type="button" data-action="select-all" title="单击全选，双击取消全选">全选</button>
           <button class="lic-small" type="button" data-action="remove-batch">移除</button>
+          <button class="lic-small" type="button" data-action="ocr" title="使用本机 Apple Vision 识别选中图片">OCR 存文字</button>
           <button class="lic-primary" type="button" data-action="download">保存选中</button>
         </div>
         <div class="lic-grid${expanded ? "" : " lic-hidden"}">
@@ -446,6 +450,27 @@
         renderStatus();
       }
     );
+  }
+
+  function saveSelectedAsText(batch) {
+    const images = batch.images.filter(image => batch.selected.has(image.id));
+    if (images.length === 0) {
+      state.status = "请先选择要识别的图片";
+      renderStatus();
+      return;
+    }
+    state.status = `正在识别 ${images.length} 张图片…`;
+    renderStatus();
+    chrome.runtime.sendMessage({ type: "ocrImages", title: batch.title, images }, response => {
+      if (chrome.runtime.lastError) {
+        state.status = `OCR 失败：${chrome.runtime.lastError.message}`;
+      } else if (response?.ok) {
+        state.status = `已把 ${response.recognized} 张图片保存为文字${response.failed ? `，${response.failed} 张未识别` : ""}`;
+      } else {
+        state.status = response?.error || "OCR 失败";
+      }
+      renderStatus();
+    });
   }
 
   function batchForButton(button) {

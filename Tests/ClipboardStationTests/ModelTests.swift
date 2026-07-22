@@ -85,8 +85,35 @@ final class ModelTests: XCTestCase {
         let snippet = try decoder.decode(Snippet.self, from: data)
 
         XCTAssertEqual(snippet.kind, .text)
+        XCTAssertEqual(snippet.representation, .automatic)
         XCTAssertEqual(snippet.tags, [])
         XCTAssertFalse(snippet.isEnriching)
         XCTAssertFalse(snippet.enrichmentFailed)
+    }
+
+    func testRepresentationDefaultsAndCanSwitchToImage() {
+        var snippet = Snippet(
+            id: UUID(),
+            text: "A short note",
+            title: "Note",
+            createdAt: Date(),
+            source: .quickNote
+        )
+        XCTAssertEqual(snippet.effectiveRepresentation, .text)
+        snippet.representation = .image
+        XCTAssertEqual(snippet.effectiveRepresentation, .image)
+        XCTAssertTrue(snippet.supportsRepresentationToggle)
+    }
+
+    func testDetectsDateAndTimeInsideCopiedText() throws {
+        let detected = try XCTUnwrap(
+            DateContentDetector.firstDate(in: "Review the draft on August 10, 2026 at 2:30 PM")
+        )
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: detected.date)
+        XCTAssertEqual(components.year, 2026)
+        XCTAssertEqual(components.month, 8)
+        XCTAssertEqual(components.day, 10)
+        XCTAssertEqual(components.hour, 14)
+        XCTAssertEqual(components.minute, 30)
     }
 }

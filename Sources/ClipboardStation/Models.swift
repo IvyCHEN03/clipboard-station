@@ -6,6 +6,7 @@ enum SnippetSource: String, Codable, CaseIterable, Identifiable {
     case clipboardCopy
     case manualPasteboardImport
     case screenshot
+    case quickNote
 
     var id: String { rawValue }
 
@@ -19,8 +20,16 @@ enum SnippetSource: String, Codable, CaseIterable, Identifiable {
             return "手动导入"
         case .screenshot:
             return "截图"
+        case .quickNote:
+            return "随笔"
         }
     }
+}
+
+enum SnippetRepresentation: String, Codable {
+    case automatic
+    case text
+    case image
 }
 
 enum SnippetKind: String, Codable {
@@ -52,6 +61,7 @@ struct Snippet: Identifiable, Codable, Equatable {
     var kind: SnippetKind
     var attachmentPath: String?
     var fileName: String?
+    var representation: SnippetRepresentation
     var tags: [String]
     var isEnriching: Bool
     var enrichmentFailed: Bool
@@ -70,6 +80,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         case kind
         case attachmentPath
         case fileName
+        case representation
         case tags
         case isEnriching
         case enrichmentFailed
@@ -85,6 +96,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         kind: SnippetKind = .text,
         attachmentPath: String? = nil,
         fileName: String? = nil,
+        representation: SnippetRepresentation = .automatic,
         tags: [String] = [],
         isEnriching: Bool = false,
         enrichmentFailed: Bool = false,
@@ -98,6 +110,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         self.kind = kind
         self.attachmentPath = attachmentPath
         self.fileName = fileName
+        self.representation = representation
         self.tags = tags
         self.isEnriching = isEnriching
         self.enrichmentFailed = enrichmentFailed
@@ -114,6 +127,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         kind = try container.decodeIfPresent(SnippetKind.self, forKey: .kind) ?? .text
         attachmentPath = try container.decodeIfPresent(String.self, forKey: .attachmentPath)
         fileName = try container.decodeIfPresent(String.self, forKey: .fileName)
+        representation = try container.decodeIfPresent(SnippetRepresentation.self, forKey: .representation) ?? .automatic
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
         isEnriching = false
         enrichmentFailed = try container.decodeIfPresent(Bool.self, forKey: .enrichmentFailed) ?? false
@@ -133,6 +147,17 @@ struct Snippet: Identifiable, Codable, Equatable {
                 tag.localizedCaseInsensitiveContains(value)
                     || value.localizedCaseInsensitiveContains(tag)
             }
+    }
+
+    var effectiveRepresentation: SnippetRepresentation {
+        if representation != .automatic {
+            return representation
+        }
+        return kind == .screenshot ? .image : .text
+    }
+
+    var supportsRepresentationToggle: Bool {
+        kind == .text || kind == .spreadsheet || kind == .screenshot
     }
 }
 

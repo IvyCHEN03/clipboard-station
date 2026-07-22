@@ -627,6 +627,14 @@ private struct SnippetRow: View {
                             isEditingTitle = true
                         }
                     }
+                    if snippet.supportsRepresentationToggle {
+                        IconButton(
+                            systemName: snippet.effectiveRepresentation == .image ? "text.viewfinder" : "photo",
+                            help: snippet.effectiveRepresentation == .image ? "切换为 OCR 文字" : "切换为图片"
+                        ) {
+                            store.toggleRepresentation(for: snippet)
+                        }
+                    }
                     IconButton(systemName: "doc.on.doc", help: "复制") {
                         store.copy(snippet)
                     }
@@ -636,6 +644,25 @@ private struct SnippetRow: View {
                 }
 
                 SnippetBody(snippet: snippet)
+
+                if let detected = store.detectedDate(for: snippet) {
+                    HStack(spacing: 8) {
+                        Label(
+                            detected.date.formatted(date: .abbreviated, time: .shortened),
+                            systemImage: "clock"
+                        )
+                        .lineLimit(1)
+                        Spacer(minLength: 4)
+                        IconButton(systemName: "calendar.badge.plus", help: "加入日历") {
+                            store.addCalendarEvent(for: snippet)
+                        }
+                        IconButton(systemName: "alarm", help: "创建闹钟提醒") {
+                            store.addAlarmReminder(for: snippet)
+                        }
+                    }
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                }
 
                 if snippet.isEnriching || !snippet.tags.isEmpty || snippet.enrichmentFailed {
                     SnippetTagFlowLayout(spacing: 6) {
@@ -757,8 +784,8 @@ private struct SnippetBody: View {
     let snippet: Snippet
 
     var body: some View {
-        if snippet.attachmentPath == nil && (snippet.kind == .text || snippet.kind == .spreadsheet) {
-            Text(snippet.text)
+        if snippet.effectiveRepresentation == .text {
+            Text(snippet.text.isEmpty ? "未识别到文字" : snippet.text)
                 .font(.system(size: 12, design: .monospaced))
                 .lineLimit(5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -786,6 +813,16 @@ private struct SnippetBody: View {
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
             }
+        } else if let image = TextImageRenderer.image(text: snippet.text, title: snippet.title) {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180, alignment: .leading)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(Color.secondary.opacity(0.18))
+                }
         } else {
             HStack(spacing: 8) {
                 Image(systemName: "tablecells")
@@ -1155,6 +1192,7 @@ private struct DraftDock: View {
     @Binding var draggingSnippetID: UUID?
     @Binding var draggingDraftID: UUID?
     @State private var activeDraftSlot: String?
+    @State private var showQuickNote = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1163,6 +1201,13 @@ private struct DraftDock: View {
                     .foregroundStyle(.secondary)
                 Text("组合框")
                     .font(.system(size: 12, weight: .semibold))
+                Button {
+                    showQuickNote.toggle()
+                } label: {
+                    Label("随笔", systemImage: "square.and.pencil")
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
                 Spacer()
                 Button {
                     activeDraftSlot = nil
@@ -1189,6 +1234,29 @@ private struct DraftDock: View {
                     store.clearDraft()
                 }
                 .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
+            }
+
+            if showQuickNote {
+                HStack(alignment: .bottom, spacing: 8) {
+                    TextEditor(text: $store.quickNoteText)
+                        .font(.system(size: 12))
+                        .frame(minHeight: 54, maxHeight: 86)
+                        .padding(5)
+                        .scrollContentBackground(.hidden)
+                        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 7)
+                                .strokeBorder(Color.secondary.opacity(0.2))
+                        }
+                    Button {
+                        store.saveQuickNote()
+                    } label: {
+                        Label("形成一条", systemImage: "plus.circle.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(store.quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
             }
 
             ScrollView(.horizontal, showsIndicators: false) {

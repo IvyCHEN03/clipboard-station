@@ -4,17 +4,25 @@ struct PersistedState: Codable {
     var snippets: [Snippet]
     var deletedSnippets: [DeletedSnippet]
     var settings: StationSettings
+    var quickNoteText: String
 
     enum CodingKeys: String, CodingKey {
         case snippets
         case deletedSnippets
         case settings
+        case quickNoteText
     }
 
-    init(snippets: [Snippet], deletedSnippets: [DeletedSnippet] = [], settings: StationSettings) {
+    init(
+        snippets: [Snippet],
+        deletedSnippets: [DeletedSnippet] = [],
+        settings: StationSettings,
+        quickNoteText: String = ""
+    ) {
         self.snippets = snippets
         self.deletedSnippets = deletedSnippets
         self.settings = settings
+        self.quickNoteText = quickNoteText
     }
 
     init(from decoder: Decoder) throws {
@@ -22,6 +30,7 @@ struct PersistedState: Codable {
         snippets = try container.decode([Snippet].self, forKey: .snippets)
         deletedSnippets = try container.decodeIfPresent([DeletedSnippet].self, forKey: .deletedSnippets) ?? []
         settings = try container.decode(StationSettings.self, forKey: .settings)
+        quickNoteText = try container.decodeIfPresent(String.self, forKey: .quickNoteText) ?? ""
     }
 }
 

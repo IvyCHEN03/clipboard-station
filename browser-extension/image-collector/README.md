@@ -10,6 +10,7 @@ Experimental Chrome/Edge extension for collecting image-heavy posts and archivin
 - Double-clicks a row to expand a selectable grid.
 - Uses the post title for each temporary row and its local Downloads subfolder.
 - Converts selected images to real PNG files before saving.
+- Runs selected images through local Apple Vision OCR and saves one combined UTF-8 text file.
 - Saves the current page as a searchable static HTML snapshot.
 
 This is designed for pages such as image-heavy articles, inspiration boards, and social posts where the page itself does not provide a reliable "download all" button.
@@ -36,6 +37,8 @@ browser-extension/image-collector
 6. Click `保存选中`.
 
 Images are saved as PNG through the browser download manager under a `LingganImages/...` folder.
+
+Click `OCR 存文字` to recognize only the selected images and save their combined text under `Downloads/LingganOCR/...`. The macOS Linggan app must be running because OCR is performed locally with Apple Vision; image data is not sent to an AI provider or cloud OCR service.
 
 ### Archive A Complete Web Page
 

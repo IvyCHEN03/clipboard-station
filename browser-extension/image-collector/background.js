@@ -26,6 +26,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "ocrImages") {
+    const images = Array.isArray(message.images) ? message.images : [];
+    ocrImagesAsText(images, message.title)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
+  }
+
   if (message?.type !== "downloadImages") {
     return false;
   }
@@ -243,6 +251,51 @@ function textToDataURL(value) {
   return bytesToDataURL(new TextEncoder().encode(value), "text/html;charset=utf-8");
 }
 
+function plainTextToDataURL(value) {
+  return bytesToDataURL(new TextEncoder().encode(value), "text/plain;charset=utf-8");
+}
+
+async function ocrImagesAsText(images, title) {
+  if (images.length === 0) throw new Error("请先选择要识别的图片");
+  const sections = [];
+  const fingerprints = new Set();
+  let failed = 0;
+  for (const image of images) {
+    try {
+      const urls = [...new Set([...(Array.isArray(image?.urls) ? image.urls : []), image?.url].filter(isDownloadableURL))];
+      const png = await convertFirstAvailableToPNG(urls);
+      if (fingerprints.has(png.fingerprint)) continue;
+      fingerprints.add(png.fingerprint);
+      const response = await fetch("http://127.0.0.1:47831/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "image/png" },
+        body: png.bytes,
+        cache: "no-store"
+      });
+      const result = await response.json();
+      const text = String(result?.text || "").trim();
+      if (!response.ok || !text) {
+        failed += 1;
+        continue;
+      }
+      sections.push(text);
+    } catch (error) {
+      failed += 1;
+      console.warn("Linggan OCR failed:", error?.message || error);
+    }
+  }
+  if (sections.length === 0) {
+    throw new Error("没有识别到文字。请确认灵感悬浮球正在运行");
+  }
+  const safeTitle = sanitizePathSegment(title || "web-images");
+  const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  await startDownload(
+    plainTextToDataURL(sections.join("\n\n")),
+    `LingganOCR/${date}-${safeTitle}/${safeTitle}-OCR.txt`
+  );
+  return { ok: true, recognized: sections.length, failed };
+}
+
 async function downloadImagesAsPNG(images, folder, title) {
   let saved = 0;
   let failed = 0;
@@ -306,6 +359,7 @@ async function convertToPNG(url) {
     const fingerprint = [...digest].map(value => value.toString(16).padStart(2, "0")).join("");
     return {
       dataURL: bytesToDataURL(bytes),
+      bytes,
       fingerprint,
       perceptualHash: differenceHash(bitmap)
     };
