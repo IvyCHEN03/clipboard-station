@@ -1,6 +1,13 @@
 import Foundation
 import Network
 
+struct CollectedWebImage: Sendable {
+    let data: Data
+    let title: String
+    let ocrText: String
+    let index: Int
+}
+
 final class ImageCollectorBridge: @unchecked Sendable {
     static let port: NWEndpoint.Port = 47_831
     private static let maximumRequestSize = 20 * 1_024 * 1_024
@@ -13,9 +20,14 @@ final class ImageCollectorBridge: @unchecked Sendable {
     private var captureRequestID = 0
     private var consumedRequestID = 0
     private var panelOpen = false
+    private let saveImageHandler: @Sendable (CollectedWebImage) async -> Bool
 
-    init(port: NWEndpoint.Port = ImageCollectorBridge.port) {
+    init(
+        port: NWEndpoint.Port = ImageCollectorBridge.port,
+        saveImageHandler: @escaping @Sendable (CollectedWebImage) async -> Bool = { _ in false }
+    ) {
         self.port = port
+        self.saveImageHandler = saveImageHandler
     }
 
     func start() {
@@ -133,6 +145,32 @@ final class ImageCollectorBridge: @unchecked Sendable {
             }
             return
         }
+        if request.method == "POST", request.path.hasPrefix("/save-image") {
+            let origin = request.headers["origin"] ?? ""
+            guard origin.isEmpty || origin.hasPrefix("chrome-extension://") else {
+                sendJSON(["ok": false, "error": "只接受灵感收图扩展"], status: "403 Forbidden", on: connection)
+                return
+            }
+            let imageData = request.body
+            let metadata = Self.saveImageMetadata(from: request.path)
+            let owner = self
+            Task.detached(priority: .userInitiated) {
+                let text = OCRTextRecognizer.recognize(data: imageData) ?? ""
+                let saved = await owner.saveImageHandler(CollectedWebImage(
+                    data: imageData,
+                    title: metadata.title,
+                    ocrText: text,
+                    index: metadata.index
+                ))
+                owner.queue.async {
+                    owner.sendJSON([
+                        "ok": saved,
+                        "recognized": !text.isEmpty
+                    ], on: connection)
+                }
+            }
+            return
+        }
 
         let isPanelStateUpdate = request.path.hasPrefix("/panel-state?")
         if isPanelStateUpdate {
@@ -174,6 +212,7 @@ final class ImageCollectorBridge: @unchecked Sendable {
     private struct LocalRequest {
         let method: String
         let path: String
+        let headers: [String: String]
         let body: Data
     }
 
@@ -186,6 +225,12 @@ final class ImageCollectorBridge: @unchecked Sendable {
         let lines = header.components(separatedBy: "\r\n")
         let requestParts = lines.first?.split(separator: " ") ?? []
         guard requestParts.count >= 2 else { return nil }
+        let headers = lines.dropFirst().reduce(into: [String: String]()) { result, line in
+            let parts = line.split(separator: ":", maxSplits: 1)
+            guard parts.count == 2 else { return }
+            result[parts[0].trimmingCharacters(in: .whitespaces).lowercased()] =
+                parts[1].trimmingCharacters(in: .whitespaces)
+        }
         let contentLength = lines.dropFirst().compactMap { line -> Int? in
             let parts = line.split(separator: ":", maxSplits: 1)
             guard parts.count == 2,
@@ -199,8 +244,19 @@ final class ImageCollectorBridge: @unchecked Sendable {
         return LocalRequest(
             method: String(requestParts[0]).uppercased(),
             path: String(requestParts[1]),
+            headers: headers,
             body: Data(data[bodyStart..<(bodyStart + contentLength)])
         )
+    }
+
+    private static func saveImageMetadata(from path: String) -> (title: String, index: Int) {
+        guard let components = URLComponents(string: "http://127.0.0.1\(path)") else {
+            return ("网页图片", 1)
+        }
+        let values = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        let title = values["title"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let index = max(Int(values["index"] ?? "") ?? 1, 1)
+        return (title.isEmpty ? "网页图片 \(index)" : title, index)
     }
 
     private func consumePendingCapture() -> Bool {

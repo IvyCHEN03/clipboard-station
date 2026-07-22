@@ -34,6 +34,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "saveImagesToStation") {
+    const images = Array.isArray(message.images) ? message.images : [];
+    saveImagesToStation(images, message.title)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
+  }
+
   if (message?.type !== "downloadImages") {
     return false;
   }
@@ -294,6 +302,56 @@ async function ocrImagesAsText(images, title) {
     `LingganOCR/${date}-${safeTitle}/${safeTitle}-OCR.txt`
   );
   return { ok: true, recognized: sections.length, failed };
+}
+
+async function saveImagesToStation(images, title) {
+  if (images.length === 0) throw new Error("请先选择要存入灵感球的图片");
+  const fingerprints = new Set();
+  const baseTitle = String(title || "网页图片").trim() || "网页图片";
+  let saved = 0;
+  let recognized = 0;
+  let failed = 0;
+  let duplicates = 0;
+
+  // The native app inserts each new snippet at the top, so send the batch in
+  // reverse to preserve the post's original top-to-bottom order in the list.
+  for (const [position, image] of [...images.entries()].reverse()) {
+    try {
+      const urls = [...new Set([...(Array.isArray(image?.urls) ? image.urls : []), image?.url].filter(isDownloadableURL))];
+      const png = await convertFirstAvailableToPNG(urls);
+      if (fingerprints.has(png.fingerprint)) {
+        duplicates += 1;
+        continue;
+      }
+      fingerprints.add(png.fingerprint);
+      const index = position + 1;
+      const itemTitle = images.length > 1 ? `${baseTitle} · ${index}/${images.length}` : baseTitle;
+      const endpoint = new URL("http://127.0.0.1:47831/save-image");
+      endpoint.searchParams.set("title", itemTitle);
+      endpoint.searchParams.set("index", String(index));
+      const response = await fetch(endpoint.toString(), {
+        method: "POST",
+        headers: { "Content-Type": "image/png" },
+        body: png.bytes,
+        cache: "no-store"
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) {
+        failed += 1;
+        continue;
+      }
+      saved += 1;
+      if (result.recognized) recognized += 1;
+    } catch (error) {
+      failed += 1;
+      console.warn("Linggan station save failed:", error?.message || error);
+    }
+  }
+
+  if (saved === 0) {
+    throw new Error("没有图片存入灵感球。请确认灵感悬浮球正在运行");
+  }
+  return { ok: true, saved, recognized, failed, duplicates };
 }
 
 async function downloadImagesAsPNG(images, folder, title) {

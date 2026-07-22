@@ -7,6 +7,7 @@ enum SnippetSource: String, Codable, CaseIterable, Identifiable {
     case manualPasteboardImport
     case screenshot
     case quickNote
+    case webImageCollector
 
     var id: String { rawValue }
 
@@ -22,6 +23,8 @@ enum SnippetSource: String, Codable, CaseIterable, Identifiable {
             return "截图"
         case .quickNote:
             return "随笔"
+        case .webImageCollector:
+            return "网页收图"
         }
     }
 }

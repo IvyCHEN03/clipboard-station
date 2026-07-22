@@ -70,7 +70,21 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     private let isVideoDemo = ProcessInfo.processInfo.environment["CLIPBOARD_STATION_VIDEO_DEMO"] == "1"
     private let monitor: ClipboardMonitor
     private let screenshotMonitor: ScreenshotShortcutMonitor
-    private let imageCollectorBridge = ImageCollectorBridge()
+    private lazy var imageCollectorBridge = ImageCollectorBridge { [weak self] image in
+        guard let self else { return false }
+        return await MainActor.run {
+            let saved = self.store.addWebImage(
+                data: image.data,
+                title: image.title,
+                ocrText: image.ocrText,
+                index: image.index
+            )
+            if saved {
+                self.showStationWindow()
+            }
+            return saved
+        }
+    }
     private let hotKey = HotKeyController()
     private let keyboardMonitor = KeyboardShortcutMonitor()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)

@@ -201,6 +201,9 @@
     } else if (action === "ocr") {
       const batch = batchForButton(button);
       if (batch) saveSelectedAsText(batch);
+    } else if (action === "save-to-station") {
+      const batch = batchForButton(button);
+      if (batch) saveSelectedToStation(batch);
     }
   });
 
@@ -388,6 +391,7 @@
           <button class="lic-small" type="button" data-action="select-all" title="单击全选，双击取消全选">全选</button>
           <button class="lic-small" type="button" data-action="remove-batch">移除</button>
           <button class="lic-small" type="button" data-action="ocr" title="使用本机 Apple Vision 识别选中图片">OCR 存文字</button>
+          <button class="lic-small" type="button" data-action="save-to-station" title="原图和 OCR 文字一起存入灵感球">存入灵感球</button>
           <button class="lic-primary" type="button" data-action="download">保存选中</button>
         </div>
         <div class="lic-grid${expanded ? "" : " lic-hidden"}">
@@ -468,6 +472,27 @@
         state.status = `已把 ${response.recognized} 张图片保存为文字${response.failed ? `，${response.failed} 张未识别` : ""}`;
       } else {
         state.status = response?.error || "OCR 失败";
+      }
+      renderStatus();
+    });
+  }
+
+  function saveSelectedToStation(batch) {
+    const images = batch.images.filter(image => batch.selected.has(image.id));
+    if (images.length === 0) {
+      state.status = "请先选择要存入灵感球的图片";
+      renderStatus();
+      return;
+    }
+    state.status = `正在把 ${images.length} 张图片存入灵感球…`;
+    renderStatus();
+    chrome.runtime.sendMessage({ type: "saveImagesToStation", title: batch.title, images }, response => {
+      if (chrome.runtime.lastError) {
+        state.status = `存入失败：${chrome.runtime.lastError.message}`;
+      } else if (response?.ok) {
+        state.status = `已存入灵感球 ${response.saved} 张 · ${response.recognized} 张带 OCR 文字${response.duplicates ? ` · 跳过 ${response.duplicates} 张重复图` : ""}${response.failed ? ` · ${response.failed} 张失败` : ""}`;
+      } else {
+        state.status = response?.error || "存入灵感球失败";
       }
       renderStatus();
     });

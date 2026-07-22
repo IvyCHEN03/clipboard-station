@@ -31,6 +31,7 @@ final class SnippetStore: ObservableObject {
     }
     @Published var polishedDraftText = ""
     @Published var isPolishingDraft = false
+    @Published var isPolishingQuickNote = false
     @Published var quickNoteText = "" {
         didSet {
             if oldValue != quickNoteText, didFinishInitialLoad, !isApplyingInitialLoad {
@@ -278,6 +279,41 @@ final class SnippetStore: ObservableObject {
         showToast("随笔已形成一条内容")
     }
 
+    func polishQuickNote() {
+        let source = quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !source.isEmpty else {
+            showToast("随笔没有可润色的文字")
+            return
+        }
+        guard let configuration = polishConfiguration() else { return }
+        guard !isPolishingQuickNote else { return }
+
+        isPolishingQuickNote = true
+        showToast("DeepSeek 正在润色随笔")
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let result = try await enricher.polish(
+                    text: source,
+                    baseURL: configuration.baseURL,
+                    model: configuration.model,
+                    apiKey: configuration.apiKey
+                )
+                guard quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines) == source else {
+                    isPolishingQuickNote = false
+                    showToast("随笔内容已变化，未覆盖新的文字")
+                    return
+                }
+                quickNoteText = result
+                isPolishingQuickNote = false
+                showToast("随笔 Polish 完成")
+            } catch {
+                isPolishingQuickNote = false
+                handleAIError(error, prefix: "随笔 Polish 失败")
+            }
+        }
+    }
+
     func toggleRepresentation(for snippet: Snippet) {
         guard snippet.supportsRepresentationToggle,
               let index = snippets.firstIndex(where: { $0.id == snippet.id }) else {
@@ -418,6 +454,42 @@ final class SnippetStore: ObservableObject {
         }
     }
 
+    @discardableResult
+    func addWebImage(data: Data, title rawTitle: String, ocrText: String, index: Int) -> Bool {
+        guard NSImage(data: data) != nil else {
+            showToast("网页图片格式无效")
+            return false
+        }
+        let stamp = Self.fileDateFormatter.string(from: Date())
+        let fileName = "web-image-\(stamp)-\(index)-\(UUID().uuidString.prefix(8)).png"
+        let url = attachmentsDirectory.appendingPathComponent(fileName)
+        do {
+            try data.write(to: url, options: [.atomic])
+        } catch {
+            showToast("网页图片保存失败")
+            return false
+        }
+
+        let cleanTitle = rawTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanText = ocrText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let snippet = Snippet(
+            id: UUID(),
+            text: cleanText,
+            title: cleanTitle.isEmpty ? "网页图片 \(index)" : cleanTitle,
+            createdAt: Date(),
+            source: .webImageCollector,
+            kind: .screenshot,
+            attachmentPath: url.path,
+            fileName: fileName,
+            representation: .image
+        )
+        snippets.insert(snippet, at: 0)
+        persist()
+        enrichSnippetIfNeeded(snippet.id)
+        showToast(cleanText.isEmpty ? "图片已存入灵感球" : "图片和 OCR 文字已存入灵感球")
+        return true
+    }
+
     func addPasteboardContents(source: SnippetSource) {
         let pasteboard = NSPasteboard.general
         if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
@@ -531,8 +603,20 @@ final class SnippetStore: ObservableObject {
     }
 
     func addToDraft(id: UUID, before targetID: UUID? = nil) {
-        guard snippets.contains(where: { $0.id == id }) else {
+        guard let snippet = snippets.first(where: { $0.id == id }) else {
             return
+        }
+        if snippet.kind == .screenshot {
+            guard screenshotText(for: snippet)?.isEmpty == false else {
+                showToast("这张图片没有识别到文字，暂时不能加入组合框")
+                return
+            }
+            if let index = snippets.firstIndex(where: { $0.id == id }),
+               snippets[index].effectiveRepresentation != .text {
+                snippets[index].representation = .text
+                persist()
+                showToast("图片已转换为 OCR 文字并加入组合框")
+            }
         }
         draftSnippetIDs.removeAll { $0 == id }
         if let targetID, let targetIndex = draftSnippetIDs.firstIndex(of: targetID) {
@@ -587,13 +671,7 @@ final class SnippetStore: ObservableObject {
             showToast("组合框没有可润色的文字")
             return
         }
-        let key = aiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        let model = settings.aiModel.trimmingCharacters(in: .whitespacesAndNewlines)
-        let baseURL = settings.aiBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty, !model.isEmpty, !baseURL.isEmpty else {
-            showToast("请先在设置中填写 DeepSeek API Key、模型名和 Base URL")
-            return
-        }
+        guard let configuration = polishConfiguration() else { return }
         guard !isPolishingDraft else { return }
 
         isPolishingDraft = true
@@ -603,9 +681,9 @@ final class SnippetStore: ObservableObject {
             do {
                 let result = try await enricher.polish(
                     text: source,
-                    baseURL: baseURL,
-                    model: model,
-                    apiKey: key
+                    baseURL: configuration.baseURL,
+                    model: configuration.model,
+                    apiKey: configuration.apiKey
                 )
                 guard assembledDraftText() == source else {
                     isPolishingDraft = false
@@ -626,6 +704,17 @@ final class SnippetStore: ObservableObject {
     var hasCurrentPolishedDraft: Bool {
         !polishedDraftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && polishedDraftSourceText == assembledDraftText()
+    }
+
+    private func polishConfiguration() -> (baseURL: String, model: String, apiKey: String)? {
+        let key = aiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let model = settings.aiModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let baseURL = settings.aiBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty, !model.isEmpty, !baseURL.isEmpty else {
+            showToast("请先在设置中填写 DeepSeek API Key、模型名和 Base URL")
+            return nil
+        }
+        return (baseURL, model, key)
     }
 
     private func assembledDraftText() -> String {

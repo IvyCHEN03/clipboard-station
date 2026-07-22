@@ -1248,14 +1248,40 @@ private struct DraftDock: View {
                             RoundedRectangle(cornerRadius: 7)
                                 .strokeBorder(Color.secondary.opacity(0.2))
                         }
-                    Button {
-                        store.saveQuickNote()
-                    } label: {
-                        Label("形成一条", systemImage: "plus.circle.fill")
+                    VStack(spacing: 6) {
+                        Button {
+                            store.polishQuickNote()
+                        } label: {
+                            if store.isPolishingQuickNote {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .frame(minWidth: 72)
+                            } else {
+                                Label("Polish", systemImage: "wand.and.stars")
+                                    .frame(minWidth: 72)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(
+                            store.isPolishingQuickNote
+                                || store.quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
+                        .help("使用同一个 DeepSeek 配置润色随笔")
+
+                        Button {
+                            store.saveQuickNote()
+                        } label: {
+                            Label("形成一条", systemImage: "plus.circle.fill")
+                                .frame(minWidth: 72)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .disabled(
+                            store.isPolishingQuickNote
+                                || store.quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    .disabled(store.quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
 
@@ -1357,7 +1383,7 @@ private struct DraftBlock: View {
     var body: some View {
         HStack(spacing: 6) {
             if kind == .screenshot {
-                Image(systemName: "photo")
+                Image(systemName: "text.viewfinder")
                     .font(.system(size: 10, weight: .semibold))
             }
             Text("\(number)")

@@ -40,6 +40,8 @@ Images are saved as PNG through the browser download manager under a `LingganIma
 
 Click `OCR 存文字` to recognize only the selected images and save their combined text under `Downloads/LingganOCR/...`. The macOS Linggan app must be running because OCR is performed locally with Apple Vision; image data is not sent to an AI provider or cloud OCR service.
 
+Click `存入灵感球` to add the selected originals and their local OCR text to the native app. Each saved image can switch between image and text views; dragging it into the composition dock automatically uses its OCR text.
+
 ### Archive A Complete Web Page
 
 1. Open the Linggan image panel on any normal `http` or `https` page.

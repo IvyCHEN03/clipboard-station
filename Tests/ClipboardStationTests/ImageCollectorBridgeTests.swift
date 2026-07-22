@@ -4,6 +4,14 @@ import XCTest
 @testable import ClipboardStation
 
 final class ImageCollectorBridgeTests: XCTestCase {
+    private actor SavedImageBox {
+        private(set) var image: CollectedWebImage?
+
+        func store(_ image: CollectedWebImage) {
+            self.image = image
+        }
+    }
+
     func testCaptureRequestIsDeliveredOnce() async throws {
         let port: NWEndpoint.Port = 47_832
         let bridge = ImageCollectorBridge(port: port)
@@ -76,5 +84,41 @@ final class ImageCollectorBridgeTests: XCTestCase {
         let result = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         XCTAssertEqual(result["ok"] as? Bool, false)
         XCTAssertEqual(result["text"] as? String, "")
+    }
+
+    func testSaveImageRouteDeliversImageToNativeHandler() async throws {
+        let port: NWEndpoint.Port = 47_835
+        let box = SavedImageBox()
+        let bridge = ImageCollectorBridge(port: port) { image in
+            await box.store(image)
+            return true
+        }
+        bridge.start()
+        defer { bridge.stop() }
+
+        try await Task.sleep(for: .milliseconds(250))
+        let title = "帖子灵感 · 1/2"
+        var components = URLComponents(string: "http://127.0.0.1:\(port.rawValue)/save-image")!
+        components.queryItems = [
+            URLQueryItem(name: "title", value: title),
+            URLQueryItem(name: "index", value: "1")
+        ]
+        var request = URLRequest(url: try XCTUnwrap(components.url))
+        request.httpMethod = "POST"
+        request.setValue("image/png", forHTTPHeaderField: "Content-Type")
+        request.setValue("chrome-extension://test-extension", forHTTPHeaderField: "Origin")
+        request.httpBody = try XCTUnwrap(Data(base64Encoded:
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        ))
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        let result = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(result["ok"] as? Bool, true)
+
+        let saved = await box.image
+        XCTAssertEqual(saved?.title, title)
+        XCTAssertEqual(saved?.index, 1)
+        XCTAssertEqual(saved?.data, request.httpBody)
     }
 }
