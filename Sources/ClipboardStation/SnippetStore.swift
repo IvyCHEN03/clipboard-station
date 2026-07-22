@@ -124,7 +124,7 @@ final class SnippetStore: ObservableObject {
             snippet.tags.isEmpty
                 && !snippet.isEnriching
                 && !snippet.enrichmentFailed
-                && hasExportableText(snippet)
+                && hasPotentialEnrichmentText(snippet)
         }.count
     }
 
@@ -911,7 +911,7 @@ final class SnippetStore: ObservableObject {
                     && snippet.tags.isEmpty
                     && !snippet.isEnriching
                     && !snippet.enrichmentFailed
-                    && !(exportText(for: snippet) ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    && hasPotentialEnrichmentText(snippet)
             }
             .map(\.id)
 
@@ -1289,8 +1289,11 @@ final class SnippetStore: ObservableObject {
         return snippet.text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func hasExportableText(_ snippet: Snippet) -> Bool {
-        !(exportText(for: snippet) ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    private func hasPotentialEnrichmentText(_ snippet: Snippet) -> Bool {
+        if !snippet.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        return snippet.kind == .screenshot && !snippet.allAttachmentPaths.isEmpty
     }
 
     private func screenshotText(for snippet: Snippet) -> String? {

@@ -887,6 +887,7 @@ private struct ImageViewer: View {
     let images: [NSImage]
     @Binding var selectedIndex: Int
     @Environment(\.dismiss) private var dismiss
+    @State private var zoomScale: CGFloat = 1
 
     private var safeIndex: Int {
         guard !images.isEmpty else { return 0 }
@@ -905,6 +906,23 @@ private struct ImageViewer: View {
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
+                if !images.isEmpty {
+                    IconButton(systemName: "minus.magnifyingglass", help: "缩小") {
+                        changeZoom(by: -0.25)
+                    }
+                    .disabled(zoomScale <= 0.25)
+                    Text("\(Int((zoomScale * 100).rounded()))%")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 42)
+                    IconButton(systemName: "plus.magnifyingglass", help: "放大") {
+                        changeZoom(by: 0.25)
+                    }
+                    .disabled(zoomScale >= 4)
+                    IconButton(systemName: "arrow.counterclockwise", help: "适合窗口") {
+                        zoomScale = 1
+                    }
+                }
                 IconButton(systemName: "xmark", help: "关闭大图") {
                     dismiss()
                 }
@@ -916,7 +934,7 @@ private struct ImageViewer: View {
             Divider()
 
             ZStack {
-                Color(nsColor: .underPageBackgroundColor)
+                Color.white
 
                 if images.isEmpty {
                     VStack(spacing: 10) {
@@ -927,10 +945,24 @@ private struct ImageViewer: View {
                     }
                     .foregroundStyle(.secondary)
                 } else {
-                    Image(nsImage: images[safeIndex])
-                        .resizable()
-                        .scaledToFit()
-                        .padding(24)
+                    GeometryReader { proxy in
+                        let fitted = fittedSize(for: images[safeIndex], in: proxy.size)
+                        ScrollView([.horizontal, .vertical]) {
+                            Image(nsImage: images[safeIndex])
+                                .resizable()
+                                .interpolation(.high)
+                                .frame(
+                                    width: fitted.width * zoomScale,
+                                    height: fitted.height * zoomScale
+                                )
+                                .frame(
+                                    minWidth: proxy.size.width,
+                                    minHeight: proxy.size.height,
+                                    alignment: .center
+                                )
+                        }
+                        .background(Color.white)
+                    }
                 }
 
                 if images.count > 1 {
@@ -984,6 +1016,24 @@ private struct ImageViewer: View {
         .onAppear {
             selectedIndex = safeIndex
         }
+        .onChange(of: selectedIndex) { _ in
+            zoomScale = 1
+        }
+    }
+
+    private func changeZoom(by amount: CGFloat) {
+        withAnimation(.easeOut(duration: 0.12)) {
+            zoomScale = min(max(zoomScale + amount, 0.25), 4)
+        }
+    }
+
+    private func fittedSize(for image: NSImage, in container: CGSize) -> CGSize {
+        let availableWidth = max(container.width - 48, 1)
+        let availableHeight = max(container.height - 48, 1)
+        let imageWidth = max(image.size.width, 1)
+        let imageHeight = max(image.size.height, 1)
+        let scale = min(availableWidth / imageWidth, availableHeight / imageHeight)
+        return CGSize(width: imageWidth * scale, height: imageHeight * scale)
     }
 
     @ViewBuilder
