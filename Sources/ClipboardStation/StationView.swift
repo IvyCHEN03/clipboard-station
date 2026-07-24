@@ -12,6 +12,7 @@ struct StationView: View {
     @State private var draggingSnippetID: UUID?
     @State private var draggingDraftID: UUID?
     @State private var selectedSnippetIDs = Set<UUID>()
+    @State private var selectionAnchorID: UUID?
     @State private var isRewound = false
 
     var body: some View {
@@ -50,6 +51,9 @@ struct StationView: View {
         .animation(.easeOut(duration: 0.18), value: store.toast)
         .onChange(of: store.filteredSnippets.map(\.id)) { visibleIDs in
             selectedSnippetIDs.formIntersection(Set(visibleIDs))
+            if let selectionAnchorID, !visibleIDs.contains(selectionAnchorID) {
+                self.selectionAnchorID = nil
+            }
         }
     }
 
@@ -259,9 +263,11 @@ struct StationView: View {
                 Button {
                     if allVisibleSelected {
                         selectedSnippetIDs.subtract(visibleIDs)
+                        selectionAnchorID = nil
                         store.showToast("已取消当前选择")
                     } else {
                         selectedSnippetIDs = visibleIDs
+                        selectionAnchorID = displayedSnippets.first?.id
                         store.showToast("已全选当前 \(visibleIDs.count) 条")
                     }
                 } label: {
@@ -275,6 +281,7 @@ struct StationView: View {
 
                 Button {
                     selectedSnippetIDs.subtract(visibleIDs)
+                    selectionAnchorID = nil
                     store.showToast("已取消当前筛选中的选择")
                 } label: {
                     Label("取消", systemImage: "xmark.square")
@@ -312,6 +319,7 @@ struct StationView: View {
                 Button(role: .destructive) {
                     store.delete(ids: visibleSelection)
                     selectedSnippetIDs.subtract(visibleSelection)
+                    selectionAnchorID = nil
                 } label: {
                     Label("删除", systemImage: "trash")
                 }
@@ -353,7 +361,11 @@ struct StationView: View {
                         SnippetRow(
                             snippet: snippet,
                             store: store,
-                            isSelected: selectedSnippetIDs.contains(snippet.id)
+                            isSelected: selectedSnippetIDs.contains(snippet.id),
+                            rangeSelectionDirection: rangeSelectionDirection(for: snippet.id),
+                            selectRange: {
+                                selectRange(to: snippet.id)
+                            }
                         ) {
                             toggleSelection(snippet.id)
                         }
@@ -423,9 +435,37 @@ struct StationView: View {
     private func toggleSelection(_ id: UUID) {
         if selectedSnippetIDs.contains(id) {
             selectedSnippetIDs.remove(id)
+            if selectionAnchorID == id {
+                selectionAnchorID = nil
+            }
         } else {
             selectedSnippetIDs.insert(id)
+            selectionAnchorID = id
         }
+    }
+
+    private func rangeSelectionDirection(for targetID: UUID) -> RangeSelectionDirection? {
+        guard !selectedSnippetIDs.contains(targetID),
+              let selectionAnchorID else {
+            return nil
+        }
+        return RangeSelection.direction(
+            from: selectionAnchorID,
+            to: targetID,
+            in: displayedSnippets.map(\.id)
+        )
+    }
+
+    private func selectRange(to targetID: UUID) {
+        guard let selectionAnchorID else { return }
+        let rangeIDs = RangeSelection.ids(
+            from: selectionAnchorID,
+            to: targetID,
+            in: displayedSnippets.map(\.id)
+        )
+        guard !rangeIDs.isEmpty else { return }
+        selectedSnippetIDs.formUnion(rangeIDs)
+        store.showToast("已连续选择 \(rangeIDs.count) 条")
     }
 
 }
@@ -556,15 +596,28 @@ private struct SnippetRow: View {
     let snippet: Snippet
     @ObservedObject var store: SnippetStore
     let isSelected: Bool
+    let rangeSelectionDirection: RangeSelectionDirection?
+    let selectRange: () -> Void
     let toggleSelection: () -> Void
     @State private var title: String
     @State private var isEditingTitle = false
     @State private var orderText: String
+    @State private var isHovering = false
+    @State private var isRangeActionHovering = false
 
-    init(snippet: Snippet, store: SnippetStore, isSelected: Bool, toggleSelection: @escaping () -> Void) {
+    init(
+        snippet: Snippet,
+        store: SnippetStore,
+        isSelected: Bool,
+        rangeSelectionDirection: RangeSelectionDirection?,
+        selectRange: @escaping () -> Void,
+        toggleSelection: @escaping () -> Void
+    ) {
         self.snippet = snippet
         self.store = store
         self.isSelected = isSelected
+        self.rangeSelectionDirection = rangeSelectionDirection
+        self.selectRange = selectRange
         self.toggleSelection = toggleSelection
         _title = State(initialValue: snippet.title)
         _orderText = State(initialValue: "\(store.displayIndex(for: snippet) ?? 1)")
@@ -576,8 +629,8 @@ private struct SnippetRow: View {
 
         HStack(alignment: .top, spacing: 8) {
             Button(action: toggleSelection) {
-                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 15, weight: .semibold))
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(isSelected ? orderColor : .secondary)
             }
             .buttonStyle(.plain)
@@ -718,6 +771,15 @@ private struct SnippetRow: View {
                 .strokeBorder(isSelected ? orderColor.opacity(0.35) : Color.clear)
         }
         .contentShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(alignment: rangeSelectionDirection == .up ? .top : .bottom) {
+            if isHovering || isRangeActionHovering, let rangeSelectionDirection {
+                SelectToHereButton(direction: rangeSelectionDirection, action: selectRange)
+                    .offset(y: rangeSelectionDirection == .up ? -16 : 16)
+                    .onHover { isRangeActionHovering = $0 }
+            }
+        }
+        .zIndex((isHovering || isRangeActionHovering) && rangeSelectionDirection != nil ? 2 : 0)
+        .onHover { isHovering = $0 }
         .onTapGesture {
             toggleSelection()
         }
@@ -754,6 +816,32 @@ private struct SnippetRow: View {
         formatter.dateFormat = "MM-dd HH:mm:ss"
         return formatter
     }()
+}
+
+private struct SelectToHereButton: View {
+    let direction: RangeSelectionDirection
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(
+                "选择到这里",
+                systemImage: direction == .up ? "arrow.up" : "arrow.down"
+            )
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 12)
+            .frame(height: 28)
+            .background(.regularMaterial, in: Capsule())
+            .overlay {
+                Capsule()
+                    .strokeBorder(Color.accentColor.opacity(0.2))
+            }
+            .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
+        }
+        .buttonStyle(.plain)
+        .help(direction == .up ? "向上连续选择到这一条" : "向下连续选择到这一条")
+    }
 }
 
 private struct BubbleLogo: View {
