@@ -41,10 +41,14 @@ The app intentionally allows repeated captures. If you copy the same content thr
 
 - Use search for title, body, source, or tag.
 - Use time filters: Today, 3 days, or Fish 7-day memory.
+- Click the star on a snippet to favorite it, then use the `收藏` filter to show favorites only. Favorites do not expire into the memory shore automatically.
+- Click `日期` to choose an inclusive start and end date. Applying a custom range clears the preset time filter, while search and tag filters continue to apply.
 - Select one or more tag chips to narrow the list.
 - Click a selected tag again to remove it from the filter.
 
 The header shows the current filtered count so hidden snippets are not mistaken for lost snippets.
+
+If copied text contains a recognizable date and time, the snippet shows Calendar and Reminder actions. They create a local event or reminder only after you click the corresponding action.
 
 ## Compose With Blocks
 
@@ -84,6 +88,14 @@ After arranging blocks and bridge text in the composer, click `Polish` to ask th
 ## Local Backup
 
 Open Settings and use `导出 JSON 备份` to save a local backup containing snippets, settings, and attachment data such as screenshots or table files. Use `导入 JSON 备份` to restore it later.
+
+Linggan also keeps the previous valid encrypted state as
+`state.backup.enc`. If the primary encrypted state cannot be decoded, the app
+automatically falls back to that backup.
+
+Items removed manually or moved by the seven-day memory rule wait in
+`回忆浅滩`. Use `全部找回` to return every item to the main list. Recovered
+items are automatically favorited so they do not immediately expire again.
 
 Backup files are not encrypted by the app. Store them somewhere private if they contain sensitive clipboard content. API keys are not included in backups.
 

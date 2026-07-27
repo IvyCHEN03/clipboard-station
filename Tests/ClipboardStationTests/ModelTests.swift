@@ -89,8 +89,54 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(snippet.attachmentPaths, [])
         XCTAssertEqual(snippet.attachmentFileNames, [])
         XCTAssertEqual(snippet.tags, [])
+        XCTAssertFalse(snippet.isFavorite)
         XCTAssertFalse(snippet.isEnriching)
         XCTAssertFalse(snippet.enrichmentFailed)
+    }
+
+    func testFavoriteAndDateRangeFiltersComposeWithSearchAndTags() {
+        let calendar = Calendar(identifier: .gregorian)
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let favoriteMatch = Snippet(
+            id: UUID(),
+            text: "A useful AI workflow",
+            title: "Keep this",
+            createdAt: start.addingTimeInterval(3600),
+            source: .clipboardCopy,
+            tags: ["workflow"],
+            isFavorite: true
+        )
+        let normalMatch = Snippet(
+            id: UUID(),
+            text: "A useful AI workflow",
+            title: "Temporary",
+            createdAt: start.addingTimeInterval(7200),
+            source: .clipboardCopy,
+            tags: ["workflow"]
+        )
+        let favoriteOutsideRange = Snippet(
+            id: UUID(),
+            text: "A useful AI workflow",
+            title: "Old favorite",
+            createdAt: start.addingTimeInterval(-3 * 24 * 60 * 60),
+            source: .clipboardCopy,
+            tags: ["workflow"],
+            isFavorite: true
+        )
+        let range = DateRangeFilter(start: start, end: start)
+
+        XCTAssertTrue(range.contains(start.addingTimeInterval(3600), calendar: calendar))
+        XCTAssertFalse(range.contains(favoriteOutsideRange.createdAt, calendar: calendar))
+
+        let result = SnippetFilter.apply(
+            to: [favoriteMatch, normalMatch, favoriteOutsideRange],
+            searchText: "useful",
+            selectedTags: ["workflow"],
+            dateRange: range,
+            favoritesOnly: true
+        )
+
+        XCTAssertEqual(result, [favoriteMatch])
     }
 
     func testGroupedSnippetUsesAllAttachmentPaths() {

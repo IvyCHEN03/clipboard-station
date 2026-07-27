@@ -68,6 +68,7 @@ struct Snippet: Identifiable, Codable, Equatable {
     var attachmentFileNames: [String]
     var representation: SnippetRepresentation
     var tags: [String]
+    var isFavorite: Bool
     var isEnriching: Bool
     var enrichmentFailed: Bool
     var enrichmentError: String?
@@ -89,6 +90,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         case attachmentFileNames
         case representation
         case tags
+        case isFavorite
         case isEnriching
         case enrichmentFailed
         case enrichmentError
@@ -107,6 +109,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         attachmentFileNames: [String] = [],
         representation: SnippetRepresentation = .automatic,
         tags: [String] = [],
+        isFavorite: Bool = false,
         isEnriching: Bool = false,
         enrichmentFailed: Bool = false,
         enrichmentError: String? = nil
@@ -123,6 +126,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         self.attachmentFileNames = attachmentFileNames
         self.representation = representation
         self.tags = tags
+        self.isFavorite = isFavorite
         self.isEnriching = isEnriching
         self.enrichmentFailed = enrichmentFailed
         self.enrichmentError = enrichmentError
@@ -142,6 +146,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         attachmentFileNames = try container.decodeIfPresent([String].self, forKey: .attachmentFileNames) ?? []
         representation = try container.decodeIfPresent(SnippetRepresentation.self, forKey: .representation) ?? .automatic
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
         isEnriching = false
         enrichmentFailed = try container.decodeIfPresent(Bool.self, forKey: .enrichmentFailed) ?? false
         enrichmentError = try container.decodeIfPresent(String.self, forKey: .enrichmentError)
@@ -186,6 +191,40 @@ struct Snippet: Identifiable, Codable, Equatable {
 
     var attachmentCount: Int {
         allAttachmentPaths.count
+    }
+}
+
+struct DateRangeFilter: Equatable {
+    var start: Date
+    var end: Date
+
+    func contains(_ date: Date, calendar: Calendar = .current) -> Bool {
+        let lowerBound = calendar.startOfDay(for: min(start, end))
+        let upperDay = calendar.startOfDay(for: max(start, end))
+        let upperBound = calendar.date(byAdding: .day, value: 1, to: upperDay) ?? upperDay
+        return date >= lowerBound && date < upperBound
+    }
+}
+
+enum SnippetFilter {
+    static func apply(
+        to snippets: [Snippet],
+        searchText: String = "",
+        selectedTags: Set<String> = [],
+        timeFilter: TimeFilter? = nil,
+        dateRange: DateRangeFilter? = nil,
+        favoritesOnly: Bool = false
+    ) -> [Snippet] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return snippets.filter { snippet in
+            let matchesText = query.isEmpty || snippet.matchesKeyword(query)
+            let matchesTags = selectedTags.isEmpty
+                || selectedTags.allSatisfy { snippet.matchesKeyword($0) }
+            let matchesTime = timeFilter?.contains(snippet.createdAt) ?? true
+            let matchesRange = dateRange?.contains(snippet.createdAt) ?? true
+            let matchesFavorite = !favoritesOnly || snippet.isFavorite
+            return matchesText && matchesTags && matchesTime && matchesRange && matchesFavorite
+        }
     }
 }
 

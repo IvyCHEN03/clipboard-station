@@ -14,6 +14,9 @@ struct StationView: View {
     @State private var selectedSnippetIDs = Set<UUID>()
     @State private var selectionAnchorID: UUID?
     @State private var isRewound = false
+    @State private var showDateRange = false
+    @State private var rangeStart = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+    @State private var rangeEnd = Date()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -123,6 +126,72 @@ struct StationView: View {
             }
             .padding(.horizontal, 14)
 
+            filterRow(title: "筛选") {
+                Button {
+                    store.favoritesOnly.toggle()
+                } label: {
+                    Label("收藏", systemImage: store.favoritesOnly ? "star.fill" : "star")
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            store.favoritesOnly ? Color.yellow.opacity(0.2) : Color.secondary.opacity(0.1),
+                            in: Capsule()
+                        )
+                        .foregroundStyle(store.favoritesOnly ? Color.orange : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(store.favoritesOnly ? "显示全部片段" : "只显示收藏")
+
+                Button {
+                    showDateRange.toggle()
+                } label: {
+                    Label(
+                        store.selectedDateRange == nil ? "日期" : "日期已选",
+                        systemImage: store.selectedDateRange == nil ? "calendar" : "calendar.badge.checkmark"
+                    )
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        store.selectedDateRange == nil
+                            ? Color.secondary.opacity(0.1)
+                            : Color.accentColor.opacity(0.15),
+                        in: Capsule()
+                    )
+                    .foregroundStyle(store.selectedDateRange == nil ? Color.secondary : Color.accentColor)
+                }
+                .buttonStyle(.plain)
+                .help("按起止日期筛选")
+            }
+
+            if showDateRange {
+                HStack(spacing: 8) {
+                    Text("范围")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, alignment: .trailing)
+                    DatePicker("从", selection: $rangeStart, displayedComponents: .date)
+                        .labelsHidden()
+                    Text("至")
+                        .foregroundStyle(.secondary)
+                    DatePicker("到", selection: $rangeEnd, displayedComponents: .date)
+                        .labelsHidden()
+                    Button("应用") {
+                        store.selectedTimeFilter = nil
+                        store.selectedDateRange = DateRangeFilter(start: rangeStart, end: rangeEnd)
+                    }
+                    .buttonStyle(.borderless)
+                    if store.selectedDateRange != nil {
+                        Button("清除") {
+                            store.selectedDateRange = nil
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .font(.system(size: 11))
+                .padding(.horizontal, 14)
+            }
+
             if !store.frequentTags.isEmpty {
                 filterRow(title: "分类") {
                     ForEach(store.frequentTags) { item in
@@ -158,6 +227,7 @@ struct StationView: View {
                 store.selectedTimeFilter = nil
             } else {
                 store.selectedTimeFilter = filter
+                store.selectedDateRange = nil
             }
         } label: {
             ZStack(alignment: .leading) {
@@ -236,11 +306,14 @@ struct StationView: View {
                 .foregroundStyle(.secondary)
             TextField("搜索标题、正文或来源", text: $store.searchText)
                 .textFieldStyle(.plain)
-            if !store.searchText.isEmpty || !store.selectedTags.isEmpty || store.selectedTimeFilter != nil {
+            if !store.searchText.isEmpty || !store.selectedTags.isEmpty || store.selectedTimeFilter != nil
+                || store.selectedDateRange != nil || store.favoritesOnly {
                 IconButton(systemName: "xmark.circle.fill", help: "清除搜索") {
                     store.searchText = ""
                     store.selectedTags.removeAll()
                     store.selectedTimeFilter = nil
+                    store.selectedDateRange = nil
+                    store.favoritesOnly = false
                 }
             }
         }
@@ -485,6 +558,14 @@ private struct MemoryShoreView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                Button {
+                    store.restoreAllFromMemoryShore()
+                } label: {
+                    Label("全部找回", systemImage: "arrow.uturn.backward.circle")
+                }
+                .buttonStyle(.borderless)
+                .disabled(store.deletedSnippets.isEmpty)
+                .help("全部恢复到片段列表并自动收藏")
                 Button(role: .destructive) {
                     showEmptyConfirmation = true
                 } label: {
@@ -680,6 +761,13 @@ private struct SnippetRow: View {
                             isEditingTitle = true
                         }
                     }
+                    IconButton(
+                        systemName: snippet.isFavorite ? "star.fill" : "star",
+                        help: snippet.isFavorite ? "取消收藏" : "收藏"
+                    ) {
+                        store.toggleFavorite(snippet)
+                    }
+                    .foregroundStyle(snippet.isFavorite ? Color.orange : Color.secondary)
                     if snippet.supportsRepresentationToggle {
                         IconButton(
                             systemName: snippet.effectiveRepresentation == .image ? "text.viewfinder" : "photo",

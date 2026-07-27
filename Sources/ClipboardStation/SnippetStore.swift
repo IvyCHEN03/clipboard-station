@@ -20,6 +20,8 @@ final class SnippetStore: ObservableObject {
     @Published var searchText = ""
     @Published var selectedTags = Set<String>()
     @Published var selectedTimeFilter: TimeFilter?
+    @Published var selectedDateRange: DateRangeFilter?
+    @Published var favoritesOnly = false
     @Published var toast: ToastMessage?
     @Published var draftExtraText = ""
     @Published var draftTextSlots: [String: String] = [:] {
@@ -84,13 +86,14 @@ final class SnippetStore: ObservableObject {
     static let fishMemoryDuration: TimeInterval = 7 * 24 * 60 * 60
 
     var filteredSnippets: [Snippet] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return snippets.filter { snippet in
-            let matchesText = query.isEmpty || snippet.matchesKeyword(query)
-            let matchesTags = selectedTags.isEmpty || selectedTags.allSatisfy { snippet.matchesKeyword($0) }
-            let matchesTime = selectedTimeFilter?.contains(snippet.createdAt) ?? true
-            return matchesText && matchesTags && matchesTime
-        }
+        SnippetFilter.apply(
+            to: snippets,
+            searchText: searchText,
+            selectedTags: selectedTags,
+            timeFilter: selectedTimeFilter,
+            dateRange: selectedDateRange,
+            favoritesOnly: favoritesOnly
+        )
     }
 
     var draftSnippets: [Snippet] {
@@ -355,6 +358,15 @@ final class SnippetStore: ObservableObject {
         }
     }
 
+    func toggleFavorite(_ snippet: Snippet) {
+        guard let index = snippets.firstIndex(where: { $0.id == snippet.id }) else {
+            return
+        }
+        snippets[index].isFavorite.toggle()
+        persist()
+        showToast(snippets[index].isFavorite ? "已收藏，7 天后也会保留" : "已取消收藏")
+    }
+
     func addAlarmReminder(for snippet: Snippet) {
         guard let detected = detectedDate(for: snippet) else {
             showToast("这条内容里没有识别到日期时间")
@@ -580,10 +592,26 @@ final class SnippetStore: ObservableObject {
 
     func restoreFromMemoryShore(_ item: DeletedSnippet) {
         guard let index = deletedSnippets.firstIndex(where: { $0.id == item.id }) else { return }
-        let restored = deletedSnippets.remove(at: index).snippet
+        var restored = deletedSnippets.remove(at: index).snippet
+        restored.isFavorite = true
         snippets.insert(restored, at: 0)
         persist()
-        showToast("已找回“\(restored.title)”")
+        showToast("已找回并收藏“\(restored.title)”")
+    }
+
+    func restoreAllFromMemoryShore() {
+        var state = PersistedState(
+            snippets: snippets,
+            deletedSnippets: deletedSnippets,
+            settings: settings,
+            quickNoteText: quickNoteText
+        )
+        let restoredCount = state.restoreAllDeletedAsFavorites()
+        guard restoredCount > 0 else { return }
+        snippets = state.snippets
+        deletedSnippets = state.deletedSnippets
+        persist()
+        showToast("已找回并收藏 \(restoredCount) 条历史资料")
     }
 
     func permanentlyDelete(_ item: DeletedSnippet) {
@@ -1359,7 +1387,9 @@ final class SnippetStore: ObservableObject {
 
     private func expireFishMemory(now: Date = Date()) {
         guard !isVideoDemo else { return }
-        let expired = snippets.filter { Self.shouldMoveToMemoryShore(createdAt: $0.createdAt, now: now) }
+        let expired = snippets.filter {
+            !$0.isFavorite && Self.shouldMoveToMemoryShore(createdAt: $0.createdAt, now: now)
+        }
         guard !expired.isEmpty else { return }
         let ids = Set(expired.map(\.id))
         moveToMemoryShore(expired, deletedAt: now)

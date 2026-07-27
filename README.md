@@ -1,6 +1,7 @@
 # Linggan Floating Ball
 
-> Catch scattered ideas before your fish-memory forgets them.
+> **灵感不是没有，只是被下一个 `Cmd+C` 覆盖了。**<br>
+> Catch scattered ideas before the next copy, tab, or seven-day memory fade.
 
 [![CI](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/ci.yml/badge.svg)](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/ci.yml)
 [![Release](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/release.yml/badge.svg)](https://github.com/IvyCHEN03/clipboard-station/actions/workflows/release.yml)
@@ -8,17 +9,30 @@
 ![Swift](https://img.shields.io/badge/Swift-6-compatible-f05138)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**An idea just popped up, and it is already running away. Linggan catches it.**
+**You copied the useful sentence. Then copied a table. Then took a screenshot. Now the sentence is gone.**
 
-Linggan Floating Ball is a local-first macOS companion for collecting useful text, screenshots, table snippets, every image from a post, and complete web-page archives while you move across AI chats, browsers, notes, and spreadsheets.
+Linggan Floating Ball is a local-first macOS idea inbox for people working across AI chats, browsers, notes, and spreadsheets. It catches text, screenshots, tables, post images, quick notes, and web pages before they disappear into clipboard history, Downloads, or another forgotten tab.
 
-[Watch the 28-second demo](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [观看中文版](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-cn-1080p.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
+[Watch the complete workflow](docs/assets/social/linggan-core-workflow.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
 
-[![Linggan Floating Ball: collect scattered ideas](docs/assets/social/linggan-readme-demo.gif)](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4)
+[![Linggan Floating Ball: collect, find, compose, polish, recover memories, and capture images](docs/assets/social/linggan-core-workflow-cover.png)](docs/assets/social/linggan-core-workflow.mp4)
 
-Copy fragments as they appear, find them again with tags and search, arrange them into one reusable prompt, let AI polish the blocks into a coherent paragraph, or `Cmd` + click the bubble to turn an image-heavy post into a selectable PNG stack.
+Copy fragments as they appear, protect the ones that matter with a star, travel back by date, and turn scattered blocks into one usable paragraph. When a post hides twenty images behind twenty save actions, `Cmd` + click the bubble to collect the post as one selectable stack.
 
 Everything stays local by default. Optional AI features run only after you configure a provider; composer text is sent only when you click `Polish`. If Linggan catches a spark for you, a GitHub star helps shape what comes next.
+
+![Latest Linggan interface with favorites, date filters, calendar actions, tags, and block composer](docs/assets/linggan-latest-ui.png)
+
+## The Pain It Removes
+
+| What keeps happening | What Linggan changes |
+| --- | --- |
+| The next `Cmd+C` overwrites the sentence you still need. | Every capture becomes a visible, searchable block. Repeated copies stay repeated. |
+| “I will organize this later” becomes a pile you never revisit. | Today / 3 days / Fish 7-day memory make time visible; important blocks can be favorited and kept. |
+| You remember *when* you saw something, but not its exact words. | Filter by a custom date range, then combine it with search and tags. |
+| A date inside copied text remains passive text. | Turn detected dates into a Calendar event or Reminder without retyping them. |
+| Useful fragments never become a finished prompt or paragraph. | Drag blocks into the composer, write between them, and use optional AI `Polish` for continuity. |
+| An image-heavy post asks you to save every picture manually. | Collect the post into one row, expand it, choose the keepers, run OCR, or drag images out. |
 
 ## 10-Second Pitch
 
@@ -26,7 +40,7 @@ Everything stays local by default. Optional AI features run only after you confi
 
 | Collect ideas | Collect images |
 | --- | --- |
-| Keep repeated text, screenshots, and table cells visible, searchable, and reorderable. | Capture the current multi-image post, select the keepers, and export real PNG files. |
+| Keep repeated text, screenshots, table cells, and quick notes visible, searchable, favoriteable, and reorderable. | Capture the current multi-image post, select the keepers, OCR them, or drag out the original images. |
 
 Everything stays local by default. Optional AI tagging and `Polish` run only after you configure a provider.
 
@@ -56,9 +70,10 @@ Skip it if you mainly need cross-device clipboard sync, long-term note taking, o
 
 1. Copy useful fragments from AI chats, web pages, notes, screenshots, or spreadsheets.
 2. Click the small blue floating bubble to keep everything visible.
-3. Filter by search, tag, type, or recent time window.
-4. Drag snippets into the bottom composer and type text between the blocks.
-5. Click `Polish` to turn the blocks into a coherent paragraph, then copy it into any input box.
+3. Star anything that must survive the seven-day memory fade.
+4. Filter by search, multiple tags, recent time, favorites, or a custom date range.
+5. Drag snippets into the bottom composer and type text between the blocks.
+6. Click `Polish` to turn the blocks into a coherent paragraph, then copy it into any input box.
 
 ## Quick Start
 
@@ -105,13 +120,13 @@ The app is usable today, but still pre-1.0:
 
 The privacy-safe product previews show both core loops without exposing private clipboard or browser content: collect fragments into a final prompt, or collect a whole image post into a selectable PNG stack.
 
-### 28-Second Motion Demo
+### 44-Second Core Workflow
 
-[![Watch the Linggan Floating Ball 28-second demo](docs/assets/social/linggan-readme-demo.gif)](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4)
+[![Watch the Linggan Floating Ball core workflow](docs/assets/social/linggan-core-workflow-cover.png)](docs/assets/social/linggan-core-workflow.mp4)
 
-Watch the cursor collect and drag snippets into the block composer, click `Polish` to generate one coherent paragraph, copy the result, then `Cmd`-click the floating bubble to select post images and save a clean PNG pack. The synthetic demo contains no private clipboard content, accounts, or API keys.
+Watch the cursor protect a favorite, search, drag snippets into the block composer, and click `Polish` to generate one coherent paragraph. Then turn a copied date into a Calendar event and Reminder, recover seven-day memories as protected favorites, capture a whole image post, select individual images, run OCR, and drag originals into another document. The synthetic demo contains no private clipboard content, accounts, or API keys.
 
-[English HD](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-en-1080p.mp4) · [中文高清版](https://raw.githubusercontent.com/IvyCHEN03/clipboard-station/main/docs/assets/social/linggan-x-teaser-cn-1080p.mp4)
+[Open the HD MP4](docs/assets/social/linggan-core-workflow.mp4)
 
 See [docs/DEMO.md](docs/DEMO.md) for the recording script, screenshot checklist, privacy rules, and release-note copy.
 
@@ -143,6 +158,10 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Import screenshots and show them directly in the list.
 - Capture spreadsheet-like copied text as table snippets.
 - Search by title, source, body, tag, or time window.
+- Favorite important snippets and filter to favorites only.
+- Keep favorites out of automatic seven-day expiration.
+- Filter with an inclusive custom start and end date; combine it with search and tags.
+- Detect dates in copied text and turn them into Calendar events or Reminders.
 - Use AI-generated titles and tags with any OpenAI-compatible chat completions API.
 - Select multiple snippets and delete them in one action.
 - Select snippets inside the current filtered view and paste them in the exact visible order.

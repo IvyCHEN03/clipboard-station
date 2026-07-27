@@ -8,6 +8,7 @@ For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUN
 
 | Asset | Purpose |
 | --- | --- |
+| [`linggan-core-workflow.mp4`](assets/social/linggan-core-workflow.mp4) | 44-second HD demo covering favorites, search, composition, Polish, Calendar and Reminder actions, memory recovery, image capture, OCR, and original-image drag |
 | [`linggan-x-teaser-en-1080p.mp4`](assets/social/linggan-x-teaser-en-1080p.mp4) | 28-second English X post and README demo |
 | [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080p.mp4) | 28-second Chinese X post |
 | [`linggan-readme-demo.gif`](assets/social/linggan-readme-demo.gif) | Inline GitHub README preview |
@@ -43,7 +44,21 @@ Do not show browser tabs, account avatars, usernames, tokens, or real saved cont
 
 ## README Hero GIF
 
-Target length: 8-15 seconds.
+The current comprehensive README GIF is generated from the privacy-safe feature
+demo:
+
+```bash
+swift Scripts/make-x-feature-demo.swift
+swift Scripts/make-readme-gif.swift \
+  docs/assets/social/linggan-core-workflow.mp4 \
+  docs/assets/social/linggan-core-workflow.gif
+```
+
+Until the GIF is regenerated, use
+[`linggan-core-workflow-cover.png`](assets/social/linggan-core-workflow-cover.png)
+as the linked README preview instead of publishing an outdated animation.
+
+Target length: 15-35 seconds.
 
 Goal: make a new visitor understand the product before reading the README.
 
