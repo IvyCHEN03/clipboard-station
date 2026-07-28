@@ -85,8 +85,102 @@ final class ModelTests: XCTestCase {
         let snippet = try decoder.decode(Snippet.self, from: data)
 
         XCTAssertEqual(snippet.kind, .text)
+        XCTAssertEqual(snippet.representation, .automatic)
+        XCTAssertEqual(snippet.attachmentPaths, [])
+        XCTAssertEqual(snippet.attachmentFileNames, [])
         XCTAssertEqual(snippet.tags, [])
+        XCTAssertFalse(snippet.isFavorite)
         XCTAssertFalse(snippet.isEnriching)
         XCTAssertFalse(snippet.enrichmentFailed)
+    }
+
+    func testFavoriteAndDateRangeFiltersComposeWithSearchAndTags() {
+        let calendar = Calendar(identifier: .gregorian)
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let favoriteMatch = Snippet(
+            id: UUID(),
+            text: "A useful AI workflow",
+            title: "Keep this",
+            createdAt: start.addingTimeInterval(3600),
+            source: .clipboardCopy,
+            tags: ["workflow"],
+            isFavorite: true
+        )
+        let normalMatch = Snippet(
+            id: UUID(),
+            text: "A useful AI workflow",
+            title: "Temporary",
+            createdAt: start.addingTimeInterval(7200),
+            source: .clipboardCopy,
+            tags: ["workflow"]
+        )
+        let favoriteOutsideRange = Snippet(
+            id: UUID(),
+            text: "A useful AI workflow",
+            title: "Old favorite",
+            createdAt: start.addingTimeInterval(-3 * 24 * 60 * 60),
+            source: .clipboardCopy,
+            tags: ["workflow"],
+            isFavorite: true
+        )
+        let range = DateRangeFilter(start: start, end: start)
+
+        XCTAssertTrue(range.contains(start.addingTimeInterval(3600), calendar: calendar))
+        XCTAssertFalse(range.contains(favoriteOutsideRange.createdAt, calendar: calendar))
+
+        let result = SnippetFilter.apply(
+            to: [favoriteMatch, normalMatch, favoriteOutsideRange],
+            searchText: "useful",
+            selectedTags: ["workflow"],
+            dateRange: range,
+            favoritesOnly: true
+        )
+
+        XCTAssertEqual(result, [favoriteMatch])
+    }
+
+    func testGroupedSnippetUsesAllAttachmentPaths() {
+        let snippet = Snippet(
+            id: UUID(),
+            text: "OCR one\n\nOCR two",
+            title: "Grouped images",
+            createdAt: Date(),
+            source: .webImageCollector,
+            kind: .screenshot,
+            attachmentPath: "/tmp/one.png",
+            fileName: "one.png",
+            attachmentPaths: ["/tmp/one.png", "/tmp/two.png"],
+            attachmentFileNames: ["one.png", "two.png"]
+        )
+
+        XCTAssertEqual(snippet.attachmentCount, 2)
+        XCTAssertEqual(snippet.allAttachmentPaths, ["/tmp/one.png", "/tmp/two.png"])
+        XCTAssertEqual(snippet.allAttachmentFileNames, ["one.png", "two.png"])
+    }
+
+    func testRepresentationDefaultsAndCanSwitchToImage() {
+        var snippet = Snippet(
+            id: UUID(),
+            text: "A short note",
+            title: "Note",
+            createdAt: Date(),
+            source: .quickNote
+        )
+        XCTAssertEqual(snippet.effectiveRepresentation, .text)
+        snippet.representation = .image
+        XCTAssertEqual(snippet.effectiveRepresentation, .image)
+        XCTAssertTrue(snippet.supportsRepresentationToggle)
+    }
+
+    func testDetectsDateAndTimeInsideCopiedText() throws {
+        let detected = try XCTUnwrap(
+            DateContentDetector.firstDate(in: "Review the draft on August 10, 2026 at 2:30 PM")
+        )
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: detected.date)
+        XCTAssertEqual(components.year, 2026)
+        XCTAssertEqual(components.month, 8)
+        XCTAssertEqual(components.day, 10)
+        XCTAssertEqual(components.hour, 14)
+        XCTAssertEqual(components.minute, 30)
     }
 }

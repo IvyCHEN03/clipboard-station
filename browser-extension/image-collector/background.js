@@ -1,4 +1,4 @@
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "nativeCaptureRequested") {
     captureFocusedPost()
       .then(result => sendResponse(result))
@@ -17,6 +17,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     reportPanelState(Boolean(message.open));
     sendResponse({ ok: true });
     return false;
+  }
+
+  if (message?.type === "archiveCurrentPage") {
+    archiveCurrentPage(sender.tab)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
+  }
+
+  if (message?.type === "ocrImages") {
+    const images = Array.isArray(message.images) ? message.images : [];
+    ocrImagesAsText(images, message.title)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
+  }
+
+  if (message?.type === "saveImagesToStation") {
+    const images = Array.isArray(message.images) ? message.images : [];
+    saveImagesToStation(images, message.title)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+    return true;
   }
 
   if (message?.type !== "downloadImages") {
@@ -193,6 +216,151 @@ function isDownloadableURL(url) {
   return /^https?:\/\//i.test(url) || /^data:image\//i.test(url);
 }
 
+async function archiveCurrentPage(senderTab) {
+  const tab = senderTab?.id
+    ? senderTab
+    : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+  if (!tab?.id || !/^https?:/i.test(tab.url || "")) {
+    throw new Error("请先打开一个普通网页");
+  }
+
+  await ensureCollectorInjected(tab.id);
+  let prepared = null;
+  try {
+    prepared = await chrome.tabs.sendMessage(tab.id, { type: "preparePageArchive" });
+    if (!prepared?.ok) {
+      throw new Error(prepared?.error || "网页还没有准备好，请稍后重试");
+    }
+    const snapshot = await chrome.tabs.sendMessage(tab.id, { type: "serializePageHTML" });
+    if (!snapshot?.ok || !snapshot.html) {
+      throw new Error(snapshot?.error || "无法读取当前网页 HTML");
+    }
+    const title = sanitizePathSegment(snapshot.title || prepared?.title || tab.title || "web-page");
+    const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const folder = `LingganPages/${date}-${title}`;
+    await startDownload(textToDataURL(snapshot.html), `${folder}/${title}.html`);
+    return {
+      ok: true,
+      saved: 1,
+      folder,
+      title,
+      message: `已保存 ${title} 的网页 HTML`
+    };
+  } finally {
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: "restorePageArchive" });
+    } catch {
+      // Navigation may have replaced the page while capture was running.
+    }
+  }
+}
+
+function textToDataURL(value) {
+  return bytesToDataURL(new TextEncoder().encode(value), "text/html;charset=utf-8");
+}
+
+function plainTextToDataURL(value) {
+  return bytesToDataURL(new TextEncoder().encode(value), "text/plain;charset=utf-8");
+}
+
+async function ocrImagesAsText(images, title) {
+  if (images.length === 0) throw new Error("请先选择要识别的图片");
+  const sections = [];
+  const fingerprints = new Set();
+  let failed = 0;
+  for (const image of images) {
+    try {
+      const urls = [...new Set([...(Array.isArray(image?.urls) ? image.urls : []), image?.url].filter(isDownloadableURL))];
+      const png = await convertFirstAvailableToPNG(urls);
+      if (fingerprints.has(png.fingerprint)) continue;
+      fingerprints.add(png.fingerprint);
+      const response = await fetch("http://127.0.0.1:47831/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "image/png" },
+        body: png.bytes,
+        cache: "no-store"
+      });
+      const result = await response.json();
+      const text = String(result?.text || "").trim();
+      if (!response.ok || !text) {
+        failed += 1;
+        continue;
+      }
+      sections.push(text);
+    } catch (error) {
+      failed += 1;
+      console.warn("Linggan OCR failed:", error?.message || error);
+    }
+  }
+  if (sections.length === 0) {
+    throw new Error("没有识别到文字。请确认灵感悬浮球正在运行");
+  }
+  const safeTitle = sanitizePathSegment(title || "web-images");
+  const date = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  await startDownload(
+    plainTextToDataURL(sections.join("\n\n")),
+    `LingganOCR/${date}-${safeTitle}/${safeTitle}-OCR.txt`
+  );
+  return { ok: true, recognized: sections.length, failed };
+}
+
+async function saveImagesToStation(images, title) {
+  if (images.length === 0) throw new Error("请先选择要存入灵感球的图片");
+  const fingerprints = new Set();
+  const baseTitle = String(title || "网页图片").trim() || "网页图片";
+  let failed = 0;
+  let duplicates = 0;
+  const prepared = [];
+
+  for (const [position, image] of images.entries()) {
+    try {
+      const urls = [...new Set([...(Array.isArray(image?.urls) ? image.urls : []), image?.url].filter(isDownloadableURL))];
+      const png = await convertFirstAvailableToPNG(urls);
+      if (fingerprints.has(png.fingerprint)) {
+        duplicates += 1;
+        continue;
+      }
+      fingerprints.add(png.fingerprint);
+      prepared.push({ index: position + 1, png });
+    } catch (error) {
+      failed += 1;
+      console.warn("Linggan station preparation failed:", error?.message || error);
+    }
+  }
+
+  if (prepared.length === 0) {
+    throw new Error("没有可存入灵感球的图片");
+  }
+
+  const batchID = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  let recognized = 0;
+  for (const item of prepared) {
+    try {
+      const endpoint = new URL("http://127.0.0.1:47831/save-image");
+      endpoint.searchParams.set("title", baseTitle);
+      endpoint.searchParams.set("index", String(item.index));
+      endpoint.searchParams.set("batch", batchID);
+      endpoint.searchParams.set("total", String(prepared.length));
+      const response = await fetch(endpoint.toString(), {
+        method: "POST",
+        headers: { "Content-Type": "image/png" },
+        body: item.png.bytes,
+        cache: "no-store"
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.error || `HTTP ${response.status}`);
+      }
+      if (result.recognized) recognized += 1;
+    } catch (error) {
+      console.warn("Linggan station save failed:", error?.message || error);
+      throw new Error("图片组未完整存入。请确认灵感悬浮球正在运行后重试");
+    }
+  }
+
+  return { ok: true, saved: prepared.length, groups: 1, recognized, failed, duplicates };
+}
+
 async function downloadImagesAsPNG(images, folder, title) {
   let saved = 0;
   let failed = 0;
@@ -256,6 +424,7 @@ async function convertToPNG(url) {
     const fingerprint = [...digest].map(value => value.toString(16).padStart(2, "0")).join("");
     return {
       dataURL: bytesToDataURL(bytes),
+      bytes,
       fingerprint,
       perceptualHash: differenceHash(bitmap)
     };
@@ -294,13 +463,13 @@ function hammingDistance(left, right) {
   return distance;
 }
 
-function bytesToDataURL(bytes) {
+function bytesToDataURL(bytes, mimeType = "image/png") {
   let binary = "";
   const chunkSize = 0x8000;
   for (let offset = 0; offset < bytes.length; offset += chunkSize) {
     binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
   }
-  return `data:image/png;base64,${btoa(binary)}`;
+  return `data:${mimeType};base64,${btoa(binary)}`;
 }
 
 function startDownload(url, filename) {

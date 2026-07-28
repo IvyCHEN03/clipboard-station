@@ -1,8 +1,18 @@
 import Foundation
 import Network
 
+struct CollectedWebImage: Sendable {
+    let data: Data
+    let title: String
+    let ocrText: String
+    let index: Int
+    let batchID: String
+    let total: Int
+}
+
 final class ImageCollectorBridge: @unchecked Sendable {
     static let port: NWEndpoint.Port = 47_831
+    private static let maximumRequestSize = 20 * 1_024 * 1_024
 
     private let queue = DispatchQueue(label: "com.local.clipboard-station.image-collector")
     private let port: NWEndpoint.Port
@@ -12,9 +22,14 @@ final class ImageCollectorBridge: @unchecked Sendable {
     private var captureRequestID = 0
     private var consumedRequestID = 0
     private var panelOpen = false
+    private let saveImageHandler: @Sendable (CollectedWebImage) async -> Bool
 
-    init(port: NWEndpoint.Port = ImageCollectorBridge.port) {
+    init(
+        port: NWEndpoint.Port = ImageCollectorBridge.port,
+        saveImageHandler: @escaping @Sendable (CollectedWebImage) async -> Bool = { _ in false }
+    ) {
         self.port = port
+        self.saveImageHandler = saveImageHandler
     }
 
     func start() {
@@ -89,37 +104,170 @@ final class ImageCollectorBridge: @unchecked Sendable {
 
     private func handle(_ connection: NWConnection) {
         connection.start(queue: queue)
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 4_096) { [weak self] data, _, _, _ in
+        receiveRequest(on: connection, buffer: Data())
+    }
+
+    private func receiveRequest(on connection: NWConnection, buffer: Data) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1_024) { [weak self] data, _, isComplete, error in
             guard let self else {
                 connection.cancel()
                 return
             }
-            let requestLine = data.flatMap { String(data: $0, encoding: .utf8) }?
-                .split(separator: "\r\n", maxSplits: 1)
-                .first ?? ""
-            let isPanelStateUpdate = requestLine.contains(" /panel-state?")
-            if isPanelStateUpdate {
-                self.panelOpen = requestLine.contains("open=1") || requestLine.contains("open=true")
+            var next = buffer
+            if let data {
+                next.append(data)
             }
-            let isCapturePoll = requestLine.contains(" /capture ")
-            let shouldCapture = isCapturePoll && self.consumePendingCapture()
-            let shouldHide = isCapturePoll && self.consumePendingHide()
-            let isPending = self.pendingCaptureUntil.map { $0 >= Date() } ?? false
-            let body = "{\"capture\":\(shouldCapture ? "true" : "false"),\"hide\":\(shouldHide ? "true" : "false"),\"panelOpen\":\(self.panelOpen ? "true" : "false"),\"pending\":\(isPending ? "true" : "false"),\"requestID\":\(self.captureRequestID),\"consumedID\":\(self.consumedRequestID)}"
-            let response = [
-                "HTTP/1.1 200 OK",
-                "Content-Type: application/json",
-                "Content-Length: \(body.utf8.count)",
-                "Cache-Control: no-store",
-                "Access-Control-Allow-Origin: *",
-                "Connection: close",
-                "",
-                body
-            ].joined(separator: "\r\n")
-            connection.send(content: Data(response.utf8), completion: .contentProcessed { _ in
-                connection.cancel()
-            })
+            guard next.count <= Self.maximumRequestSize else {
+                self.sendJSON(["ok": false, "error": "图片超过 20 MB"], status: "413 Payload Too Large", on: connection)
+                return
+            }
+            if let request = Self.parseRequest(next) {
+                self.process(request, on: connection)
+            } else if isComplete || error != nil {
+                self.sendJSON(["ok": false, "error": "本地请求不完整"], status: "400 Bad Request", on: connection)
+            } else {
+                self.receiveRequest(on: connection, buffer: next)
+            }
         }
+    }
+
+    private func process(_ request: LocalRequest, on connection: NWConnection) {
+        if request.method == "OPTIONS" {
+            sendJSON(["ok": true], on: connection)
+            return
+        }
+        if request.method == "POST", request.path == "/ocr" {
+            let imageData = request.body
+            let owner = self
+            DispatchQueue.global(qos: .userInitiated).async {
+                let text = OCRTextRecognizer.recognize(data: imageData) ?? ""
+                owner.queue.async {
+                    owner.sendJSON(["ok": !text.isEmpty, "text": text], on: connection)
+                }
+            }
+            return
+        }
+        if request.method == "POST", request.path.hasPrefix("/save-image") {
+            let origin = request.headers["origin"] ?? ""
+            guard origin.isEmpty || origin.hasPrefix("chrome-extension://") else {
+                sendJSON(["ok": false, "error": "只接受灵感收图扩展"], status: "403 Forbidden", on: connection)
+                return
+            }
+            let imageData = request.body
+            let metadata = Self.saveImageMetadata(from: request.path)
+            let owner = self
+            Task.detached(priority: .userInitiated) {
+                let text = OCRTextRecognizer.recognize(data: imageData) ?? ""
+                let saved = await owner.saveImageHandler(CollectedWebImage(
+                    data: imageData,
+                    title: metadata.title,
+                    ocrText: text,
+                    index: metadata.index,
+                    batchID: metadata.batchID,
+                    total: metadata.total
+                ))
+                owner.queue.async {
+                    owner.sendJSON([
+                        "ok": saved,
+                        "recognized": !text.isEmpty
+                    ], on: connection)
+                }
+            }
+            return
+        }
+
+        let isPanelStateUpdate = request.path.hasPrefix("/panel-state?")
+        if isPanelStateUpdate {
+            panelOpen = request.path.contains("open=1") || request.path.contains("open=true")
+        }
+        let isCapturePoll = request.path == "/capture"
+        let shouldCapture = isCapturePoll && consumePendingCapture()
+        let shouldHide = isCapturePoll && consumePendingHide()
+        let isPending = pendingCaptureUntil.map { $0 >= Date() } ?? false
+        sendJSON([
+            "capture": shouldCapture,
+            "hide": shouldHide,
+            "panelOpen": panelOpen,
+            "pending": isPending,
+            "requestID": captureRequestID,
+            "consumedID": consumedRequestID
+        ], on: connection)
+    }
+
+    private func sendJSON(_ object: [String: Any], status: String = "200 OK", on connection: NWConnection) {
+        let body = (try? JSONSerialization.data(withJSONObject: object)) ?? Data("{}".utf8)
+        let header = [
+            "HTTP/1.1 \(status)",
+            "Content-Type: application/json; charset=utf-8",
+            "Content-Length: \(body.count)",
+            "Cache-Control: no-store",
+            "Access-Control-Allow-Origin: *",
+            "Access-Control-Allow-Methods: GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers: Content-Type",
+            "Connection: close",
+            "",
+            ""
+        ].joined(separator: "\r\n")
+        connection.send(content: Data(header.utf8) + body, completion: .contentProcessed { _ in
+            connection.cancel()
+        })
+    }
+
+    private struct LocalRequest {
+        let method: String
+        let path: String
+        let headers: [String: String]
+        let body: Data
+    }
+
+    private static func parseRequest(_ data: Data) -> LocalRequest? {
+        let separator = Data("\r\n\r\n".utf8)
+        guard let headerRange = data.range(of: separator),
+              let header = String(data: data[..<headerRange.lowerBound], encoding: .utf8) else {
+            return nil
+        }
+        let lines = header.components(separatedBy: "\r\n")
+        let requestParts = lines.first?.split(separator: " ") ?? []
+        guard requestParts.count >= 2 else { return nil }
+        let headers = lines.dropFirst().reduce(into: [String: String]()) { result, line in
+            let parts = line.split(separator: ":", maxSplits: 1)
+            guard parts.count == 2 else { return }
+            result[parts[0].trimmingCharacters(in: .whitespaces).lowercased()] =
+                parts[1].trimmingCharacters(in: .whitespaces)
+        }
+        let contentLength = lines.dropFirst().compactMap { line -> Int? in
+            let parts = line.split(separator: ":", maxSplits: 1)
+            guard parts.count == 2,
+                  parts[0].trimmingCharacters(in: .whitespaces).lowercased() == "content-length" else {
+                return nil
+            }
+            return Int(parts[1].trimmingCharacters(in: .whitespaces))
+        }.first ?? 0
+        let bodyStart = headerRange.upperBound
+        guard data.count >= bodyStart + contentLength else { return nil }
+        return LocalRequest(
+            method: String(requestParts[0]).uppercased(),
+            path: String(requestParts[1]),
+            headers: headers,
+            body: Data(data[bodyStart..<(bodyStart + contentLength)])
+        )
+    }
+
+    private static func saveImageMetadata(from path: String) -> (title: String, index: Int, batchID: String, total: Int) {
+        guard let components = URLComponents(string: "http://127.0.0.1\(path)") else {
+            return ("网页图片", 1, UUID().uuidString, 1)
+        }
+        let values = Dictionary(uniqueKeysWithValues: (components.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        let title = values["title"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let index = max(Int(values["index"] ?? "") ?? 1, 1)
+        let batchID = values["batch"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let total = max(Int(values["total"] ?? "") ?? 1, 1)
+        return (
+            title.isEmpty ? "网页图片" : title,
+            index,
+            batchID.isEmpty ? UUID().uuidString : batchID,
+            total
+        )
     }
 
     private func consumePendingCapture() -> Bool {

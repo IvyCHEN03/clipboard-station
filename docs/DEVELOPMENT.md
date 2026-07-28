@@ -18,7 +18,11 @@ To install the app locally after changing code:
 ./Scripts/install-local.sh
 ```
 
-The install script rebuilds the app, replaces `~/Applications/ClipboardStation.app`, and restarts the user LaunchAgent.
+The install script rebuilds the app beside the repository, replaces the previous
+local bundle, stops stale copies, and starts the new one. The app itself owns
+the optional login LaunchAgent through its `开机启动` setting. Because the app
+path is derived from the script location, moving the repository only requires
+running the install script once more.
 
 ## Common Commands
 
@@ -31,6 +35,8 @@ The install script rebuilds the app, replaces `~/Applications/ClipboardStation.a
 | Install local app and launch agent | `./Scripts/install-local.sh` |
 | Remove local app and launch agent | `./Scripts/uninstall-local.sh` |
 | Diagnose local install | `./Scripts/doctor.sh` |
+| Preview current-branch GitHub sync | `./Scripts/push-current-branch.sh` |
+| Upload the committed current branch | `./Scripts/push-current-branch.sh --apply` |
 | Check Markdown links | `./Scripts/check-doc-links.sh` |
 | Scan tracked files for token-shaped secrets | `./Scripts/check-secrets.sh` |
 | Run all local gates | `./Scripts/check-project.sh` |

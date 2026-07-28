@@ -6,6 +6,8 @@ enum SnippetSource: String, Codable, CaseIterable, Identifiable {
     case clipboardCopy
     case manualPasteboardImport
     case screenshot
+    case quickNote
+    case webImageCollector
 
     var id: String { rawValue }
 
@@ -19,8 +21,18 @@ enum SnippetSource: String, Codable, CaseIterable, Identifiable {
             return "手动导入"
         case .screenshot:
             return "截图"
+        case .quickNote:
+            return "随笔"
+        case .webImageCollector:
+            return "网页收图"
         }
     }
+}
+
+enum SnippetRepresentation: String, Codable {
+    case automatic
+    case text
+    case image
 }
 
 enum SnippetKind: String, Codable {
@@ -52,7 +64,11 @@ struct Snippet: Identifiable, Codable, Equatable {
     var kind: SnippetKind
     var attachmentPath: String?
     var fileName: String?
+    var attachmentPaths: [String]
+    var attachmentFileNames: [String]
+    var representation: SnippetRepresentation
     var tags: [String]
+    var isFavorite: Bool
     var isEnriching: Bool
     var enrichmentFailed: Bool
     var enrichmentError: String?
@@ -70,7 +86,11 @@ struct Snippet: Identifiable, Codable, Equatable {
         case kind
         case attachmentPath
         case fileName
+        case attachmentPaths
+        case attachmentFileNames
+        case representation
         case tags
+        case isFavorite
         case isEnriching
         case enrichmentFailed
         case enrichmentError
@@ -85,7 +105,11 @@ struct Snippet: Identifiable, Codable, Equatable {
         kind: SnippetKind = .text,
         attachmentPath: String? = nil,
         fileName: String? = nil,
+        attachmentPaths: [String] = [],
+        attachmentFileNames: [String] = [],
+        representation: SnippetRepresentation = .automatic,
         tags: [String] = [],
+        isFavorite: Bool = false,
         isEnriching: Bool = false,
         enrichmentFailed: Bool = false,
         enrichmentError: String? = nil
@@ -98,7 +122,11 @@ struct Snippet: Identifiable, Codable, Equatable {
         self.kind = kind
         self.attachmentPath = attachmentPath
         self.fileName = fileName
+        self.attachmentPaths = attachmentPaths
+        self.attachmentFileNames = attachmentFileNames
+        self.representation = representation
         self.tags = tags
+        self.isFavorite = isFavorite
         self.isEnriching = isEnriching
         self.enrichmentFailed = enrichmentFailed
         self.enrichmentError = enrichmentError
@@ -114,7 +142,11 @@ struct Snippet: Identifiable, Codable, Equatable {
         kind = try container.decodeIfPresent(SnippetKind.self, forKey: .kind) ?? .text
         attachmentPath = try container.decodeIfPresent(String.self, forKey: .attachmentPath)
         fileName = try container.decodeIfPresent(String.self, forKey: .fileName)
+        attachmentPaths = try container.decodeIfPresent([String].self, forKey: .attachmentPaths) ?? []
+        attachmentFileNames = try container.decodeIfPresent([String].self, forKey: .attachmentFileNames) ?? []
+        representation = try container.decodeIfPresent(SnippetRepresentation.self, forKey: .representation) ?? .automatic
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
         isEnriching = false
         enrichmentFailed = try container.decodeIfPresent(Bool.self, forKey: .enrichmentFailed) ?? false
         enrichmentError = try container.decodeIfPresent(String.self, forKey: .enrichmentError)
@@ -133,6 +165,66 @@ struct Snippet: Identifiable, Codable, Equatable {
                 tag.localizedCaseInsensitiveContains(value)
                     || value.localizedCaseInsensitiveContains(tag)
             }
+    }
+
+    var effectiveRepresentation: SnippetRepresentation {
+        if representation != .automatic {
+            return representation
+        }
+        return kind == .screenshot ? .image : .text
+    }
+
+    var supportsRepresentationToggle: Bool {
+        kind == .text || kind == .spreadsheet || kind == .screenshot
+    }
+
+    var allAttachmentPaths: [String] {
+        attachmentPaths.isEmpty ? attachmentPath.map { [$0] } ?? [] : attachmentPaths
+    }
+
+    var allAttachmentFileNames: [String] {
+        if !attachmentFileNames.isEmpty {
+            return attachmentFileNames
+        }
+        return fileName.map { [$0] } ?? []
+    }
+
+    var attachmentCount: Int {
+        allAttachmentPaths.count
+    }
+}
+
+struct DateRangeFilter: Equatable {
+    var start: Date
+    var end: Date
+
+    func contains(_ date: Date, calendar: Calendar = .current) -> Bool {
+        let lowerBound = calendar.startOfDay(for: min(start, end))
+        let upperDay = calendar.startOfDay(for: max(start, end))
+        let upperBound = calendar.date(byAdding: .day, value: 1, to: upperDay) ?? upperDay
+        return date >= lowerBound && date < upperBound
+    }
+}
+
+enum SnippetFilter {
+    static func apply(
+        to snippets: [Snippet],
+        searchText: String = "",
+        selectedTags: Set<String> = [],
+        timeFilter: TimeFilter? = nil,
+        dateRange: DateRangeFilter? = nil,
+        favoritesOnly: Bool = false
+    ) -> [Snippet] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return snippets.filter { snippet in
+            let matchesText = query.isEmpty || snippet.matchesKeyword(query)
+            let matchesTags = selectedTags.isEmpty
+                || selectedTags.allSatisfy { snippet.matchesKeyword($0) }
+            let matchesTime = timeFilter?.contains(snippet.createdAt) ?? true
+            let matchesRange = dateRange?.contains(snippet.createdAt) ?? true
+            let matchesFavorite = !favoritesOnly || snippet.isFavorite
+            return matchesText && matchesTags && matchesTime && matchesRange && matchesFavorite
+        }
     }
 }
 

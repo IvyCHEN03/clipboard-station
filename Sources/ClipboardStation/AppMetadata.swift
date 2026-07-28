@@ -2,7 +2,11 @@ import Foundation
 
 enum AppMetadata {
     static let version: String = {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.4.0"
+        if let override = ProcessInfo.processInfo.environment["CLIPBOARD_STATION_VERSION_OVERRIDE"],
+           !override.isEmpty {
+            return override
+        }
+        return Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.4.0"
     }()
 
     static let build: String = {

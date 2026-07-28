@@ -28,19 +28,20 @@ enum ClipboardBackupCodec {
         appVersion: String,
         exportedAt: Date = Date()
     ) -> ClipboardBackup {
-        let attachments = snippets.compactMap { snippet -> BackupAttachment? in
-            guard let attachmentPath = snippet.attachmentPath else {
-                return nil
+        let attachments = snippets.flatMap { snippet -> [BackupAttachment] in
+            let names = snippet.allAttachmentFileNames
+            return snippet.allAttachmentPaths.enumerated().compactMap { index, attachmentPath in
+                let url = URL(fileURLWithPath: attachmentPath)
+                guard let data = try? Data(contentsOf: url) else {
+                    return nil
+                }
+                let fileName = names.indices.contains(index) ? names[index] : url.lastPathComponent
+                return BackupAttachment(
+                    snippetID: snippet.id,
+                    fileName: fileName,
+                    data: data
+                )
             }
-            let url = URL(fileURLWithPath: attachmentPath)
-            guard let data = try? Data(contentsOf: url) else {
-                return nil
-            }
-            return BackupAttachment(
-                snippetID: snippet.id,
-                fileName: snippet.fileName ?? url.lastPathComponent,
-                data: data
-            )
         }
 
         return ClipboardBackup(

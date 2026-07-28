@@ -7,12 +7,14 @@ enum DemoContent {
                 id: UUID(),
                 text: """
                 [内容已脱敏] 提取多个 AI 回答的共同结论，保留关键差异，再组合为一段可继续使用的提示词。
+                Next review: August 10, 2026 at 2:30 PM.
                 """,
                 title: "匿名 AI 讨论片段",
                 createdAt: now,
                 source: .manualPasteboardImport,
                 kind: .text,
-                tags: ["prompt", "workflow", "AI"]
+                tags: ["prompt", "workflow", "AI"],
+                isFavorite: true
             ),
             Snippet(
                 id: UUID(),

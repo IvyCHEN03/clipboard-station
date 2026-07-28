@@ -4,7 +4,7 @@ This kit keeps the launch focused on one promise: Linggan catches scattered idea
 
 ## Recommended Post Order
 
-1. Publish the English post with the 26-second English teaser attached.
+1. Publish the English post with the 28-second English teaser attached.
 2. Put the GitHub link in the first reply so the main post stays conversational.
 3. Add the longer product demo in a second reply only when someone asks for more detail.
 4. Publish the Chinese version 12-24 hours later instead of posting both languages at once.
@@ -20,7 +20,7 @@ Ideas do not disappear. They scatter.
 Across AI chats, screenshots, spreadsheets, and image-heavy posts.
 
 So I built Linggan Floating Ball for macOS:
-catch them, find them, compose them, and collect the whole post.
+catch them, find them, compose them, let AI polish them into one clear paragraph, and collect the whole post.
 
 Local-first. Open source.
 ```
@@ -46,7 +46,7 @@ Attach: [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080
 散落在 AI 对话、截图、表格，还有一张张不想手动下载的图片里。
 
 所以我做了「灵感悬浮球」：
-接住、找回、组合，再把整篇图片打包带走。
+接住、找回、组合，让 AI 把碎片润色成全文，再把整篇图片打包带走。
 
 本地优先，完全开源。
 ```
@@ -75,7 +75,7 @@ https://github.com/IvyCHEN03/clipboard-station
 Use short, concrete replies instead of feature lists:
 
 ```text
-The core workflow is local. Clipboard data is encrypted on disk, and nothing is uploaded unless optional AI tagging is enabled.
+The core workflow is local. Clipboard data is encrypted on disk. AI receives composer text only when you click Polish or enable optional tagging with your own provider settings.
 ```
 
 ```text

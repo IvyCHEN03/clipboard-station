@@ -12,7 +12,11 @@ struct StationView: View {
     @State private var draggingSnippetID: UUID?
     @State private var draggingDraftID: UUID?
     @State private var selectedSnippetIDs = Set<UUID>()
+    @State private var selectionAnchorID: UUID?
     @State private var isRewound = false
+    @State private var showDateRange = false
+    @State private var rangeStart = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+    @State private var rangeEnd = Date()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -50,6 +54,9 @@ struct StationView: View {
         .animation(.easeOut(duration: 0.18), value: store.toast)
         .onChange(of: store.filteredSnippets.map(\.id)) { visibleIDs in
             selectedSnippetIDs.formIntersection(Set(visibleIDs))
+            if let selectionAnchorID, !visibleIDs.contains(selectionAnchorID) {
+                self.selectionAnchorID = nil
+            }
         }
     }
 
@@ -119,6 +126,72 @@ struct StationView: View {
             }
             .padding(.horizontal, 14)
 
+            filterRow(title: "筛选") {
+                Button {
+                    store.favoritesOnly.toggle()
+                } label: {
+                    Label("收藏", systemImage: store.favoritesOnly ? "star.fill" : "star")
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            store.favoritesOnly ? Color.yellow.opacity(0.2) : Color.secondary.opacity(0.1),
+                            in: Capsule()
+                        )
+                        .foregroundStyle(store.favoritesOnly ? Color.orange : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(store.favoritesOnly ? "显示全部片段" : "只显示收藏")
+
+                Button {
+                    showDateRange.toggle()
+                } label: {
+                    Label(
+                        store.selectedDateRange == nil ? "日期" : "日期已选",
+                        systemImage: store.selectedDateRange == nil ? "calendar" : "calendar.badge.checkmark"
+                    )
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        store.selectedDateRange == nil
+                            ? Color.secondary.opacity(0.1)
+                            : Color.accentColor.opacity(0.15),
+                        in: Capsule()
+                    )
+                    .foregroundStyle(store.selectedDateRange == nil ? Color.secondary : Color.accentColor)
+                }
+                .buttonStyle(.plain)
+                .help("按起止日期筛选")
+            }
+
+            if showDateRange {
+                HStack(spacing: 8) {
+                    Text("范围")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, alignment: .trailing)
+                    DatePicker("从", selection: $rangeStart, displayedComponents: .date)
+                        .labelsHidden()
+                    Text("至")
+                        .foregroundStyle(.secondary)
+                    DatePicker("到", selection: $rangeEnd, displayedComponents: .date)
+                        .labelsHidden()
+                    Button("应用") {
+                        store.selectedTimeFilter = nil
+                        store.selectedDateRange = DateRangeFilter(start: rangeStart, end: rangeEnd)
+                    }
+                    .buttonStyle(.borderless)
+                    if store.selectedDateRange != nil {
+                        Button("清除") {
+                            store.selectedDateRange = nil
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .font(.system(size: 11))
+                .padding(.horizontal, 14)
+            }
+
             if !store.frequentTags.isEmpty {
                 filterRow(title: "分类") {
                     ForEach(store.frequentTags) { item in
@@ -154,6 +227,7 @@ struct StationView: View {
                 store.selectedTimeFilter = nil
             } else {
                 store.selectedTimeFilter = filter
+                store.selectedDateRange = nil
             }
         } label: {
             ZStack(alignment: .leading) {
@@ -232,11 +306,14 @@ struct StationView: View {
                 .foregroundStyle(.secondary)
             TextField("搜索标题、正文或来源", text: $store.searchText)
                 .textFieldStyle(.plain)
-            if !store.searchText.isEmpty || !store.selectedTags.isEmpty || store.selectedTimeFilter != nil {
+            if !store.searchText.isEmpty || !store.selectedTags.isEmpty || store.selectedTimeFilter != nil
+                || store.selectedDateRange != nil || store.favoritesOnly {
                 IconButton(systemName: "xmark.circle.fill", help: "清除搜索") {
                     store.searchText = ""
                     store.selectedTags.removeAll()
                     store.selectedTimeFilter = nil
+                    store.selectedDateRange = nil
+                    store.favoritesOnly = false
                 }
             }
         }
@@ -259,9 +336,11 @@ struct StationView: View {
                 Button {
                     if allVisibleSelected {
                         selectedSnippetIDs.subtract(visibleIDs)
+                        selectionAnchorID = nil
                         store.showToast("已取消当前选择")
                     } else {
                         selectedSnippetIDs = visibleIDs
+                        selectionAnchorID = displayedSnippets.first?.id
                         store.showToast("已全选当前 \(visibleIDs.count) 条")
                     }
                 } label: {
@@ -275,6 +354,7 @@ struct StationView: View {
 
                 Button {
                     selectedSnippetIDs.subtract(visibleIDs)
+                    selectionAnchorID = nil
                     store.showToast("已取消当前筛选中的选择")
                 } label: {
                     Label("取消", systemImage: "xmark.square")
@@ -312,6 +392,7 @@ struct StationView: View {
                 Button(role: .destructive) {
                     store.delete(ids: visibleSelection)
                     selectedSnippetIDs.subtract(visibleSelection)
+                    selectionAnchorID = nil
                 } label: {
                     Label("删除", systemImage: "trash")
                 }
@@ -353,7 +434,11 @@ struct StationView: View {
                         SnippetRow(
                             snippet: snippet,
                             store: store,
-                            isSelected: selectedSnippetIDs.contains(snippet.id)
+                            isSelected: selectedSnippetIDs.contains(snippet.id),
+                            rangeSelectionDirection: rangeSelectionDirection(for: snippet.id),
+                            selectRange: {
+                                selectRange(to: snippet.id)
+                            }
                         ) {
                             toggleSelection(snippet.id)
                         }
@@ -423,9 +508,37 @@ struct StationView: View {
     private func toggleSelection(_ id: UUID) {
         if selectedSnippetIDs.contains(id) {
             selectedSnippetIDs.remove(id)
+            if selectionAnchorID == id {
+                selectionAnchorID = nil
+            }
         } else {
             selectedSnippetIDs.insert(id)
+            selectionAnchorID = id
         }
+    }
+
+    private func rangeSelectionDirection(for targetID: UUID) -> RangeSelectionDirection? {
+        guard !selectedSnippetIDs.contains(targetID),
+              let selectionAnchorID else {
+            return nil
+        }
+        return RangeSelection.direction(
+            from: selectionAnchorID,
+            to: targetID,
+            in: displayedSnippets.map(\.id)
+        )
+    }
+
+    private func selectRange(to targetID: UUID) {
+        guard let selectionAnchorID else { return }
+        let rangeIDs = RangeSelection.ids(
+            from: selectionAnchorID,
+            to: targetID,
+            in: displayedSnippets.map(\.id)
+        )
+        guard !rangeIDs.isEmpty else { return }
+        selectedSnippetIDs.formUnion(rangeIDs)
+        store.showToast("已连续选择 \(rangeIDs.count) 条")
     }
 
 }
@@ -445,6 +558,14 @@ private struct MemoryShoreView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                Button {
+                    store.restoreAllFromMemoryShore()
+                } label: {
+                    Label("全部找回", systemImage: "arrow.uturn.backward.circle")
+                }
+                .buttonStyle(.borderless)
+                .disabled(store.deletedSnippets.isEmpty)
+                .help("全部恢复到片段列表并自动收藏")
                 Button(role: .destructive) {
                     showEmptyConfirmation = true
                 } label: {
@@ -556,15 +677,28 @@ private struct SnippetRow: View {
     let snippet: Snippet
     @ObservedObject var store: SnippetStore
     let isSelected: Bool
+    let rangeSelectionDirection: RangeSelectionDirection?
+    let selectRange: () -> Void
     let toggleSelection: () -> Void
     @State private var title: String
     @State private var isEditingTitle = false
     @State private var orderText: String
+    @State private var isHovering = false
+    @State private var isRangeActionHovering = false
 
-    init(snippet: Snippet, store: SnippetStore, isSelected: Bool, toggleSelection: @escaping () -> Void) {
+    init(
+        snippet: Snippet,
+        store: SnippetStore,
+        isSelected: Bool,
+        rangeSelectionDirection: RangeSelectionDirection?,
+        selectRange: @escaping () -> Void,
+        toggleSelection: @escaping () -> Void
+    ) {
         self.snippet = snippet
         self.store = store
         self.isSelected = isSelected
+        self.rangeSelectionDirection = rangeSelectionDirection
+        self.selectRange = selectRange
         self.toggleSelection = toggleSelection
         _title = State(initialValue: snippet.title)
         _orderText = State(initialValue: "\(store.displayIndex(for: snippet) ?? 1)")
@@ -576,8 +710,8 @@ private struct SnippetRow: View {
 
         HStack(alignment: .top, spacing: 8) {
             Button(action: toggleSelection) {
-                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 15, weight: .semibold))
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(isSelected ? orderColor : .secondary)
             }
             .buttonStyle(.plain)
@@ -627,6 +761,21 @@ private struct SnippetRow: View {
                             isEditingTitle = true
                         }
                     }
+                    IconButton(
+                        systemName: snippet.isFavorite ? "star.fill" : "star",
+                        help: snippet.isFavorite ? "取消收藏" : "收藏"
+                    ) {
+                        store.toggleFavorite(snippet)
+                    }
+                    .foregroundStyle(snippet.isFavorite ? Color.orange : Color.secondary)
+                    if snippet.supportsRepresentationToggle {
+                        IconButton(
+                            systemName: snippet.effectiveRepresentation == .image ? "text.viewfinder" : "photo",
+                            help: snippet.effectiveRepresentation == .image ? "切换为 OCR 文字" : "切换为图片"
+                        ) {
+                            store.toggleRepresentation(for: snippet)
+                        }
+                    }
                     IconButton(systemName: "doc.on.doc", help: "复制") {
                         store.copy(snippet)
                     }
@@ -636,6 +785,25 @@ private struct SnippetRow: View {
                 }
 
                 SnippetBody(snippet: snippet)
+
+                if let detected = store.detectedDate(for: snippet) {
+                    HStack(spacing: 8) {
+                        Label(
+                            detected.date.formatted(date: .abbreviated, time: .shortened),
+                            systemImage: "clock"
+                        )
+                        .lineLimit(1)
+                        Spacer(minLength: 4)
+                        IconButton(systemName: "calendar.badge.plus", help: "加入日历") {
+                            store.addCalendarEvent(for: snippet)
+                        }
+                        IconButton(systemName: "alarm", help: "创建闹钟提醒") {
+                            store.addAlarmReminder(for: snippet)
+                        }
+                    }
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                }
 
                 if snippet.isEnriching || !snippet.tags.isEmpty || snippet.enrichmentFailed {
                     SnippetTagFlowLayout(spacing: 6) {
@@ -674,6 +842,9 @@ private struct SnippetRow: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.secondary.opacity(0.12), in: Capsule())
+                    if snippet.attachmentCount > 1 {
+                        Label("\(snippet.attachmentCount) 张", systemImage: "square.stack.3d.up")
+                    }
                     Text(Self.dateFormatter.string(from: snippet.createdAt))
                     Text("\(snippet.charCount) 字")
                 }
@@ -688,6 +859,15 @@ private struct SnippetRow: View {
                 .strokeBorder(isSelected ? orderColor.opacity(0.35) : Color.clear)
         }
         .contentShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(alignment: rangeSelectionDirection == .up ? .top : .bottom) {
+            if isHovering || isRangeActionHovering, let rangeSelectionDirection {
+                SelectToHereButton(direction: rangeSelectionDirection, action: selectRange)
+                    .offset(y: rangeSelectionDirection == .up ? -16 : 16)
+                    .onHover { isRangeActionHovering = $0 }
+            }
+        }
+        .zIndex((isHovering || isRangeActionHovering) && rangeSelectionDirection != nil ? 2 : 0)
+        .onHover { isHovering = $0 }
         .onTapGesture {
             toggleSelection()
         }
@@ -726,6 +906,32 @@ private struct SnippetRow: View {
     }()
 }
 
+private struct SelectToHereButton: View {
+    let direction: RangeSelectionDirection
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Label(
+                "选择到这里",
+                systemImage: direction == .up ? "arrow.up" : "arrow.down"
+            )
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 12)
+            .frame(height: 28)
+            .background(.regularMaterial, in: Capsule())
+            .overlay {
+                Capsule()
+                    .strokeBorder(Color.accentColor.opacity(0.2))
+            }
+            .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
+        }
+        .buttonStyle(.plain)
+        .help(direction == .up ? "向上连续选择到这一条" : "向下连续选择到这一条")
+    }
+}
+
 private struct BubbleLogo: View {
     var body: some View {
         ZStack {
@@ -755,29 +961,25 @@ private struct BubbleLogo: View {
 
 private struct SnippetBody: View {
     let snippet: Snippet
+    @State private var showImageViewer = false
+    @State private var selectedImageIndex = 0
 
     var body: some View {
-        if snippet.attachmentPath == nil && (snippet.kind == .text || snippet.kind == .spreadsheet) {
-            Text(snippet.text)
-                .font(.system(size: 12, design: .monospaced))
-                .lineLimit(5)
-                .fixedSize(horizontal: false, vertical: true)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else if snippet.kind == .screenshot {
-            if let attachmentPath = snippet.attachmentPath,
-               let image = NSImage(contentsOfFile: attachmentPath) {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180, alignment: .leading)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.secondary.opacity(0.18))
-                    }
-                    .help(snippet.fileName ?? "截图")
-            } else {
+        Group {
+            if snippet.effectiveRepresentation == .text {
+                Text(snippet.text.isEmpty ? "未识别到文字" : snippet.text)
+                    .font(.system(size: 12, design: .monospaced))
+                    .lineLimit(5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else if !previewImages.isEmpty {
+                ImageGroupPreview(images: previewImages) { index in
+                    selectedImageIndex = index
+                    showImageViewer = true
+                }
+                .help(previewImages.count > 1 ? "双击查看 \(previewImages.count) 张大图" : "双击查看大图")
+            } else if snippet.kind == .screenshot {
                 HStack(spacing: 8) {
                     Image(systemName: "photo")
                     Text(snippet.fileName ?? "截图")
@@ -785,16 +987,309 @@ private struct SnippetBody: View {
                 }
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "tablecells")
+                    Text(snippet.fileName ?? snippet.title)
+                        .lineLimit(1)
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
             }
-        } else {
-            HStack(spacing: 8) {
-                Image(systemName: "tablecells")
-                Text(snippet.fileName ?? snippet.title)
-                    .lineLimit(1)
-            }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(.secondary)
         }
+        .sheet(isPresented: $showImageViewer) {
+            ImageViewer(
+                title: snippet.title,
+                images: previewImages,
+                selectedIndex: $selectedImageIndex
+            )
+        }
+    }
+
+    private var previewImages: [NSImage] {
+        if snippet.kind == .screenshot {
+            return snippet.allAttachmentPaths.compactMap(NSImage.init(contentsOfFile:))
+        }
+        if snippet.effectiveRepresentation == .image,
+           let image = TextImageRenderer.image(text: snippet.text, title: snippet.title) {
+            return [image]
+        }
+        return []
+    }
+}
+
+private struct ImageGroupPreview: View {
+    let images: [NSImage]
+    let onOpen: (Int) -> Void
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            HStack(spacing: 4) {
+                ForEach(Array(images.prefix(4).enumerated()), id: \.offset) { index, image in
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180)
+                        .clipped()
+                        .contentShape(Rectangle())
+                        .highPriorityGesture(
+                            TapGesture(count: 2)
+                                .onEnded { onOpen(index) }
+                        )
+                        .accessibilityLabel("第 \(index + 1) 张图片，双击查看大图")
+                }
+            }
+            if images.count > 1 {
+                Text("\(images.count) 张")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.black.opacity(0.72), in: Capsule())
+                    .padding(8)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180, alignment: .leading)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color.secondary.opacity(0.18))
+        }
+    }
+}
+
+private struct ImageViewer: View {
+    let title: String
+    let images: [NSImage]
+    @Binding var selectedIndex: Int
+    @Environment(\.dismiss) private var dismiss
+    @State private var zoomScale: CGFloat = 1
+
+    private var safeIndex: Int {
+        guard !images.isEmpty else { return 0 }
+        return min(max(selectedIndex, 0), images.count - 1)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .lineLimit(1)
+                Spacer()
+                if images.count > 1 {
+                    Text("\(safeIndex + 1) / \(images.count)")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
+                if !images.isEmpty {
+                    IconButton(systemName: "minus.magnifyingglass", help: "缩小") {
+                        changeZoom(by: -0.25)
+                    }
+                    .disabled(zoomScale <= 0.25)
+                    Text("\(Int((zoomScale * 100).rounded()))%")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 42)
+                    IconButton(systemName: "plus.magnifyingglass", help: "放大") {
+                        changeZoom(by: 0.25)
+                    }
+                    .disabled(zoomScale >= 4)
+                    IconButton(systemName: "arrow.counterclockwise", help: "适合窗口") {
+                        zoomScale = 1
+                    }
+                }
+                IconButton(systemName: "xmark", help: "关闭大图") {
+                    dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 48)
+
+            Divider()
+
+            ZStack {
+                Color.white
+
+                if images.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "photo")
+                            .font(.system(size: 30))
+                        Text("图片不可用")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundStyle(.secondary)
+                } else {
+                    GeometryReader { proxy in
+                        let fitted = fittedSize(for: images[safeIndex], in: proxy.size)
+                        ScrollView([.horizontal, .vertical]) {
+                            Image(nsImage: images[safeIndex])
+                                .resizable()
+                                .interpolation(.high)
+                                .frame(
+                                    width: fitted.width * zoomScale,
+                                    height: fitted.height * zoomScale
+                                )
+                                .frame(
+                                    minWidth: proxy.size.width,
+                                    minHeight: proxy.size.height,
+                                    alignment: .center
+                                )
+                        }
+                        .background(Color.white)
+                    }
+                }
+
+                if images.count > 1 {
+                    HStack {
+                        viewerArrow(systemName: "chevron.left", help: "上一张", isEnabled: safeIndex > 0) {
+                            selectedIndex = safeIndex - 1
+                        }
+                        Spacer()
+                        viewerArrow(systemName: "chevron.right", help: "下一张", isEnabled: safeIndex < images.count - 1) {
+                            selectedIndex = safeIndex + 1
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if images.count > 1 {
+                Divider()
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(images.enumerated()), id: \.offset) { index, image in
+                            Button {
+                                selectedIndex = index
+                            } label: {
+                                Image(nsImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 64, height: 48)
+                                    .clipped()
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .strokeBorder(
+                                                index == safeIndex ? Color.accentColor : Color.secondary.opacity(0.2),
+                                                lineWidth: index == safeIndex ? 2 : 1
+                                            )
+                                    }
+                                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                            }
+                            .buttonStyle(.plain)
+                            .help("查看第 \(index + 1) 张")
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+                .frame(height: 68)
+            }
+        }
+        .frame(minWidth: 680, idealWidth: 760, minHeight: 520, idealHeight: 620)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .onAppear {
+            selectedIndex = safeIndex
+        }
+        .onChange(of: selectedIndex) { _ in
+            zoomScale = 1
+        }
+    }
+
+    private func changeZoom(by amount: CGFloat) {
+        withAnimation(.easeOut(duration: 0.12)) {
+            zoomScale = min(max(zoomScale + amount, 0.25), 4)
+        }
+    }
+
+    private func fittedSize(for image: NSImage, in container: CGSize) -> CGSize {
+        let availableWidth = max(container.width - 48, 1)
+        let availableHeight = max(container.height - 48, 1)
+        let imageWidth = max(image.size.width, 1)
+        let imageHeight = max(image.size.height, 1)
+        let scale = min(availableWidth / imageWidth, availableHeight / imageHeight)
+        return CGSize(width: imageWidth * scale, height: imageHeight * scale)
+    }
+
+    @ViewBuilder
+    private func viewerArrow(
+        systemName: String,
+        help: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 16, weight: .semibold))
+                .frame(width: 36, height: 36)
+                .background(.regularMaterial, in: Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .help(help)
+    }
+}
+
+private struct SnippetTagFlowLayout: Layout {
+    let spacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let maxWidth = proposal.width ?? .greatestFiniteMagnitude
+        let result = arrangement(maxWidth: maxWidth, subviews: subviews)
+        return CGSize(width: proposal.width ?? result.width, height: result.height)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > bounds.minX, x + size.width > bounds.maxX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            subview.place(
+                at: CGPoint(x: x, y: y),
+                anchor: .topLeading,
+                proposal: ProposedViewSize(size)
+            )
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+    }
+
+    private func arrangement(maxWidth: CGFloat, subviews: Subviews) -> CGSize {
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var usedWidth: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > maxWidth {
+                y += rowHeight + spacing
+                x = 0
+                rowHeight = 0
+            }
+            usedWidth = max(usedWidth, x + size.width)
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+
+        return CGSize(width: usedWidth, height: y + rowHeight)
     }
 }
 
@@ -1155,6 +1650,7 @@ private struct DraftDock: View {
     @Binding var draggingSnippetID: UUID?
     @Binding var draggingDraftID: UUID?
     @State private var activeDraftSlot: String?
+    @State private var showQuickNote = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1163,8 +1659,35 @@ private struct DraftDock: View {
                     .foregroundStyle(.secondary)
                 Text("组合框")
                     .font(.system(size: 12, weight: .semibold))
+                Button {
+                    showQuickNote.toggle()
+                } label: {
+                    Label("随笔", systemImage: "square.and.pencil")
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
                 Spacer()
                 Button {
+                    activeDraftSlot = nil
+                    store.polishDraft()
+                } label: {
+                    if store.isPolishingDraft {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(width: 72)
+                    } else {
+                        Label("Polish", systemImage: "wand.and.stars")
+                            .frame(minWidth: 72)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(store.isPolishingDraft)
+                .help("使用 DeepSeek 将积木整理成连贯正文")
+                IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
+                    store.copyDraftText()
+                }
+                IconButton(systemName: "xmark.circle", help: "一键取消组合框全部内容") {
                     activeDraftSlot = nil
                     store.polishDraft()
                 } label: {
@@ -1177,15 +1700,55 @@ private struct DraftDock: View {
                             .frame(width: 54)
                     }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(
-                    store.isPolishingDraft
-                        || (store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
-                )
-                .help("使用 DeepSeek 将积木整理成连贯正文")
-                IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
-                    store.copyDraftText()
+                .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
+            }
+
+            if showQuickNote {
+                HStack(alignment: .bottom, spacing: 8) {
+                    TextEditor(text: $store.quickNoteText)
+                        .font(.system(size: 12))
+                        .frame(minHeight: 54, maxHeight: 86)
+                        .padding(5)
+                        .scrollContentBackground(.hidden)
+                        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 7)
+                                .strokeBorder(Color.secondary.opacity(0.2))
+                        }
+                    VStack(spacing: 6) {
+                        Button {
+                            store.polishQuickNote()
+                        } label: {
+                            if store.isPolishingQuickNote {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .frame(minWidth: 72)
+                            } else {
+                                Label("Polish", systemImage: "wand.and.stars")
+                                    .frame(minWidth: 72)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(
+                            store.isPolishingQuickNote
+                                || store.quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
+                        .help("使用同一个 DeepSeek 配置润色随笔")
+
+                        Button {
+                            store.saveQuickNote()
+                        } label: {
+                            Label("形成一条", systemImage: "plus.circle.fill")
+                                .frame(minWidth: 72)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .disabled(
+                            store.isPolishingQuickNote
+                                || store.quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
+                    }
                 }
                 IconButton(systemName: "xmark.circle", help: "一键取消组合框全部内容") {
                     activeDraftSlot = nil
@@ -1292,7 +1855,7 @@ private struct DraftBlock: View {
     var body: some View {
         HStack(spacing: 6) {
             if kind == .screenshot {
-                Image(systemName: "photo")
+                Image(systemName: "text.viewfinder")
                     .font(.system(size: 10, weight: .semibold))
             }
             Text("\(number)")
@@ -1510,7 +2073,7 @@ private func snippetOrderColor(_ index: Int) -> Color {
 private func snippetDragProvider(for snippet: Snippet) -> NSItemProvider {
     let provider = NSItemProvider(object: snippet.id.uuidString as NSString)
     guard snippet.kind == .screenshot,
-          let attachmentPath = snippet.attachmentPath else {
+          let attachmentPath = snippet.allAttachmentPaths.first else {
         return provider
     }
 

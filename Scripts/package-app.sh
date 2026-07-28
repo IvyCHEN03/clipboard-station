@@ -6,9 +6,21 @@ APP_DIR="$ROOT_DIR/.build/ClipboardStation.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
+ROOT_MARKER="$ROOT_DIR/.build/.linggan-source-root"
 
 cd "$ROOT_DIR"
+
+if [[ -d "$ROOT_DIR/.build" ]]; then
+  PREVIOUS_ROOT="$(cat "$ROOT_MARKER" 2>/dev/null || true)"
+  if [[ "$PREVIOUS_ROOT" != "$ROOT_DIR" ]]; then
+    echo "Source checkout moved; clearing stale SwiftPM build cache."
+    swift package clean
+  fi
+fi
+
 swift build -c release
+mkdir -p "$ROOT_DIR/.build"
+printf "%s\n" "$ROOT_DIR" > "$ROOT_MARKER"
 swift "$ROOT_DIR/Scripts/generate-icon.swift"
 
 rm -rf "$APP_DIR"

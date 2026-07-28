@@ -39,12 +39,18 @@ cd clipboard-station
 ./Scripts/install-local.sh
 ```
 
-This installs the app into `~/Applications/ClipboardStation.app` and starts a user LaunchAgent so the floating bubble can stay available.
+This installs and starts `ClipboardStation.app` beside the cloned source directory. Enable `开机启动` in the app when you want it to create a user LaunchAgent and stay available after login.
 
-The install script rebuilds the packaged app every time before copying it into `~/Applications`. If you pull new changes or edit the source locally, run the same command again to refresh the installed app and restart the launch agent:
+The install script rebuilds the packaged app every time before replacing that local app. If you pull new changes, edit the source, or move the checkout, run the same command again to refresh the app, update the LaunchAgent path, and restart it:
 
 ```bash
 ./Scripts/install-local.sh
+```
+
+To install somewhere else intentionally:
+
+```bash
+LINGGAN_INSTALL_DIR="$HOME/Applications" ./Scripts/install-local.sh
 ```
 
 After installing, follow [GETTING_STARTED.md](GETTING_STARTED.md) for the five-minute first run.

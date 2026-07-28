@@ -4,7 +4,6 @@ import Combine
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
-import Vision
 
 @MainActor
 final class SnippetStore: ObservableObject {
@@ -21,6 +20,8 @@ final class SnippetStore: ObservableObject {
     @Published var searchText = ""
     @Published var selectedTags = Set<String>()
     @Published var selectedTimeFilter: TimeFilter?
+    @Published var selectedDateRange: DateRangeFilter?
+    @Published var favoritesOnly = false
     @Published var toast: ToastMessage?
     @Published var draftExtraText = ""
     @Published var draftTextSlots: [String: String] = [:] {
@@ -32,6 +33,14 @@ final class SnippetStore: ObservableObject {
     }
     @Published var polishedDraftText = ""
     @Published var isPolishingDraft = false
+    @Published var isPolishingQuickNote = false
+    @Published var quickNoteText = "" {
+        didSet {
+            if oldValue != quickNoteText, didFinishInitialLoad, !isApplyingInitialLoad {
+                persist()
+            }
+        }
+    }
     @Published var aiAPIKey: String = "" {
         didSet {
             if oldValue != aiAPIKey, didFinishInitialLoad, !isApplyingInitialLoad {
@@ -55,6 +64,7 @@ final class SnippetStore: ObservableObject {
 
     private let persistentStore = PersistentStore()
     private let enricher = AIEnricher()
+    private let calendarReminderService = CalendarReminderService()
     private let attachmentsDirectory: URL
     private let isVideoDemo = ProcessInfo.processInfo.environment["CLIPBOARD_STATION_VIDEO_DEMO"] == "1"
     private var toastTask: Task<Void, Never>?
@@ -66,17 +76,24 @@ final class SnippetStore: ObservableObject {
     private var polishedDraftSourceText = ""
     private var didFinishInitialLoad = false
     private var isApplyingInitialLoad = false
+    private var pendingWebImageBatches: [String: PendingWebImageBatch] = [:]
+
+    private struct PendingWebImageBatch {
+        var images: [Int: CollectedWebImage]
+        var expiresAt: Date
+    }
 
     static let fishMemoryDuration: TimeInterval = 7 * 24 * 60 * 60
 
     var filteredSnippets: [Snippet] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return snippets.filter { snippet in
-            let matchesText = query.isEmpty || snippet.matchesKeyword(query)
-            let matchesTags = selectedTags.isEmpty || selectedTags.allSatisfy { snippet.matchesKeyword($0) }
-            let matchesTime = selectedTimeFilter?.contains(snippet.createdAt) ?? true
-            return matchesText && matchesTags && matchesTime
-        }
+        SnippetFilter.apply(
+            to: snippets,
+            searchText: searchText,
+            selectedTags: selectedTags,
+            timeFilter: selectedTimeFilter,
+            dateRange: selectedDateRange,
+            favoritesOnly: favoritesOnly
+        )
     }
 
     var draftSnippets: [Snippet] {
@@ -110,7 +127,7 @@ final class SnippetStore: ObservableObject {
             snippet.tags.isEmpty
                 && !snippet.isEnriching
                 && !snippet.enrichmentFailed
-                && hasExportableText(snippet)
+                && hasPotentialEnrichmentText(snippet)
         }.count
     }
 
@@ -229,6 +246,7 @@ final class SnippetStore: ObservableObject {
         snippets = state.snippets.sorted { $0.createdAt > $1.createdAt }
         deletedSnippets = state.deletedSnippets.sorted { $0.deletedAt > $1.deletedAt }
         settings = state.settings
+        quickNoteText = state.quickNoteText
         aiAPIKey = apiKey
         isApplyingInitialLoad = false
         didFinishInitialLoad = true
@@ -257,6 +275,116 @@ final class SnippetStore: ObservableObject {
         persist()
         showToast("已收集 \(snippet.charCount) 字")
         enrichSnippetIfNeeded(snippet.id)
+    }
+
+    func saveQuickNote() {
+        let note = quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !note.isEmpty else {
+            showToast("随笔还是空的")
+            return
+        }
+        add(text: note, source: .quickNote, force: true)
+        quickNoteText = ""
+        showToast("随笔已形成一条内容")
+    }
+
+    func polishQuickNote() {
+        let source = quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !source.isEmpty else {
+            showToast("随笔没有可润色的文字")
+            return
+        }
+        guard let configuration = polishConfiguration() else { return }
+        guard !isPolishingQuickNote else { return }
+
+        isPolishingQuickNote = true
+        showToast("DeepSeek 正在润色随笔")
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let result = try await enricher.polish(
+                    text: source,
+                    baseURL: configuration.baseURL,
+                    model: configuration.model,
+                    apiKey: configuration.apiKey
+                )
+                guard quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines) == source else {
+                    isPolishingQuickNote = false
+                    showToast("随笔内容已变化，未覆盖新的文字")
+                    return
+                }
+                quickNoteText = result
+                isPolishingQuickNote = false
+                showToast("随笔 Polish 完成")
+            } catch {
+                isPolishingQuickNote = false
+                handleAIError(error, prefix: "随笔 Polish 失败")
+            }
+        }
+    }
+
+    func toggleRepresentation(for snippet: Snippet) {
+        guard snippet.supportsRepresentationToggle,
+              let index = snippets.firstIndex(where: { $0.id == snippet.id }) else {
+            return
+        }
+        if snippet.effectiveRepresentation == .image {
+            if snippet.kind == .screenshot, screenshotText(for: snippet)?.isEmpty != false {
+                showToast("这张图片没有识别到文字")
+                return
+            }
+            snippets[index].representation = .text
+            showToast("已切换为文字")
+        } else {
+            snippets[index].representation = .image
+            showToast("已切换为图片")
+        }
+        persist()
+    }
+
+    func addCalendarEvent(for snippet: Snippet) {
+        guard let detected = detectedDate(for: snippet) else {
+            showToast("这条内容里没有识别到日期时间")
+            return
+        }
+        let service = calendarReminderService
+        Task { @MainActor [weak self] in
+            do {
+                try await service.addEvent(title: snippet.title, notes: snippet.text, date: detected.date)
+                self?.showToast("已加入日历")
+            } catch {
+                self?.showToast("加入日历失败：\(Self.shortError(error))")
+            }
+        }
+    }
+
+    func toggleFavorite(_ snippet: Snippet) {
+        guard let index = snippets.firstIndex(where: { $0.id == snippet.id }) else {
+            return
+        }
+        snippets[index].isFavorite.toggle()
+        persist()
+        showToast(snippets[index].isFavorite ? "已收藏，7 天后也会保留" : "已取消收藏")
+    }
+
+    func addAlarmReminder(for snippet: Snippet) {
+        guard let detected = detectedDate(for: snippet) else {
+            showToast("这条内容里没有识别到日期时间")
+            return
+        }
+        let service = calendarReminderService
+        Task { @MainActor [weak self] in
+            do {
+                try await service.addReminder(title: snippet.title, notes: snippet.text, date: detected.date)
+                self?.showToast("已创建闹钟提醒")
+            } catch {
+                self?.showToast("创建提醒失败：\(Self.shortError(error))")
+            }
+        }
+    }
+
+    func detectedDate(for snippet: Snippet) -> DetectedDateContent? {
+        DateContentDetector.firstDate(in: snippet.text)
     }
 
     func addSpreadsheetText(_ rawText: String, source: SnippetSource) {
@@ -344,6 +472,75 @@ final class SnippetStore: ObservableObject {
         }
     }
 
+    @discardableResult
+    func addWebImage(_ image: CollectedWebImage) -> Bool {
+        guard NSImage(data: image.data) != nil else {
+            showToast("网页图片格式无效")
+            return false
+        }
+        let now = Date()
+        pendingWebImageBatches = pendingWebImageBatches.filter { $0.value.expiresAt > now }
+        let total = min(max(image.total, 1), 100)
+        var batch = pendingWebImageBatches[image.batchID]
+            ?? PendingWebImageBatch(images: [:], expiresAt: now.addingTimeInterval(120))
+        batch.images[image.index] = image
+        batch.expiresAt = now.addingTimeInterval(120)
+        pendingWebImageBatches[image.batchID] = batch
+
+        guard batch.images.count >= total else {
+            return true
+        }
+        pendingWebImageBatches.removeValue(forKey: image.batchID)
+        let ordered = batch.images.values.sorted { $0.index < $1.index }
+        return saveWebImageBatch(Array(ordered.prefix(total)))
+    }
+
+    private func saveWebImageBatch(_ images: [CollectedWebImage]) -> Bool {
+        guard !images.isEmpty else { return false }
+        let stamp = Self.fileDateFormatter.string(from: Date())
+        var paths: [String] = []
+        var fileNames: [String] = []
+        for image in images {
+            let fileName = "web-image-\(stamp)-\(image.index)-\(UUID().uuidString.prefix(8)).png"
+            let url = attachmentsDirectory.appendingPathComponent(fileName)
+            do {
+                try image.data.write(to: url, options: [.atomic])
+                paths.append(url.path)
+                fileNames.append(fileName)
+            } catch {
+                paths.forEach { try? FileManager.default.removeItem(atPath: $0) }
+                showToast("网页图片组保存失败")
+                return false
+            }
+        }
+
+        let cleanTitle = images[0].title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanText = images
+            .map { $0.ocrText.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
+        let snippet = Snippet(
+            id: UUID(),
+            text: cleanText,
+            title: cleanTitle.isEmpty ? "网页图片组" : cleanTitle,
+            createdAt: Date(),
+            source: .webImageCollector,
+            kind: .screenshot,
+            attachmentPath: paths.first,
+            fileName: fileNames.first,
+            attachmentPaths: paths,
+            attachmentFileNames: fileNames,
+            representation: .image
+        )
+        snippets.insert(snippet, at: 0)
+        persist()
+        enrichSnippetIfNeeded(snippet.id)
+        showToast(cleanText.isEmpty
+            ? "\(images.count) 张图片已存入同一个灵感框"
+            : "\(images.count) 张图片和 OCR 文字已存入同一个灵感框")
+        return true
+    }
+
     func addPasteboardContents(source: SnippetSource) {
         let pasteboard = NSPasteboard.general
         if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
@@ -395,10 +592,26 @@ final class SnippetStore: ObservableObject {
 
     func restoreFromMemoryShore(_ item: DeletedSnippet) {
         guard let index = deletedSnippets.firstIndex(where: { $0.id == item.id }) else { return }
-        let restored = deletedSnippets.remove(at: index).snippet
+        var restored = deletedSnippets.remove(at: index).snippet
+        restored.isFavorite = true
         snippets.insert(restored, at: 0)
         persist()
-        showToast("已找回“\(restored.title)”")
+        showToast("已找回并收藏“\(restored.title)”")
+    }
+
+    func restoreAllFromMemoryShore() {
+        var state = PersistedState(
+            snippets: snippets,
+            deletedSnippets: deletedSnippets,
+            settings: settings,
+            quickNoteText: quickNoteText
+        )
+        let restoredCount = state.restoreAllDeletedAsFavorites()
+        guard restoredCount > 0 else { return }
+        snippets = state.snippets
+        deletedSnippets = state.deletedSnippets
+        persist()
+        showToast("已找回并收藏 \(restoredCount) 条历史资料")
     }
 
     func permanentlyDelete(_ item: DeletedSnippet) {
@@ -457,8 +670,20 @@ final class SnippetStore: ObservableObject {
     }
 
     func addToDraft(id: UUID, before targetID: UUID? = nil) {
-        guard snippets.contains(where: { $0.id == id }) else {
+        guard let snippet = snippets.first(where: { $0.id == id }) else {
             return
+        }
+        if snippet.kind == .screenshot {
+            guard screenshotText(for: snippet)?.isEmpty == false else {
+                showToast("这张图片没有识别到文字，暂时不能加入组合框")
+                return
+            }
+            if let index = snippets.firstIndex(where: { $0.id == id }),
+               snippets[index].effectiveRepresentation != .text {
+                snippets[index].representation = .text
+                persist()
+                showToast("图片已转换为 OCR 文字并加入组合框")
+            }
         }
         draftSnippetIDs.removeAll { $0 == id }
         if let targetID, let targetIndex = draftSnippetIDs.firstIndex(of: targetID) {
@@ -513,13 +738,7 @@ final class SnippetStore: ObservableObject {
             showToast("组合框没有可润色的文字")
             return
         }
-        let key = aiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        let model = settings.aiModel.trimmingCharacters(in: .whitespacesAndNewlines)
-        let baseURL = settings.aiBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty, !model.isEmpty, !baseURL.isEmpty else {
-            showToast("请先在设置中填写 DeepSeek API Key、模型名和 Base URL")
-            return
-        }
+        guard let configuration = polishConfiguration() else { return }
         guard !isPolishingDraft else { return }
 
         isPolishingDraft = true
@@ -529,9 +748,9 @@ final class SnippetStore: ObservableObject {
             do {
                 let result = try await enricher.polish(
                     text: source,
-                    baseURL: baseURL,
-                    model: model,
-                    apiKey: key
+                    baseURL: configuration.baseURL,
+                    model: configuration.model,
+                    apiKey: configuration.apiKey
                 )
                 guard assembledDraftText() == source else {
                     isPolishingDraft = false
@@ -552,6 +771,17 @@ final class SnippetStore: ObservableObject {
     var hasCurrentPolishedDraft: Bool {
         !polishedDraftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && polishedDraftSourceText == assembledDraftText()
+    }
+
+    private func polishConfiguration() -> (baseURL: String, model: String, apiKey: String)? {
+        let key = aiAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let model = settings.aiModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let baseURL = settings.aiBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty, !model.isEmpty, !baseURL.isEmpty else {
+            showToast("请先在设置中填写 DeepSeek API Key、模型名和 Base URL")
+            return nil
+        }
+        return (baseURL, model, key)
     }
 
     private func assembledDraftText() -> String {
@@ -709,7 +939,7 @@ final class SnippetStore: ObservableObject {
                     && snippet.tags.isEmpty
                     && !snippet.isEnriching
                     && !snippet.enrichmentFailed
-                    && !(exportText(for: snippet) ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    && hasPotentialEnrichmentText(snippet)
             }
             .map(\.id)
 
@@ -994,16 +1224,24 @@ final class SnippetStore: ObservableObject {
     private func writeSnippetToPasteboard(_ snippet: Snippet) -> Bool {
         NSPasteboard.general.clearContents()
         let didWrite: Bool
-        if snippet.kind == .screenshot,
-           let text = screenshotText(for: snippet),
-           !text.isEmpty {
-            didWrite = NSPasteboard.general.setString(text, forType: .string)
-        } else if snippet.kind == .screenshot,
-                  let attachmentPath = snippet.attachmentPath {
-            didWrite = writeImageToPasteboard(path: attachmentPath)
+        if snippet.effectiveRepresentation == .image {
+            if snippet.kind == .screenshot, !snippet.allAttachmentPaths.isEmpty {
+                didWrite = writeImagesToPasteboard(paths: snippet.allAttachmentPaths)
+            } else if let pngData = TextImageRenderer.pngData(text: snippet.text, title: snippet.title) {
+                didWrite = writeImageDataToPasteboard(pngData)
+            } else {
+                didWrite = false
+            }
+        } else if snippet.kind == .screenshot {
+            let text = screenshotText(for: snippet) ?? ""
+            didWrite = !text.isEmpty && NSPasteboard.general.setString(text, forType: .string)
         } else if let attachmentPath = snippet.attachmentPath {
-            let url = URL(fileURLWithPath: attachmentPath)
-            didWrite = NSPasteboard.general.writeObjects([url as NSURL])
+            if snippet.kind == .spreadsheet {
+                didWrite = NSPasteboard.general.setString(snippet.text, forType: .string)
+            } else {
+                let url = URL(fileURLWithPath: attachmentPath)
+                didWrite = NSPasteboard.general.writeObjects([url as NSURL])
+            }
         } else {
             didWrite = NSPasteboard.general.setString(snippet.text, forType: .string)
         }
@@ -1015,18 +1253,29 @@ final class SnippetStore: ObservableObject {
 
     private func restoreBackupAttachments(_ backup: ClipboardBackup) throws -> [Snippet] {
         try FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
-        let attachmentMap = Dictionary(uniqueKeysWithValues: backup.attachments.map { ($0.snippetID, $0) })
+        let attachmentMap = Dictionary(grouping: backup.attachments, by: \.snippetID)
         return try backup.snippets.map { snippet in
             var restored = snippet
             restored.isEnriching = false
-            if let attachment = attachmentMap[snippet.id] {
-                let fileName = uniqueBackupFileName(attachment.fileName)
-                let url = attachmentsDirectory.appendingPathComponent(fileName)
-                try attachment.data.write(to: url, options: [.atomic])
-                restored.attachmentPath = url.path
-                restored.fileName = fileName
-            } else if snippet.attachmentPath != nil {
+            if let attachments = attachmentMap[snippet.id], !attachments.isEmpty {
+                var paths: [String] = []
+                var names: [String] = []
+                for attachment in attachments {
+                    let fileName = uniqueBackupFileName(attachment.fileName)
+                    let url = attachmentsDirectory.appendingPathComponent(fileName)
+                    try attachment.data.write(to: url, options: [.atomic])
+                    paths.append(url.path)
+                    names.append(fileName)
+                }
+                restored.attachmentPath = paths.first
+                restored.fileName = names.first
+                restored.attachmentPaths = paths
+                restored.attachmentFileNames = names
+            } else if !snippet.allAttachmentPaths.isEmpty {
                 restored.attachmentPath = nil
+                restored.fileName = nil
+                restored.attachmentPaths = []
+                restored.attachmentFileNames = []
             }
             return restored
         }
@@ -1068,18 +1317,24 @@ final class SnippetStore: ObservableObject {
         return snippet.text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func hasExportableText(_ snippet: Snippet) -> Bool {
-        !(exportText(for: snippet) ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    private func hasPotentialEnrichmentText(_ snippet: Snippet) -> Bool {
+        if !snippet.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        return snippet.kind == .screenshot && !snippet.allAttachmentPaths.isEmpty
     }
 
     private func screenshotText(for snippet: Snippet) -> String? {
         let existing = snippet.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !existing.isEmpty, existing != snippet.attachmentPath {
+        if !existing.isEmpty, !snippet.allAttachmentPaths.contains(existing) {
             return existing
         }
-        guard let attachmentPath = snippet.attachmentPath,
-              let recognized = Self.recognizedText(from: URL(fileURLWithPath: attachmentPath)),
-              !recognized.isEmpty else {
+        let recognized = snippet.allAttachmentPaths
+            .compactMap { Self.recognizedText(from: URL(fileURLWithPath: $0)) }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n")
+        guard !recognized.isEmpty else {
             return nil
         }
         if let index = snippets.firstIndex(where: { $0.id == snippet.id }) {
@@ -1092,17 +1347,29 @@ final class SnippetStore: ObservableObject {
         return recognized
     }
 
-    private func writeImageToPasteboard(path: String) -> Bool {
-        guard let image = NSImage(contentsOfFile: path),
-              let tiffData = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else {
-            return false
+    private func writeImagesToPasteboard(paths: [String]) -> Bool {
+        let items = paths.compactMap { path -> NSPasteboardItem? in
+            guard let image = NSImage(contentsOfFile: path),
+                  let tiffData = image.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiffData),
+                  let pngData = bitmap.representation(using: .png, properties: [:]) else {
+                return nil
+            }
+            let item = NSPasteboardItem()
+            item.setData(pngData, forType: NSPasteboard.PasteboardType("public.png"))
+            item.setData(tiffData, forType: NSPasteboard.PasteboardType("public.tiff"))
+            return item
         }
+        guard !items.isEmpty else { return false }
+        return NSPasteboard.general.writeObjects(items)
+    }
 
+    private func writeImageDataToPasteboard(_ pngData: Data, tiffData: Data? = nil) -> Bool {
         let item = NSPasteboardItem()
         item.setData(pngData, forType: NSPasteboard.PasteboardType("public.png"))
-        item.setData(tiffData, forType: NSPasteboard.PasteboardType("public.tiff"))
+        if let tiffData {
+            item.setData(tiffData, forType: NSPasteboard.PasteboardType("public.tiff"))
+        }
         return NSPasteboard.general.writeObjects([item])
     }
 
@@ -1113,13 +1380,16 @@ final class SnippetStore: ObservableObject {
         persistentStore.save(PersistedState(
             snippets: persistedSnippets,
             deletedSnippets: persistedDeletedSnippets,
-            settings: settings
+            settings: settings,
+            quickNoteText: quickNoteText
         ))
     }
 
     private func expireFishMemory(now: Date = Date()) {
         guard !isVideoDemo else { return }
-        let expired = snippets.filter { Self.shouldMoveToMemoryShore(createdAt: $0.createdAt, now: now) }
+        let expired = snippets.filter {
+            !$0.isFavorite && Self.shouldMoveToMemoryShore(createdAt: $0.createdAt, now: now)
+        }
         guard !expired.isEmpty else { return }
         let ids = Set(expired.map(\.id))
         moveToMemoryShore(expired, deletedAt: now)
@@ -1283,30 +1553,7 @@ final class SnippetStore: ObservableObject {
     }
 
     private static func recognizedText(from url: URL) -> String? {
-        guard let image = NSImage(contentsOf: url),
-              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            return nil
-        }
-
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
-        request.recognitionLanguages = ["zh-Hans", "zh-Hant", "en-US"]
-        request.usesLanguageCorrection = true
-
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        do {
-            try handler.perform([request])
-        } catch {
-            return nil
-        }
-
-        let lines = (request.results ?? [])
-            .compactMap { $0.topCandidates(1).first?.string.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        guard !lines.isEmpty else {
-            return nil
-        }
-        return lines.joined(separator: "\n")
+        OCRTextRecognizer.recognize(url: url)
     }
 
     private static func shortError(_ error: Error) -> String {

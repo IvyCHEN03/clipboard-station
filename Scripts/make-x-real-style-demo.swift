@@ -10,7 +10,7 @@ private let canvasSize = CGSize(width: 1920, height: 1080)
 private let fps: Int32 = 30
 private let arguments = Set(CommandLine.arguments.dropFirst())
 private let isTeaser = arguments.contains("teaser")
-private let duration: Double = isTeaser ? 26 : 32
+private let duration: Double = isTeaser ? 28 : 32
 private let frameCount = Int(duration * Double(fps))
 private let repo = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 private let language = arguments.contains("en") ? "en" : "cn"
@@ -150,7 +150,7 @@ private func windowShadow(_ rect: CGRect, radius: CGFloat) {
 
 private let appRect = CGRect(x: 72, y: 48, width: 454, height: 640)
 
-private func drawStationFrame(_ index: Int, alpha: CGFloat = 1) {
+private func drawStationFrame(_ index: Int, time: Double, alpha: CGFloat = 1) {
     windowShadow(appRect, radius: 22)
     NSGraphicsContext.saveGraphicsState()
     NSBezierPath(roundedRect: appRect, xRadius: 22, yRadius: 22).addClip()
@@ -230,32 +230,58 @@ private func drawStationFrame(_ index: Int, alpha: CGFloat = 1) {
         snippetRow(number: "2", title: localized("匿名表格摘录", "Redacted table excerpt"), y: 399, color: NSColor.systemOrange, tags: ["table", "AI"])
     }
 
-    rounded(CGRect(x: 0, y: 503, width: 420, height: 89), radius: 0, color: .white, alpha: alpha)
+    let composerTop: CGFloat = index >= 7 ? 396 : 503
+    let composerHeight = 592 - composerTop
+    rounded(CGRect(x: 0, y: composerTop, width: 420, height: composerHeight), radius: 0, color: .white, alpha: alpha)
     NSColor(calibratedWhite: 0.88, alpha: alpha).setStroke()
-    NSBezierPath(rect: CGRect(x: 0, y: 503, width: 420, height: 1)).stroke()
-    text(localized("▱  组合框", "▱  Composer"), rect: CGRect(x: 18, y: 514, width: 160, height: 22), size: 12, weight: .bold, alpha: alpha)
-    text("ⓧ   ⧉", rect: CGRect(x: 356, y: 514, width: 48, height: 22), size: 13, color: muted, alignment: .right, alpha: alpha)
-    rounded(CGRect(x: 16, y: 540, width: 388, height: 42), radius: 8, color: NSColor(calibratedWhite: 0.995, alpha: 1), alpha: alpha)
-    stroke(CGRect(x: 16, y: 540, width: 388, height: 42), radius: 8, color: border, alpha: alpha)
+    NSBezierPath(rect: CGRect(x: 0, y: composerTop, width: 420, height: 1)).stroke()
+    text(localized("▱  组合框", "▱  Composer"), rect: CGRect(x: 18, y: composerTop + 11, width: 160, height: 22), size: 12, weight: .bold, alpha: alpha)
+    text("✦  Polish     ⧉     ⓧ", rect: CGRect(x: 270, y: composerTop + 11, width: 134, height: 22), size: 11, weight: .semibold, color: muted, alignment: .right, alpha: alpha)
+    let blockRowY = composerTop + 37
+    rounded(CGRect(x: 16, y: blockRowY, width: 388, height: 42), radius: 8, color: NSColor(calibratedWhite: 0.995, alpha: 1), alpha: alpha)
+    stroke(CGRect(x: 16, y: blockRowY, width: 388, height: 42), radius: 8, color: border, alpha: alpha)
     if index < 4 {
-        text(localized("空", "Empty"), rect: CGRect(x: 28, y: 552, width: 80, height: 20), size: 11, color: muted, alpha: alpha)
+        text(localized("空", "Empty"), rect: CGRect(x: 28, y: blockRowY + 12, width: 80, height: 20), size: 11, color: muted, alpha: alpha)
     } else {
-        rounded(CGRect(x: 48, y: 549, width: 40, height: 25), radius: 6, color: coral.withAlphaComponent(0.17), alpha: alpha)
-        text("1 ×", rect: CGRect(x: 48, y: 555, width: 40, height: 16), size: 11, weight: .bold, color: coral, alignment: .center, alpha: alpha)
+        rounded(CGRect(x: 48, y: blockRowY + 9, width: 40, height: 25), radius: 6, color: coral.withAlphaComponent(0.17), alpha: alpha)
+        text("1 ×", rect: CGRect(x: 48, y: blockRowY + 15, width: 40, height: 16), size: 11, weight: .bold, color: coral, alignment: .center, alpha: alpha)
         if index >= 5 {
             let bridge = index >= 6 ? localized("对比以下内容", "Compare with") : ""
             if !bridge.isEmpty {
-                rounded(CGRect(x: 98, y: 549, width: 112, height: 25), radius: 5, color: NSColor(calibratedWhite: 0.96, alpha: 1), alpha: alpha)
-                text(bridge, rect: CGRect(x: 98, y: 555, width: 112, height: 16), size: 10, color: ink, alignment: .center, alpha: alpha)
+                rounded(CGRect(x: 98, y: blockRowY + 9, width: 112, height: 25), radius: 5, color: NSColor(calibratedWhite: 0.96, alpha: 1), alpha: alpha)
+                text(bridge, rect: CGRect(x: 98, y: blockRowY + 15, width: 112, height: 16), size: 10, color: ink, alignment: .center, alpha: alpha)
             }
             let secondX: CGFloat = index >= 6 ? 220 : 100
-            rounded(CGRect(x: secondX, y: 549, width: 40, height: 25), radius: 6, color: NSColor.systemOrange.withAlphaComponent(0.18), alpha: alpha)
-            text("2 ×", rect: CGRect(x: secondX, y: 555, width: 40, height: 16), size: 11, weight: .bold, color: NSColor.systemOrange, alignment: .center, alpha: alpha)
+            rounded(CGRect(x: secondX, y: blockRowY + 9, width: 40, height: 25), radius: 6, color: NSColor.systemOrange.withAlphaComponent(0.18), alpha: alpha)
+            text("2 ×", rect: CGRect(x: secondX, y: blockRowY + 15, width: 40, height: 16), size: 11, weight: .bold, color: NSColor.systemOrange, alignment: .center, alpha: alpha)
         }
     }
-    if index == 7 {
-        rounded(CGRect(x: 132, y: 480, width: 156, height: 36), radius: 18, color: ink, alpha: alpha * 0.96)
-        text(localized("已复制组合内容", "Composition copied"), rect: CGRect(x: 132, y: 490, width: 156, height: 18), size: 11, weight: .bold, color: .white, alignment: .center, alpha: alpha)
+    if index >= 7 {
+        let outputRect = CGRect(x: 16, y: composerTop + 87, width: 388, height: 92)
+        rounded(outputRect, radius: 8, color: NSColor(calibratedRed: 0.975, green: 0.988, blue: 1, alpha: 1), alpha: alpha)
+        stroke(outputRect, radius: 8, color: NSColor.systemBlue.withAlphaComponent(0.30), alpha: alpha)
+        if index == 7 {
+            let center = CGPoint(x: 55, y: composerTop + 133)
+            for dot in 0..<8 {
+                let angle = Double(dot) * Double.pi / 4 + time * 4.2
+                let point = CGPoint(x: center.x + CGFloat(cos(angle)) * 13, y: center.y + CGFloat(sin(angle)) * 13)
+                let dotAlpha = CGFloat(0.18 + 0.72 * Double(dot + 1) / 8)
+                NSColor.systemBlue.withAlphaComponent(dotAlpha * alpha).setFill()
+                NSBezierPath(ovalIn: CGRect(x: point.x - 2.5, y: point.y - 2.5, width: 5, height: 5)).fill()
+            }
+            text(localized("AI 正在串联碎片…", "AI is connecting the fragments…"), rect: CGRect(x: 82, y: composerTop + 119, width: 286, height: 24), size: 12, weight: .semibold, color: NSColor.systemBlue, alpha: alpha)
+            text(localized("保留原意，补上自然过渡", "Keeping the meaning, adding a natural flow"), rect: CGRect(x: 82, y: composerTop + 145, width: 286, height: 20), size: 10, color: muted, alpha: alpha)
+        } else {
+            let polished = localized(
+                "两段观点都强调：先提炼共同结论，再保留关键差异，最终形成一份可以继续使用的完整提示词。",
+                "Both fragments point to the same workflow: extract the shared conclusion, preserve the key differences, and turn them into one reusable prompt."
+            )
+            text(polished, rect: CGRect(x: 29, y: composerTop + 101, width: 362, height: 66), size: language == "en" ? 10.5 : 11.5, weight: .medium, color: ink, alpha: alpha, lines: 4)
+        }
+    }
+    if index == 9 {
+        rounded(CGRect(x: 125, y: composerTop - 42, width: 170, height: 34), radius: 17, color: ink, alpha: alpha * 0.96)
+        text(localized("已复制 AI 润色全文", "AI-polished paragraph copied"), rect: CGRect(x: 125, y: composerTop - 33, width: 170, height: 18), size: language == "en" ? 9.5 : 10.5, weight: .bold, color: .white, alignment: .center, alpha: alpha)
     }
     NSGraphicsContext.restoreGraphicsState()
 }
@@ -267,8 +293,10 @@ private func stationIndex(at time: Double) -> Int {
     if time < 9.35 { return 3 }
     if time < 11.6 { return 4 }
     if time < 13.65 { return 5 }
-    if time < 15.45 { return 6 }
-    return 7
+    if time < 14.5 { return 6 }
+    if time < 15.6 { return 7 }
+    if time < 16.45 { return 8 }
+    return 9
 }
 
 private func localToCanvas(_ p: CGPoint) -> CGPoint {
@@ -283,7 +311,8 @@ private func stationCursor(_ t: Double) -> (CGPoint, Bool) {
     let composerA = localToCanvas(CGPoint(x: 86, y: 558))
     let composerB = localToCanvas(CGPoint(x: 220, y: 558))
     let bridge = localToCanvas(CGPoint(x: 142, y: 558))
-    let copy = localToCanvas(CGPoint(x: 395, y: 515))
+    let polish = localToCanvas(CGPoint(x: 316, y: 414))
+    let copy = localToCanvas(CGPoint(x: 373, y: 414))
     if t < 2.25 { return (CGPoint(x: 635, y: 128), false) }
     if t < 2.85 { return (interpolate(CGPoint(x: 635, y: 128), ai, (t - 2.25) / 0.6), false) }
     if t < 3.1 { return (ai, true) }
@@ -296,8 +325,11 @@ private func stationCursor(_ t: Double) -> (CGPoint, Bool) {
     if t < 11.5 { return (interpolate(row2, composerB, (t - 10.15) / 1.35), true) }
     if t < 12.45 { return (interpolate(composerB, bridge, (t - 11.5) / 0.95), false) }
     if t < 13.5 { return (bridge, t < 12.7) }
-    if t < 14.8 { return (interpolate(bridge, copy, (t - 13.5) / 1.3), false) }
-    return (copy, t < 15.12)
+    if t < 14.35 { return (interpolate(bridge, polish, (t - 13.5) / 0.85), false) }
+    if t < 14.7 { return (polish, true) }
+    if t < 15.65 { return (polish, false) }
+    if t < 16.3 { return (interpolate(polish, copy, (t - 15.65) / 0.65), false) }
+    return (copy, t < 16.62)
 }
 
 private func stageLabel(_ step: String, _ title: String, _ detail: String) {
@@ -311,7 +343,7 @@ private func drawStationScene(_ t: Double) {
     bg.setFill()
     NSBezierPath(rect: CGRect(origin: .zero, size: designSize)).fill()
     let index = stationIndex(at: t)
-    drawStationFrame(index)
+    drawStationFrame(index, time: t)
 
     if t < 6.8 {
         stageLabel(
@@ -325,11 +357,17 @@ private func drawStationScene(_ t: Double) {
             localized("一句、两句，\n再添一点新灵感。", "One fragment. Then another.\nAdd a spark of your own."),
             localized("散落的碎片，开始长成答案。", "Watch scattered fragments start becoming an answer.")
         )
+    } else if t < 16.45 {
+        stageLabel(
+            localized("03  AI 串联", "03  AI POLISH"),
+            localized("点一下 Polish，\n碎片自动长成全文。", "One click on Polish.\nFragments become a full paragraph."),
+            localized("保留原意，补上过渡，让上下文自然连贯。", "Keep the meaning. Add the flow. Make the context read naturally.")
+        )
     } else {
         stageLabel(
-            localized("03  出发", "03  NEXT STOP"),
-            localized("组合完成。\n下一站：AI 对话框。", "Built.\nNext stop: your AI chat."),
-            localized("带上刚刚长成的答案，继续出发。", "Take the answer you just built and keep moving.")
+            localized("04  一键带走", "04  READY TO GO"),
+            localized("全文已生成。\n复制，继续出发。", "The full paragraph is ready.\nCopy it and keep moving."),
+            localized("从散落片段，到可以直接使用的完整表达。", "From scattered fragments to a polished result you can use now.")
         )
     }
 
@@ -350,7 +388,7 @@ private func drawStationScene(_ t: Double) {
 
     let (p, down) = stationCursor(t)
     cursor(at: p, down: down)
-    for event in [2.9, 4.18, 12.55, 14.95] { clickRing(at: p, time: t, event: event) }
+    for event in [2.9, 4.18, 12.55, 14.5, 16.45] { clickRing(at: p, time: t, event: event) }
 }
 
 private func photo(_ rect: CGRect, variant: Int) {
@@ -381,12 +419,13 @@ private func browserPage() {
         NSBezierPath(ovalIn: CGRect(x: x, y: 43, width: 14, height: 14)).fill()
     }
     rounded(CGRect(x: 164, y: 34, width: 760, height: 38), radius: 19, color: NSColor(calibratedWhite: 0.95, alpha: 1))
-    text("xiaohongshu.com/explore/inspiration-workflow", rect: CGRect(x: 192, y: 44, width: 700, height: 22), size: 14, color: muted)
+    text("linggan.app/web-collector", rect: CGRect(x: 192, y: 44, width: 700, height: 22), size: 14, color: muted)
     text(localized("遇到多图，\n不想把下载键敲出火星子？", "Too many images to save\none by one?"), rect: CGRect(x: 70, y: 114, width: 690, height: 78), size: 31, weight: .bold, lines: 2)
     text(localized("⌘ 点灵感球，整篇打包带走。", "⌘-click the bubble. Take the whole post with you."), rect: CGRect(x: 72, y: 198, width: 620, height: 28), size: 16, weight: .medium, color: muted)
-    photo(CGRect(x: 70, y: 228, width: 310, height: 360), variant: 0)
+    photo(CGRect(x: 70, y: 228, width: 310, height: 170), variant: 0)
     photo(CGRect(x: 400, y: 228, width: 310, height: 170), variant: 1)
-    photo(CGRect(x: 400, y: 418, width: 310, height: 170), variant: 2)
+    photo(CGRect(x: 70, y: 418, width: 310, height: 170), variant: 2)
+    photo(CGRect(x: 400, y: 418, width: 310, height: 170), variant: 3)
     text(localized("双击摊开。只留下心动的画面。", "Double-click. Keep only what catches your eye."), rect: CGRect(x: 72, y: 615, width: 638, height: 52), size: 17, weight: .semibold, color: muted, lines: 2)
 }
 
@@ -409,7 +448,7 @@ private func stackPreview(_ rect: CGRect) {
     text("4", rect: CGRect(x: rect.maxX - 28, y: rect.maxY - 21, width: 24, height: 16), size: 11, weight: .bold, color: .white, alignment: .center)
 }
 
-private func collectorPanel(mode: Int, selected: Set<Int>, toast: Bool) {
+private func collectorPanel(mode: Int, selected: Set<Int>, toast: Int) {
     NSGraphicsContext.saveGraphicsState()
     let shadow = NSShadow()
     shadow.shadowColor = NSColor.black.withAlphaComponent(0.18)
@@ -422,6 +461,7 @@ private func collectorPanel(mode: Int, selected: Set<Int>, toast: Bool) {
 
     text(localized("灵感图片暂存", "Image Stash"), rect: CGRect(x: panel.minX + 14, y: panel.minY + 15, width: 190, height: 25), size: 16, weight: .bold)
     text(localized("每个帖子一行，双击展开", "One post per row. Double-click to expand."), rect: CGRect(x: panel.minX + 14, y: panel.minY + 40, width: 230, height: 20), size: 12, color: muted)
+    button(localized("存网页", "Save page"), rect: CGRect(x: panel.maxX - 216, y: panel.minY + 14, width: 76, height: 36))
     button(localized("收图", "Collect"), rect: CGRect(x: panel.maxX - 132, y: panel.minY + 14, width: 62, height: 36))
     button(localized("收起", "Hide"), rect: CGRect(x: panel.maxX - 62, y: panel.minY + 14, width: 50, height: 36))
 
@@ -457,9 +497,12 @@ private func collectorPanel(mode: Int, selected: Set<Int>, toast: Bool) {
     }
 
     text(localized("已暂存 1 行 / 4 张 · 已选 \(selected.count) 张", "1 post / 4 images · \(selected.count) selected"), rect: CGRect(x: panel.minX + 14, y: panel.maxY - 32, width: panel.width - 28, height: 20), size: 12, color: muted)
-    if toast {
-        rounded(CGRect(x: panel.minX + 68, y: panel.maxY - 78, width: 244, height: 42), radius: 21, color: ink, alpha: 0.95)
-        text(localized("已保存 3 张 PNG", "Saved 3 PNG images"), rect: CGRect(x: panel.minX + 68, y: panel.maxY - 67, width: 244, height: 22), size: 13, weight: .bold, color: .white, alignment: .center)
+    if toast > 0 {
+        let message = toast == 2
+            ? localized("网页 HTML 已保存", "Web page HTML saved")
+            : localized("已保存 3 张 PNG", "Saved 3 PNG images")
+        rounded(CGRect(x: panel.minX + 50, y: panel.maxY - 78, width: 280, height: 42), radius: 21, color: ink, alpha: 0.95)
+        text(message, rect: CGRect(x: panel.minX + 50, y: panel.maxY - 67, width: 280, height: 22), size: language == "en" ? 11.5 : 12.5, weight: .bold, color: .white, alignment: .center)
     }
 }
 
@@ -468,6 +511,7 @@ private func collectorCursor(_ t: Double) -> (CGPoint, Bool) {
     let row = CGPoint(x: panel.minX + 180, y: panel.minY + 112)
     let item = CGPoint(x: panel.minX + 287, y: panel.minY + 280)
     let save = CGPoint(x: panel.minX + 183, y: panel.minY + 185)
+    let archive = CGPoint(x: panel.maxX - 178, y: panel.minY + 32)
     if t < 18.5 { return (CGPoint(x: 760, y: 180), false) }
     if t < 19.1 { return (interpolate(CGPoint(x: 760, y: 180), collect, (t - 18.5) / 0.6), false) }
     if t < 19.35 { return (collect, true) }
@@ -479,8 +523,10 @@ private func collectorCursor(_ t: Double) -> (CGPoint, Bool) {
     if t < 23.05 { return (row, true) }
     if t < 24.15 { return (row, false) }
     if t < 24.55 { return (row, true) }
-    if t < 25.6 { return (interpolate(row, save, (t - 24.55) / 1.05), false) }
-    return (save, t < 26.1)
+    if t < 25.35 { return (interpolate(row, save, (t - 24.55) / 0.8), false) }
+    if t < 25.68 { return (save, true) }
+    if t < 26.18 { return (interpolate(save, archive, (t - 25.68) / 0.5), false) }
+    return (archive, t < 26.48)
 }
 
 private func drawCollectorScene(_ t: Double) {
@@ -492,7 +538,8 @@ private func drawCollectorScene(_ t: Double) {
     else if t < 24.65 { mode = 1 }
     else { mode = 2 }
     let selected: Set<Int> = t >= 22.0 ? [0, 1, 3] : [0, 1, 2, 3]
-    collectorPanel(mode: mode, selected: selected, toast: t >= 26.1)
+    let toast = t >= 26.48 ? 2 : t >= 25.68 ? 1 : 0
+    collectorPanel(mode: mode, selected: selected, toast: toast)
     bubble(center: CGPoint(x: 1222, y: 360), radius: 31)
     if t < 19.4 {
         rounded(CGRect(x: 1000, y: 645, width: 204, height: 38), radius: 19, color: ink, alpha: 0.9)
@@ -500,7 +547,7 @@ private func drawCollectorScene(_ t: Double) {
     }
     let (p, down) = collectorCursor(t)
     cursor(at: p, down: down)
-    for event in [19.18, 20.35, 20.52, 21.75, 22.88, 23.03, 24.35, 24.52, 25.9] {
+    for event in [19.18, 20.35, 20.52, 21.75, 22.88, 23.03, 24.35, 24.52, 25.5, 26.34] {
         clickRing(at: p, time: t, event: event)
     }
 }
@@ -511,9 +558,9 @@ private func drawIntro(_ t: Double) {
     bubble(center: CGPoint(x: 640, y: 190), radius: 62)
     text(localized("灵感刚冒头，\n就准备开溜？", "An idea just popped up…\nand it’s already running away?"), rect: CGRect(x: 260, y: 282, width: 760, height: 110), size: 44, weight: .bold, alignment: .center, lines: 2)
     text(localized("别急，灵感悬浮球来接住。", "Don’t worry. Linggan catches it."), rect: CGRect(x: 260, y: 402, width: 760, height: 45), size: 23, weight: .medium, color: muted, alignment: .center)
-    rounded(CGRect(x: 500, y: 450, width: 280, height: 42), radius: 21, color: .white)
-    stroke(CGRect(x: 500, y: 450, width: 280, height: 42), radius: 21, color: border)
-    text(localized("接住 · 捞回 · 组合 · 收图", "CATCH · REEL BACK · BUILD · COLLECT"), rect: CGRect(x: 480, y: 462, width: 320, height: 22), size: 13, weight: .bold, color: NSColor.systemBlue, alignment: .center)
+    rounded(CGRect(x: 465, y: 450, width: 350, height: 42), radius: 21, color: .white)
+    stroke(CGRect(x: 465, y: 450, width: 350, height: 42), radius: 21, color: border)
+    text(localized("接住 · 捞回 · 组合 · 润色 · 收图", "CATCH · REEL BACK · BUILD · POLISH · COLLECT"), rect: CGRect(x: 445, y: 462, width: 390, height: 22), size: language == "en" ? 11.5 : 13, weight: .bold, color: NSColor.systemBlue, alignment: .center)
     let opacity = CGFloat(clamp((t - 1.05) / 0.5))
     text("▶", rect: CGRect(x: 620, y: 542, width: 40, height: 36), size: 25, weight: .bold, color: blue, alignment: .center, alpha: opacity)
 }
@@ -553,9 +600,9 @@ private func storyTime(for outputTime: Double) -> Double {
         (0.0..<2.6, 0.0..<1.8),
         (2.6..<7.2, 2.0..<6.5),
         (7.2..<13.2, 7.0..<13.6),
-        (13.2..<15.7, 13.8..<16.6),
-        (15.7..<22.6, 17.6..<26.8),
-        (22.6..<26.0, 28.0..<31.8),
+        (13.2..<17.7, 13.8..<17.1),
+        (17.7..<24.6, 17.6..<26.8),
+        (24.6..<28.0, 24.6..<27.6),
     ]
     guard let segment = segments.first(where: { $0.0.contains(outputTime) }) else {
         return 31.8

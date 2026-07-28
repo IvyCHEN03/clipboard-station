@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_NAME="ClipboardStation.app"
 BUILT_APP="$ROOT_DIR/.build/$APP_NAME"
-INSTALL_DIR="$HOME/Applications"
+INSTALL_DIR="${LINGGAN_INSTALL_DIR:-$ROOT_DIR}"
 INSTALLED_APP="$INSTALL_DIR/$APP_NAME"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.local.clipboard-station.agent.plist"
 
@@ -16,41 +16,13 @@ mkdir -p "$INSTALL_DIR"
 rm -rf "$INSTALLED_APP"
 cp -R "$BUILT_APP" "$INSTALLED_APP"
 
-mkdir -p "$(dirname "$LAUNCH_AGENT")"
-cat > "$LAUNCH_AGENT" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.local.clipboard-station.agent</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>$INSTALLED_APP/Contents/MacOS/ClipboardStation</string>
-  </array>
-  <key>RunAtLoad</key>
-  <true/>
-  <key>KeepAlive</key>
-  <dict>
-    <key>SuccessfulExit</key>
-    <false/>
-  </dict>
-  <key>ProcessType</key>
-  <string>Interactive</string>
-</dict>
-</plist>
-PLIST
-
-launchctl bootout "gui/$(id -u)" "$LAUNCH_AGENT" >/dev/null 2>&1 || true
+launchctl bootout "gui/$(id -u)/com.local.clipboard-station.agent" >/dev/null 2>&1 || true
 # Multiple installed app names share this executable. Stop every stale copy so
 # Finder, the menu bar, and the launch agent cannot keep an older binary alive.
 pkill -x "ClipboardStation" >/dev/null 2>&1 || true
-launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENT" >/dev/null 2>&1 || true
-sleep 1
-if ! pgrep -x "ClipboardStation" >/dev/null 2>&1; then
-    open -na "$INSTALLED_APP"
-fi
+open -na "$INSTALLED_APP"
 
 echo "Installed $INSTALLED_APP"
-echo "Launch agent: $LAUNCH_AGENT"
+echo "Launch at login is controlled by the app setting."
+echo "Move the repository later? Re-run this script to refresh the launch agent path."
 echo "The floating bubble should appear shortly."

@@ -49,6 +49,7 @@
           <div class="lic-subtitle">每个帖子一行，双击展开</div>
         </div>
         <div class="lic-actions">
+          <button class="lic-small" type="button" data-action="archive-page" title="保存当前网页为 HTML">存网页</button>
           <button class="lic-small" type="button" data-action="capture">收图</button>
           <button class="lic-small" type="button" data-action="close">收起</button>
         </div>
@@ -74,6 +75,25 @@
     }
     if (message?.type === "hideCollectorPanel") {
       setPanelVisible(false);
+      sendResponse({ ok: true });
+      return false;
+    }
+    if (message?.type === "preparePageArchive") {
+      void preparePageArchive()
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({ ok: false, error: error?.message || String(error) }));
+      return true;
+    }
+    if (message?.type === "serializePageHTML") {
+      try {
+        sendResponse({ ok: true, ...serializePageHTML() });
+      } catch (error) {
+        sendResponse({ ok: false, error: error?.message || String(error) });
+      }
+      return false;
+    }
+    if (message?.type === "restorePageArchive") {
+      restorePageArchive();
       sendResponse({ ok: true });
       return false;
     }
@@ -162,6 +182,8 @@
 
     if (action === "capture") {
       void captureBatch();
+    } else if (action === "archive-page") {
+      archiveCurrentPage();
     } else if (action === "close") {
       setPanelVisible(false);
     } else if (action === "select-all") {
@@ -176,6 +198,12 @@
     } else if (action === "download") {
       const batch = batchForButton(button);
       if (batch) downloadSelected(batch);
+    } else if (action === "ocr") {
+      const batch = batchForButton(button);
+      if (batch) saveSelectedAsText(batch);
+    } else if (action === "save-to-station") {
+      const batch = batchForButton(button);
+      if (batch) saveSelectedToStation(batch);
     }
   });
 
@@ -240,6 +268,97 @@
     });
   }
 
+  function archiveCurrentPage() {
+    state.status = "正在保存网页…";
+    renderStatus();
+    runtime.sendMessage({ type: "archiveCurrentPage" }, response => {
+      if (runtime.lastError) {
+        state.status = `网页保存失败：${runtime.lastError.message}`;
+      } else if (response?.ok) {
+        state.status = response.message || "网页 HTML 已保存";
+      } else {
+        state.status = response?.error || "网页保存失败";
+      }
+      renderStatus();
+    });
+  }
+
+  let archiveScrollPosition;
+
+  async function preparePageArchive() {
+    archiveScrollPosition = { x: window.scrollX, y: window.scrollY };
+    root.style.visibility = "hidden";
+    await prepareLazyImages(document);
+
+    const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight || 0);
+    const maxScroll = Math.max(0, scrollHeight - window.innerHeight);
+    const sampleCount = Math.min(20, Math.max(1, Math.ceil(scrollHeight / Math.max(window.innerHeight, 1))));
+    for (let index = 0; index < sampleCount; index += 1) {
+      const y = sampleCount === 1 ? 0 : Math.round(maxScroll * index / (sampleCount - 1));
+      window.scrollTo(archiveScrollPosition.x, y);
+      await new Promise(resolve => window.setTimeout(resolve, 90));
+    }
+    window.scrollTo(archiveScrollPosition.x, archiveScrollPosition.y);
+    await new Promise(resolve => window.setTimeout(resolve, 180));
+    return { ok: true, title: document.title, url: location.href };
+  }
+
+  function restorePageArchive() {
+    root.style.visibility = "";
+    if (archiveScrollPosition) {
+      window.scrollTo(archiveScrollPosition.x, archiveScrollPosition.y);
+      archiveScrollPosition = undefined;
+    }
+  }
+
+  function serializePageHTML() {
+    const clone = document.documentElement.cloneNode(true);
+    clone.querySelector(`#${ROOT_ID}`)?.remove();
+    clone.querySelectorAll("grammarly-desktop-integration, grammarly-extension, [data-grammarly-shadow-root='true']")
+      .forEach(element => element.remove());
+    clone.querySelectorAll("script, meta[charset]").forEach(element => element.remove());
+    clone.querySelectorAll("meta[http-equiv]").forEach(element => {
+      const directive = String(element.getAttribute("http-equiv") || "").toLowerCase();
+      if (directive === "content-security-policy" || directive === "content-type") {
+        element.remove();
+      }
+    });
+    clone.querySelectorAll("input").forEach(input => {
+      input.removeAttribute("value");
+      input.removeAttribute("checked");
+    });
+    clone.querySelectorAll("textarea").forEach(textarea => {
+      textarea.textContent = "";
+    });
+    for (const element of [clone, clone.querySelector("body")].filter(Boolean)) {
+      const classes = [...element.classList].filter(name => !/(?:preloader|is-loading|page-loading)/i.test(name));
+      element.setAttribute("class", classes.join(" "));
+      element.removeAttribute("data-new-gr-c-s-check-loaded");
+      element.removeAttribute("data-gr-ext-installed");
+    }
+    const head = clone.querySelector("head") || clone.insertBefore(document.createElement("head"), clone.firstChild);
+    const charset = document.createElement("meta");
+    charset.setAttribute("charset", "utf-8");
+    head.prepend(charset);
+    const base = document.createElement("base");
+    base.href = location.href;
+    charset.after(base);
+    const source = document.createElement("meta");
+    source.name = "linggan-source-url";
+    source.content = location.href;
+    base.after(source);
+    const archiveStyle = document.createElement("style");
+    archiveStyle.setAttribute("data-linggan-archive-style", "true");
+    archiveStyle.textContent = "html, body { visibility: visible !important; opacity: 1 !important; }";
+    source.after(archiveStyle);
+    clone.setAttribute("data-linggan-archive", "utf-8");
+    return {
+      title: document.title,
+      url: location.href,
+      html: `<!doctype html>\n${clone.outerHTML}`
+    };
+  }
+
   function render() {
     renderBatches();
     renderStatus();
@@ -271,6 +390,8 @@
         <div class="lic-toolbar${expanded ? "" : " lic-hidden"}">
           <button class="lic-small" type="button" data-action="select-all" title="单击全选，双击取消全选">全选</button>
           <button class="lic-small" type="button" data-action="remove-batch">移除</button>
+          <button class="lic-small" type="button" data-action="ocr" title="使用本机 Apple Vision 识别选中图片">OCR 存文字</button>
+          <button class="lic-small" type="button" data-action="save-to-station" title="原图和 OCR 文字一起存入灵感球">存入灵感球</button>
           <button class="lic-primary" type="button" data-action="download">保存选中</button>
         </div>
         <div class="lic-grid${expanded ? "" : " lic-hidden"}">
@@ -333,6 +454,48 @@
         renderStatus();
       }
     );
+  }
+
+  function saveSelectedAsText(batch) {
+    const images = batch.images.filter(image => batch.selected.has(image.id));
+    if (images.length === 0) {
+      state.status = "请先选择要识别的图片";
+      renderStatus();
+      return;
+    }
+    state.status = `正在识别 ${images.length} 张图片…`;
+    renderStatus();
+    chrome.runtime.sendMessage({ type: "ocrImages", title: batch.title, images }, response => {
+      if (chrome.runtime.lastError) {
+        state.status = `OCR 失败：${chrome.runtime.lastError.message}`;
+      } else if (response?.ok) {
+        state.status = `已把 ${response.recognized} 张图片保存为文字${response.failed ? `，${response.failed} 张未识别` : ""}`;
+      } else {
+        state.status = response?.error || "OCR 失败";
+      }
+      renderStatus();
+    });
+  }
+
+  function saveSelectedToStation(batch) {
+    const images = batch.images.filter(image => batch.selected.has(image.id));
+    if (images.length === 0) {
+      state.status = "请先选择要存入灵感球的图片";
+      renderStatus();
+      return;
+    }
+    state.status = `正在把 ${images.length} 张图片存入灵感球…`;
+    renderStatus();
+    chrome.runtime.sendMessage({ type: "saveImagesToStation", title: batch.title, images }, response => {
+      if (chrome.runtime.lastError) {
+        state.status = `存入失败：${chrome.runtime.lastError.message}`;
+      } else if (response?.ok) {
+        state.status = `已把 ${response.saved} 张图片存入同一个灵感框 · ${response.recognized} 张带 OCR 文字${response.duplicates ? ` · 跳过 ${response.duplicates} 张重复图` : ""}${response.failed ? ` · ${response.failed} 张读取失败` : ""}`;
+      } else {
+        state.status = response?.error || "存入灵感球失败";
+      }
+      renderStatus();
+    });
   }
 
   function batchForButton(button) {
@@ -413,8 +576,7 @@
     };
   }
 
-  async function prepareLazyImages() {
-    const scope = findBestImageScope().element;
+  async function prepareLazyImages(scope = findBestImageScope().element) {
     for (const img of scope.querySelectorAll("img")) {
       img.loading = "eager";
       const lazyURL = ["data-original", "data-src", "data-lazy-src", "data-actualsrc"]

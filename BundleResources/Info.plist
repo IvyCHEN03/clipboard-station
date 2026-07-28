@@ -22,6 +22,14 @@
     <string>13.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>将片段中的日期时间添加到你的日历。</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>将片段中的日期时间添加到你的日历。</string>
+    <key>NSRemindersFullAccessUsageDescription</key>
+    <string>为片段中的日期时间创建提醒。</string>
+    <key>NSRemindersUsageDescription</key>
+    <string>为片段中的日期时间创建提醒。</string>
     <key>NSHumanReadableCopyright</key>
     <string>Local-only inspiration clipboard utility.</string>
 </dict>

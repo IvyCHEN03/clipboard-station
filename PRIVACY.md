@@ -10,7 +10,7 @@ The app may store:
 - OCR text recognized from screenshots.
 - Metadata such as title, tags, source type, creation time, and ordering.
 - Attachment files such as screenshot PNGs or copied spreadsheet files.
-- App settings, including whether clipboard monitoring and AI tagging are enabled.
+- App settings, including whether clipboard monitoring and AI features are enabled.
 
 Snippet state is saved at:
 
@@ -32,9 +32,9 @@ By default, nothing is uploaded.
 
 Content may leave the device only when:
 
-- The user enables AI title/tag generation.
 - The user provides an AI API base URL, model, and API key.
-- A snippet without tags is sent to that configured OpenAI-compatible endpoint.
+- The user runs AI title/tag generation, which sends only snippets that need tags.
+- The user clicks `Polish`, which sends only the current composer text.
 
 API keys are stored in macOS Keychain and are not committed to the repository.
 
@@ -55,6 +55,12 @@ When clipboard monitoring is enabled, the app polls the macOS pasteboard change 
 
 Internal writes made by the app are ignored where possible to avoid repeatedly importing the app's own copied content.
 
+## Browser Page Archives
+
+The optional browser extension can save the current page as a static HTML file and a full-page PNG screenshot. Both files may contain whatever is visible on that page, so review sensitive or account-only pages before archiving them.
+
+Archives are written through the browser download manager under `Downloads/LingganPages/`. They are not uploaded by Linggan. The HTML snapshot removes scripts, Content Security Policy metadata, and form field values. Chrome's page debugger is attached only for the requested full-page screenshot and is detached as soon as capture finishes.
+
 ## Permissions
 
 Accessibility permission is used to simulate copy/paste keyboard events. It does not grant the app permission to upload content.
@@ -63,7 +69,7 @@ The floating bubble and menu bar app are local UI surfaces. They do not create n
 
 ## Recommended User Practices
 
-- Keep AI tagging disabled when handling sensitive content.
+- Do not run AI tagging or `Polish` on sensitive content.
 - Use a provider-specific API key with limited permissions.
 - Remove old snippets from the station when they are no longer useful.
 - Use Settings > `清除本地片段和附件` to remove saved snippets, composer text, and local attachments from this Mac.

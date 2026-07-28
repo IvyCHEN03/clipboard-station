@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_NAME="ClipboardStation.app"
-INSTALL_DIR="$HOME/Applications"
+INSTALL_DIR="${LINGGAN_INSTALL_DIR:-$ROOT_DIR}"
 INSTALLED_APP="$INSTALL_DIR/$APP_NAME"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.local.clipboard-station.agent.plist"
 
