@@ -212,13 +212,19 @@ git clone https://github.com/IvyCHEN03/clipboard-station.git
 cd clipboard-station
 ```
 
-Install a local app into `~/Applications` and start the launch agent:
+Install and start a local app beside the source checkout:
 
 ```bash
 ./Scripts/install-local.sh
 ```
 
-The floating bubble should appear after installation. The app will also start on login through a user LaunchAgent.
+The floating bubble should appear after installation. Enable `开机启动` in the
+app when you want it to create a user LaunchAgent and start on login.
+
+The checkout can be moved later. Run `./Scripts/install-local.sh` again after
+moving it so the LaunchAgent points to the new app path. Set
+`LINGGAN_INSTALL_DIR` only when you intentionally want a different install
+directory.
 
 Developers can read [Architecture](docs/ARCHITECTURE.md) for the capture pipeline, data model, persistence flow, and testing map.
 

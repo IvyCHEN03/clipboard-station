@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_SUPPORT="$HOME/Library/Application Support/ClipboardStation"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.local.clipboard-station.agent.plist"
-INSTALLED_APP="$HOME/Applications/ClipboardStation.app"
+INSTALL_DIR="${LINGGAN_INSTALL_DIR:-$ROOT_DIR}"
+INSTALLED_APP="$INSTALL_DIR/ClipboardStation.app"
 WARNINGS=0
 
 ok() {
@@ -73,7 +74,7 @@ if [[ -f "$LAUNCH_AGENT" ]]; then
     warn "not loaded in launchctl. Run ./Scripts/install-local.sh."
   fi
 else
-  warn "missing. Run ./Scripts/install-local.sh."
+  info "not installed. Enable 开机启动 in the app when you want login launch."
 fi
 
 echo

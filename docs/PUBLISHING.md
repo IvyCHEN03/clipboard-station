@@ -51,7 +51,30 @@ Review:
 - The zip and `.sha256` file exist under `.build/dist/`.
 - No `.build/` artifacts are staged for commit.
 
-## 4. Recommended Publish Command
+## 4. Sync The Current Working Branch
+
+The helper resolves the repository from its own script path, so moving the
+checkout does not change the upload command.
+
+Preview the target branch without making network changes:
+
+```bash
+./Scripts/push-current-branch.sh
+```
+
+After reviewing and committing intentional changes:
+
+```bash
+gh auth login -h github.com -p https -w
+gh auth setup-git
+./Scripts/push-current-branch.sh --apply
+```
+
+The helper uses the current branch's configured upstream when one exists. It
+does not upload `ClipboardStation.app`, `.build`, local encrypted state, API
+keys, or other ignored files.
+
+## 5. Recommended Prerelease Command
 
 After committing and authenticating GitHub safely, use the prerelease helper:
 
@@ -67,7 +90,7 @@ Without `--apply`, it only prints the plan:
 
 The apply run checks the project, builds release assets, verifies the zip, pushes `main`, creates the tag, and pushes the tag. The GitHub release workflow then creates the prerelease assets.
 
-## 5. Manual Push Main
+## 6. Manual Push Main
 
 After committing:
 
@@ -77,7 +100,7 @@ git push origin main
 
 Then check GitHub Actions CI for `main`. Do not tag a release until CI is green.
 
-## 6. Manual Prerelease Tag
+## 7. Manual Prerelease Tag
 
 The release workflow runs on tags matching `v*`.
 
@@ -94,7 +117,7 @@ The GitHub release workflow should:
 4. Generate release notes from `CHANGELOG.md`.
 5. Publish a prerelease with both assets attached.
 
-## 7. Verify The GitHub Release
+## 8. Verify The GitHub Release
 
 Before sharing the repository broadly:
 
@@ -111,7 +134,7 @@ shasum -a 256 -c Linggan-Floating-Ball-v0.4.0.zip.sha256
 - Confirm release notes include privacy notes and unsigned-install limitations.
 - Confirm README badges render and the release badge links to the workflow.
 
-## 8. Update Repository Profile
+## 9. Update Repository Profile
 
 After the first prerelease exists:
 
@@ -120,7 +143,7 @@ After the first prerelease exists:
 - Add the README hero image or a redacted app screenshot as social preview.
 - Pin the repository on the GitHub profile.
 
-## 9. First Public Share
+## 10. First Public Share
 
 Share only after:
 

@@ -30,7 +30,11 @@ The project is still early and source-first. Signed and notarized releases are o
 
 ## I changed the source, but the app still looks old. Why?
 
-The installed app in `~/Applications/ClipboardStation.app` is a packaged copy. Run `./Scripts/install-local.sh` again after pulling or editing the source; the script rebuilds the app, replaces the installed copy, and restarts the launch agent.
+The installed app beside the repository is a packaged copy. Run
+`./Scripts/install-local.sh` again after pulling, editing, or moving the source;
+the script rebuilds the app, replaces the installed copy, updates the
+running path, and restarts it. When `开机启动` is enabled, the relaunched app
+also refreshes its own LaunchAgent path.
 
 ## Why does the app allow repeated copies?
 
