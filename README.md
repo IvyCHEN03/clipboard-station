@@ -234,7 +234,11 @@ The repo includes a Chrome/Edge companion extension for posts with many images a
 
 It gathers the current post into a titled temporary row, expands that row on double-click, and saves individually selected images as PNG through the browser download manager. On supported post pages such as Xiaohongshu, it reads the post's structured image list, retries alternate source URLs, and removes URL-level and visual duplicates. When the extension is installed, `Cmd` + clicking the native Linggan floating bubble starts capture; clicking the bubble again can collapse the open image panel.
 
-To try it locally, load [browser-extension/image-collector](browser-extension/image-collector/README.md) as an unpacked extension from `chrome://extensions`.
+To try it locally, run `./Scripts/install-browser-extension.sh --reveal`, then
+load the stable Application Support copy described in the
+[Browser Image Collector guide](browser-extension/image-collector/README.md).
+Keeping Chrome pointed at this stable directory prevents extension updates from
+breaking when the source checkout moves.
 
 The extension does not bypass paywalls, authentication, DRM, or platform permissions. Generic article pages use a scoped DOM fallback, while supported post pages use their structured post image list.
 

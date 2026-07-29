@@ -55,6 +55,27 @@ LINGGAN_INSTALL_DIR="$HOME/Applications" ./Scripts/install-local.sh
 
 After installing, follow [GETTING_STARTED.md](GETTING_STARTED.md) for the five-minute first run.
 
+## Install Or Repair The Chrome Extension
+
+The native install script also refreshes a stable extension copy at:
+
+```text
+~/Library/Application Support/ClipboardStation/BrowserExtension
+```
+
+Open `chrome://extensions`, enable Developer mode, and use `Load unpacked` to
+select that directory. If an older Linggan extension still points to a source
+folder that was moved, remove the old card first.
+
+For later updates, run:
+
+```bash
+./Scripts/install-browser-extension.sh --reveal
+```
+
+Then click `Reload` on the existing Linggan extension card. You do not need to
+choose the directory again.
+
 ## Verify Local Install
 
 Run:
@@ -98,6 +119,7 @@ The uninstall script removes the app and LaunchAgent but keeps local snippet dat
 
 - Floating bubble missing: run `./Scripts/install-local.sh`, then `./Scripts/doctor.sh`.
 - Local changes do not appear: run `./Scripts/install-local.sh` again so the app is rebuilt, reinstalled, and restarted.
+- Chrome extension cannot update: remove the unpacked copy that points to the old checkout, then load `~/Library/Application Support/ClipboardStation/BrowserExtension`.
 - App opens but paste does not work: grant Accessibility permission.
 - macOS says the app is damaged or cannot be opened: confirm you downloaded from the project release, then approve it in Privacy & Security.
 - Release checksum fails: delete the zip and download it again.

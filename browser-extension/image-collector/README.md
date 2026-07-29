@@ -15,17 +15,32 @@ Experimental Chrome/Edge extension for collecting image-heavy posts and archivin
 
 This is designed for pages such as image-heavy articles, inspiration boards, and social posts where the page itself does not provide a reliable "download all" button.
 
-## Install For Local Testing
+## Install Or Repair The Local Extension
 
-1. Open Chrome or Edge.
-2. Go to `chrome://extensions`.
-3. Enable Developer mode.
-4. Click `Load unpacked`.
-5. Select this folder:
+First copy the extension into its stable local directory:
+
+```bash
+./Scripts/install-browser-extension.sh --reveal
+```
+
+The stable directory is:
 
 ```text
-browser-extension/image-collector
+~/Library/Application Support/ClipboardStation/BrowserExtension
 ```
+
+Then:
+
+1. Open Chrome or Edge and go to `chrome://extensions`.
+2. Enable Developer mode.
+3. Remove an older broken Linggan extension that points to a moved source checkout.
+4. Click `Load unpacked`.
+5. Select the stable directory above.
+
+Future updates keep the same Chrome extension path. Run `./Scripts/install-local.sh`
+or `./Scripts/install-browser-extension.sh`, then click `Reload` on the Linggan
+extension card. The manifest version lets you confirm that Chrome loaded the new
+copy.
 
 ## Use
 
