@@ -15,6 +15,7 @@ required_files=(
   manifest.json
   background.js
   content.js
+  offscreen.html
   offscreen.js
   styles.css
 )
