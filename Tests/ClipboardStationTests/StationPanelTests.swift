@@ -7,7 +7,7 @@ final class StationPanelTests: XCTestCase {
         await MainActor.run {
             let panel = StationPanel(
                 contentRect: NSRect(x: 100, y: 120, width: 440, height: 620),
-                styleMask: [.titled],
+                styleMask: [.titled, .resizable],
                 backing: .buffered,
                 defer: false
             )
@@ -18,6 +18,7 @@ final class StationPanelTests: XCTestCase {
             panel.setFrameOrigin(requestedOrigin)
 
             XCTAssertFalse(panel.isMovable)
+            XCTAssertFalse(panel.styleMask.contains(.resizable))
             XCTAssertEqual(panel.frame.origin, originalOrigin)
             XCTAssertEqual(panel.level, .floating)
 
@@ -25,6 +26,7 @@ final class StationPanelTests: XCTestCase {
             panel.setFrameOrigin(requestedOrigin)
 
             XCTAssertTrue(panel.isMovable)
+            XCTAssertTrue(panel.styleMask.contains(.resizable))
             XCTAssertEqual(panel.frame.origin, requestedOrigin)
             XCTAssertEqual(panel.level, .normal)
         }

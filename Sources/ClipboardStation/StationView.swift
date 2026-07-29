@@ -442,7 +442,6 @@ struct StationView: View {
                         ) {
                             toggleSelection(snippet.id)
                         }
-                            .opacity(draggingSnippetID == snippet.id ? 0.55 : 1)
                             .onDrag {
                                 draggingSnippetID = snippet.id
                                 return snippetDragProvider(for: snippet)
@@ -1023,38 +1022,58 @@ private struct ImageGroupPreview: View {
     let onOpen: (Int) -> Void
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            HStack(spacing: 4) {
-                ForEach(Array(images.prefix(4).enumerated()), id: \.offset) { index, image in
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180)
-                        .clipped()
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 5) {
+                Image(systemName: "photo.on.rectangle.angled")
+                Text("\(images.count) 张图片")
+                Spacer(minLength: 8)
+                if images.count > 1 {
+                    Text("左右滑动查看")
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.secondary)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 8) {
+                    ForEach(Array(images.enumerated()), id: \.offset) { index, image in
+                        ZStack(alignment: .bottomTrailing) {
+                            Color(nsColor: .textBackgroundColor)
+
+                            Image(nsImage: image)
+                                .resizable()
+                                .interpolation(.high)
+                                .scaledToFit()
+                                .padding(4)
+
+                            Text("\(index + 1)")
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .frame(minWidth: 19, minHeight: 19)
+                                .background(.black.opacity(0.66), in: Circle())
+                                .padding(5)
+                        }
+                        .frame(width: 118, height: 92)
+                        .clipShape(RoundedRectangle(cornerRadius: 7))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 7)
+                                .strokeBorder(Color.secondary.opacity(0.2))
+                        }
                         .contentShape(Rectangle())
                         .highPriorityGesture(
                             TapGesture(count: 2)
                                 .onEnded { onOpen(index) }
                         )
                         .accessibilityLabel("第 \(index + 1) 张图片，双击查看大图")
+                    }
                 }
+                .padding(.horizontal, 1)
+                .padding(.bottom, 2)
             }
-            if images.count > 1 {
-                Text("\(images.count) 张")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.black.opacity(0.72), in: Capsule())
-                    .padding(8)
-            }
+            .frame(height: 96)
         }
-        .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 180, alignment: .leading)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(Color.secondary.opacity(0.18))
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -1707,7 +1726,6 @@ private struct DraftDock: View {
                             ) {
                                 store.removeDraftBlock(id: snippet.id)
                             }
-                            .opacity(draggingDraftID == snippet.id ? 0.55 : 1)
                             .onDrag {
                                 draggingDraftID = snippet.id
                                 draggingSnippetID = snippet.id
