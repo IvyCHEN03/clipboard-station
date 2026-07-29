@@ -1085,23 +1085,77 @@ final class SnippetStore: ObservableObject {
             searchText = ""
             selectedTags.removeAll()
             selectedTimeFilter = nil
+            selectedDateRange = nil
+            favoritesOnly = false
+            draftSnippetIDs.removeAll()
+            draftTextSlots.removeAll()
+            polishedDraftText = ""
+            polishedDraftSourceText = ""
+            isPolishingDraft = false
+            toast = nil
+        case "filter":
+            searchText = ""
+            selectedTags = ["AI"]
+            selectedTimeFilter = .today
+            selectedDateRange = nil
+            favoritesOnly = true
+            draftSnippetIDs.removeAll()
+            draftTextSlots.removeAll()
+            toast = nil
+        case "search":
+            searchText = "表格"
+            selectedTags.removeAll()
+            selectedTimeFilter = nil
+            selectedDateRange = nil
+            favoritesOnly = false
             draftSnippetIDs.removeAll()
             draftTextSlots.removeAll()
             toast = nil
         case "first-block":
             guard let first = snippets.first else { return }
+            searchText = ""
+            selectedTags.removeAll()
+            selectedTimeFilter = nil
+            favoritesOnly = false
             draftSnippetIDs = [first.id]
             draftTextSlots.removeAll()
         case "second-block":
             guard snippets.count >= 2 else { return }
+            searchText = ""
+            selectedTags.removeAll()
+            selectedTimeFilter = nil
+            favoritesOnly = false
             draftSnippetIDs = [snippets[0].id, snippets[1].id]
             draftTextSlots.removeAll()
         case "bridge-text":
             guard snippets.count >= 2 else { return }
+            searchText = ""
+            selectedTags.removeAll()
+            selectedTimeFilter = nil
+            favoritesOnly = false
             draftSnippetIDs = [snippets[0].id, snippets[1].id]
-            draftTextSlots["before-\(snippets[1].id.uuidString)"] = "Compare this with"
+            draftTextSlots["before-\(snippets[1].id.uuidString)"] = "结合表格证据，进一步说明"
+        case "polishing":
+            guard snippets.count >= 2 else { return }
+            draftSnippetIDs = [snippets[0].id, snippets[1].id]
+            draftTextSlots["before-\(snippets[1].id.uuidString)"] = "结合表格证据，进一步说明"
+            polishedDraftText = ""
+            polishedDraftSourceText = ""
+            isPolishingDraft = true
+            toast = ToastMessage(text: "DeepSeek 正在润色组合内容")
+        case "polished":
+            guard snippets.count >= 2 else { return }
+            isPolishingDraft = false
+            draftSnippetIDs = [snippets[0].id, snippets[1].id]
+            draftTextSlots["before-\(snippets[1].id.uuidString)"] = "结合表格证据，进一步说明"
+            polishedDraftSourceText = assembledDraftText()
+            polishedDraftText = """
+            先提炼多个 AI 回答的共同结论，再保留关键差异；结合表格证据核对结构、表达与信息完整度，最终整理成一段可直接继续使用的提示词。
+            """
+            toast = ToastMessage(text: "Polish 完成")
         case "copied":
-            showToast("已复制组合内容")
+            isPolishingDraft = false
+            showToast(hasCurrentPolishedDraft ? "已复制润色内容" : "已复制组合内容")
         default:
             break
         }

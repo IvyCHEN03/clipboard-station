@@ -10,15 +10,24 @@ private let canvasSize = CGSize(width: 1920, height: 1080)
 private let fps: Int32 = 30
 private let arguments = Set(CommandLine.arguments.dropFirst())
 private let isTeaser = arguments.contains("teaser")
-private let duration: Double = isTeaser ? 28 : 32
+private let usesActualUI = arguments.contains("actual")
+private let duration: Double = usesActualUI && !isTeaser ? 38 : (isTeaser ? 28 : 32)
 private let frameCount = Int(duration * Double(fps))
 private let repo = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 private let language = arguments.contains("en") ? "en" : "cn"
 private let assetKind = isTeaser ? "teaser" : "demo"
-private let outputURL = repo.appendingPathComponent("docs/assets/social/linggan-x-\(assetKind)-\(language)-1080p.mp4")
-private let coverURL = repo.appendingPathComponent("docs/assets/social/linggan-x-\(assetKind)-\(language)-1080p-cover.png")
+private let outputURL = usesActualUI
+    ? repo.appendingPathComponent("docs/assets/social/linggan-core-workflow.mp4")
+    : repo.appendingPathComponent("docs/assets/social/linggan-x-\(assetKind)-\(language)-1080p.mp4")
+private let coverURL = usesActualUI
+    ? repo.appendingPathComponent("docs/assets/social/linggan-core-workflow-cover.png")
+    : repo.appendingPathComponent("docs/assets/social/linggan-x-\(assetKind)-\(language)-1080p-cover.png")
 private let silentVideoURL = FileManager.default.temporaryDirectory.appendingPathComponent("linggan-\(assetKind)-\(language)-silent.mp4")
 private let musicURL = FileManager.default.temporaryDirectory.appendingPathComponent("linggan-\(assetKind)-\(language)-music.wav")
+private let actualUIDirectory = URL(
+    fileURLWithPath: ProcessInfo.processInfo.environment["LINGGAN_VIDEO_UI_DIR"]
+        ?? FileManager.default.temporaryDirectory.appendingPathComponent("linggan-video-ui").path
+)
 
 private let ink = NSColor(calibratedRed: 0.09, green: 0.13, blue: 0.20, alpha: 1)
 private let muted = NSColor(calibratedRed: 0.39, green: 0.45, blue: 0.54, alpha: 1)
@@ -148,9 +157,48 @@ private func windowShadow(_ rect: CGRect, radius: CGFloat) {
     NSGraphicsContext.restoreGraphicsState()
 }
 
-private let appRect = CGRect(x: 72, y: 48, width: 454, height: 640)
+private let appRect = usesActualUI
+    ? CGRect(x: 44, y: 48, width: 501, height: 640)
+    : CGRect(x: 72, y: 48, width: 454, height: 640)
+
+private let actualUIStateNames = [
+    "reset",
+    "filter",
+    "search",
+    "reset",
+    "first-block",
+    "second-block",
+    "bridge-text",
+    "polishing",
+    "polished",
+    "copied",
+]
+
+private func drawActualStationFrame(_ index: Int, alpha: CGFloat) -> Bool {
+    guard usesActualUI else { return false }
+    let state = actualUIStateNames[min(max(index, 0), actualUIStateNames.count - 1)]
+    let url = actualUIDirectory.appendingPathComponent("\(state).png")
+    guard let image = NSImage(contentsOf: url) else { return false }
+
+    windowShadow(appRect, radius: 22)
+    NSGraphicsContext.saveGraphicsState()
+    NSBezierPath(roundedRect: appRect, xRadius: 22, yRadius: 22).addClip()
+    image.draw(
+        in: appRect,
+        from: .zero,
+        operation: .sourceOver,
+        fraction: alpha,
+        respectFlipped: true,
+        hints: [.interpolation: NSImageInterpolation.high]
+    )
+    NSGraphicsContext.restoreGraphicsState()
+    return true
+}
 
 private func drawStationFrame(_ index: Int, time: Double, alpha: CGFloat = 1) {
+    if drawActualStationFrame(index, alpha: alpha) {
+        return
+    }
     windowShadow(appRect, radius: 22)
     NSGraphicsContext.saveGraphicsState()
     NSBezierPath(roundedRect: appRect, xRadius: 22, yRadius: 22).addClip()
@@ -300,19 +348,22 @@ private func stationIndex(at time: Double) -> Int {
 }
 
 private func localToCanvas(_ p: CGPoint) -> CGPoint {
-    CGPoint(x: appRect.minX + p.x / 420 * appRect.width, y: appRect.minY + p.y / 592 * appRect.height)
+    if usesActualUI {
+        return CGPoint(x: appRect.minX + p.x / 720 * appRect.width, y: appRect.minY + p.y / 920 * appRect.height)
+    }
+    return CGPoint(x: appRect.minX + p.x / 420 * appRect.width, y: appRect.minY + p.y / 592 * appRect.height)
 }
 
 private func stationCursor(_ t: Double) -> (CGPoint, Bool) {
-    let ai = localToCanvas(CGPoint(x: 74, y: 145))
-    let search = localToCanvas(CGPoint(x: 105, y: 184))
-    let row1 = localToCanvas(CGPoint(x: 155, y: 280))
-    let row2 = localToCanvas(CGPoint(x: 155, y: 448))
-    let composerA = localToCanvas(CGPoint(x: 86, y: 558))
-    let composerB = localToCanvas(CGPoint(x: 220, y: 558))
-    let bridge = localToCanvas(CGPoint(x: 142, y: 558))
-    let polish = localToCanvas(CGPoint(x: 316, y: 414))
-    let copy = localToCanvas(CGPoint(x: 373, y: 414))
+    let ai = localToCanvas(usesActualUI ? CGPoint(x: 350, y: 252) : CGPoint(x: 74, y: 145))
+    let search = localToCanvas(usesActualUI ? CGPoint(x: 258, y: 355) : CGPoint(x: 105, y: 184))
+    let row1 = localToCanvas(usesActualUI ? CGPoint(x: 286, y: 560) : CGPoint(x: 155, y: 280))
+    let row2 = localToCanvas(usesActualUI ? CGPoint(x: 286, y: 700) : CGPoint(x: 155, y: 448))
+    let composerA = localToCanvas(usesActualUI ? CGPoint(x: 220, y: 836) : CGPoint(x: 86, y: 558))
+    let composerB = localToCanvas(usesActualUI ? CGPoint(x: 450, y: 836) : CGPoint(x: 220, y: 558))
+    let bridge = localToCanvas(usesActualUI ? CGPoint(x: 340, y: 836) : CGPoint(x: 142, y: 558))
+    let polish = localToCanvas(usesActualUI ? CGPoint(x: 568, y: 806) : CGPoint(x: 316, y: 414))
+    let copy = localToCanvas(usesActualUI ? CGPoint(x: 654, y: 806) : CGPoint(x: 373, y: 414))
     if t < 2.25 { return (CGPoint(x: 635, y: 128), false) }
     if t < 2.85 { return (interpolate(CGPoint(x: 635, y: 128), ai, (t - 2.25) / 0.6), false) }
     if t < 3.1 { return (ai, true) }
@@ -348,8 +399,8 @@ private func drawStationScene(_ t: Double) {
     if t < 6.8 {
         stageLabel(
             localized("01  捞回灵光", "01  REEL IT BACK"),
-            localized("标签轻轻一捞，\n刚才那点灵光，归队。", "Let tags reel it back in.\nThat little spark is back."),
-            localized("想法没丢，只是在等你叫它回来。", "Your idea was never lost. It was waiting to be called back.")
+            localized("收藏、日期、标签、搜索，\n刚才那点灵光，归队。", "Favorites, dates, tags, search.\nThat little spark is back."),
+            localized("按时间与关键词组合筛选，不必记住它藏在哪里。", "Combine filters freely. You do not need to remember where the idea was hiding.")
         )
     } else if t < 13.7 {
         stageLabel(
@@ -372,15 +423,15 @@ private func drawStationScene(_ t: Double) {
     }
 
     if t >= 7.5 && t < 9.35 {
-        let start = localToCanvas(CGPoint(x: 155, y: 280))
-        let end = localToCanvas(CGPoint(x: 86, y: 558))
+        let start = localToCanvas(usesActualUI ? CGPoint(x: 286, y: 560) : CGPoint(x: 155, y: 280))
+        let end = localToCanvas(usesActualUI ? CGPoint(x: 220, y: 836) : CGPoint(x: 86, y: 558))
         let p = interpolate(start, end, (t - 7.5) / 1.75)
         rounded(CGRect(x: p.x - 31, y: p.y - 17, width: 62, height: 34), radius: 8, color: coral, alpha: 0.92)
         text("1", rect: CGRect(x: p.x - 31, y: p.y - 9, width: 62, height: 20), size: 14, weight: .bold, color: .white, alignment: .center)
     }
     if t >= 10.15 && t < 11.6 {
-        let start = localToCanvas(CGPoint(x: 155, y: 448))
-        let end = localToCanvas(CGPoint(x: 220, y: 558))
+        let start = localToCanvas(usesActualUI ? CGPoint(x: 286, y: 700) : CGPoint(x: 155, y: 448))
+        let end = localToCanvas(usesActualUI ? CGPoint(x: 450, y: 836) : CGPoint(x: 220, y: 558))
         let p = interpolate(start, end, (t - 10.15) / 1.35)
         rounded(CGRect(x: p.x - 31, y: p.y - 17, width: 62, height: 34), radius: 8, color: NSColor.systemOrange, alpha: 0.92)
         text("2", rect: CGRect(x: p.x - 31, y: p.y - 9, width: 62, height: 20), size: 14, weight: .bold, color: .white, alignment: .center)
@@ -479,8 +530,8 @@ private func collectorPanel(mode: Int, selected: Set<Int>, toast: Int) {
 
     if mode == 2 {
         button(localized("全选", "All"), rect: CGRect(x: batch.minX + 10, y: batch.minY + 90, width: 54, height: 36))
-        button(localized("移除", "Remove"), rect: CGRect(x: batch.minX + 72, y: batch.minY + 90, width: 62, height: 36))
-        button(localized("保存选中", "Save selected"), rect: CGRect(x: batch.minX + 142, y: batch.minY + 90, width: 96, height: 36), primary: true)
+        button(localized("OCR 文字", "OCR text"), rect: CGRect(x: batch.minX + 72, y: batch.minY + 90, width: 78, height: 36))
+        button(localized("保存选中", "Save selected"), rect: CGRect(x: batch.minX + 158, y: batch.minY + 90, width: 96, height: 36), primary: true)
         let itemWidth: CGFloat = 76
         for i in 0..<4 {
             let item = CGRect(x: batch.minX + 10 + CGFloat(i) * 84, y: batch.minY + 139, width: itemWidth, height: 143)
@@ -498,9 +549,14 @@ private func collectorPanel(mode: Int, selected: Set<Int>, toast: Int) {
 
     text(localized("已暂存 1 行 / 4 张 · 已选 \(selected.count) 张", "1 post / 4 images · \(selected.count) selected"), rect: CGRect(x: panel.minX + 14, y: panel.maxY - 32, width: panel.width - 28, height: 20), size: 12, color: muted)
     if toast > 0 {
-        let message = toast == 2
-            ? localized("网页 HTML 已保存", "Web page HTML saved")
-            : localized("已保存 3 张 PNG", "Saved 3 PNG images")
+        let message: String
+        if toast == 3 {
+            message = localized("OCR 文字已存入灵感球", "OCR text saved to Linggan")
+        } else if toast == 2 {
+            message = localized("网页 HTML 已保存", "Web page HTML saved")
+        } else {
+            message = localized("已保存 3 张 PNG", "Saved 3 PNG images")
+        }
         rounded(CGRect(x: panel.minX + 50, y: panel.maxY - 78, width: 280, height: 42), radius: 21, color: ink, alpha: 0.95)
         text(message, rect: CGRect(x: panel.minX + 50, y: panel.maxY - 67, width: 280, height: 22), size: language == "en" ? 11.5 : 12.5, weight: .bold, color: .white, alignment: .center)
     }
@@ -510,7 +566,10 @@ private func collectorCursor(_ t: Double) -> (CGPoint, Bool) {
     let collect = CGPoint(x: panel.maxX - 95, y: panel.minY + 32)
     let row = CGPoint(x: panel.minX + 180, y: panel.minY + 112)
     let item = CGPoint(x: panel.minX + 287, y: panel.minY + 280)
-    let save = CGPoint(x: panel.minX + 183, y: panel.minY + 185)
+    let ocr = CGPoint(x: panel.minX + 111, y: panel.minY + 185)
+    let firstImage = CGPoint(x: panel.minX + 62, y: panel.minY + 305)
+    let document = CGPoint(x: 728, y: 520)
+    let save = CGPoint(x: panel.minX + 220, y: panel.minY + 185)
     let archive = CGPoint(x: panel.maxX - 178, y: panel.minY + 32)
     if t < 18.5 { return (CGPoint(x: 760, y: 180), false) }
     if t < 19.1 { return (interpolate(CGPoint(x: 760, y: 180), collect, (t - 18.5) / 0.6), false) }
@@ -519,14 +578,37 @@ private func collectorCursor(_ t: Double) -> (CGPoint, Bool) {
     if t < 20.55 { return (row, true) }
     if t < 21.6 { return (interpolate(row, item, (t - 20.55) / 1.05), false) }
     if t < 21.9 { return (item, true) }
-    if t < 22.7 { return (interpolate(item, row, (t - 21.9) / 0.8), false) }
-    if t < 23.05 { return (row, true) }
-    if t < 24.15 { return (row, false) }
-    if t < 24.55 { return (row, true) }
-    if t < 25.35 { return (interpolate(row, save, (t - 24.55) / 0.8), false) }
-    if t < 25.68 { return (save, true) }
-    if t < 26.18 { return (interpolate(save, archive, (t - 25.68) / 0.5), false) }
-    return (archive, t < 26.48)
+    if t < 22.25 { return (interpolate(item, ocr, (t - 21.9) / 0.35), false) }
+    if t < 22.55 { return (ocr, true) }
+    if t < 22.9 { return (interpolate(ocr, firstImage, (t - 22.55) / 0.35), false) }
+    if t < 24.25 { return (interpolate(firstImage, document, (t - 22.9) / 1.35), true) }
+    if t < 24.85 { return (interpolate(document, save, (t - 24.25) / 0.6), false) }
+    if t < 25.18 { return (save, true) }
+    if t < 25.85 { return (interpolate(save, archive, (t - 25.18) / 0.67), false) }
+    return (archive, t < 26.18)
+}
+
+private func drawDocumentDropTarget(_ t: Double) {
+    guard t >= 22.15, t < 25.1 else { return }
+    let rect = CGRect(x: 642, y: 438, width: 142, height: 172)
+    windowShadow(rect, radius: 14)
+    stroke(rect, radius: 14, color: border)
+    text(localized("文档", "Document"), rect: CGRect(x: rect.minX + 14, y: rect.minY + 14, width: rect.width - 28, height: 22), size: 13, weight: .bold)
+    rounded(CGRect(x: rect.minX + 14, y: rect.minY + 48, width: rect.width - 28, height: 92), radius: 10, color: paleBlue)
+    if t >= 24.25 {
+        photo(CGRect(x: rect.minX + 24, y: rect.minY + 56, width: rect.width - 48, height: 76), variant: 0)
+    } else {
+        text(localized("拖入原图", "Drop original"), rect: CGRect(x: rect.minX + 20, y: rect.minY + 84, width: rect.width - 40, height: 22), size: 11, weight: .semibold, color: NSColor.systemBlue, alignment: .center)
+    }
+    text(localized("保留原始画质", "Original quality"), rect: CGRect(x: rect.minX + 12, y: rect.maxY - 24, width: rect.width - 24, height: 18), size: 10, color: muted, alignment: .center)
+
+    if t >= 22.9, t < 24.25 {
+        let start = CGPoint(x: panel.minX + 62, y: panel.minY + 305)
+        let end = CGPoint(x: 728, y: 520)
+        let p = interpolate(start, end, (t - 22.9) / 1.35)
+        photo(CGRect(x: p.x - 34, y: p.y - 46, width: 68, height: 92), variant: 0)
+        stroke(CGRect(x: p.x - 34, y: p.y - 46, width: 68, height: 92), radius: 10, color: NSColor.systemBlue, width: 2)
+    }
 }
 
 private func drawCollectorScene(_ t: Double) {
@@ -534,12 +616,11 @@ private func drawCollectorScene(_ t: Double) {
     let mode: Int
     if t < 19.4 { mode = 0 }
     else if t < 20.65 { mode = 1 }
-    else if t < 23.2 { mode = 2 }
-    else if t < 24.65 { mode = 1 }
     else { mode = 2 }
     let selected: Set<Int> = t >= 22.0 ? [0, 1, 3] : [0, 1, 2, 3]
-    let toast = t >= 26.48 ? 2 : t >= 25.68 ? 1 : 0
+    let toast = t >= 26.18 ? 2 : t >= 25.18 ? 1 : (t >= 22.25 && t < 22.9 ? 3 : 0)
     collectorPanel(mode: mode, selected: selected, toast: toast)
+    drawDocumentDropTarget(t)
     bubble(center: CGPoint(x: 1222, y: 360), radius: 31)
     if t < 19.4 {
         rounded(CGRect(x: 1000, y: 645, width: 204, height: 38), radius: 19, color: ink, alpha: 0.9)
@@ -547,7 +628,7 @@ private func drawCollectorScene(_ t: Double) {
     }
     let (p, down) = collectorCursor(t)
     cursor(at: p, down: down)
-    for event in [19.18, 20.35, 20.52, 21.75, 22.88, 23.03, 24.35, 24.52, 25.5, 26.34] {
+    for event in [19.18, 20.35, 20.52, 21.75, 22.4, 24.2, 25.02, 26.05] {
         clickRing(at: p, time: t, event: event)
     }
 }
@@ -595,6 +676,21 @@ private func render(time: Double) -> NSImage {
 }
 
 private func storyTime(for outputTime: Double) -> Double {
+    if usesActualUI && !isTeaser {
+        let segments: [(Range<Double>, Range<Double>)] = [
+            (0.0..<2.8, 0.0..<1.8),
+            (2.8..<21.8, 1.8..<17.2),
+            (21.8..<34.2, 17.2..<27.7),
+            (34.2..<38.0, 27.7..<32.0),
+        ]
+        guard let segment = segments.first(where: { $0.0.contains(outputTime) }) else {
+            return 31.9
+        }
+        let source = segment.0
+        let target = segment.1
+        let progress = (outputTime - source.lowerBound) / (source.upperBound - source.lowerBound)
+        return target.lowerBound + progress * (target.upperBound - target.lowerBound)
+    }
     guard isTeaser else { return outputTime }
     let segments: [(Range<Double>, Range<Double>)] = [
         (0.0..<2.6, 0.0..<1.8),
@@ -747,7 +843,7 @@ let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
     AVVideoWidthKey: Int(canvasSize.width),
     AVVideoHeightKey: Int(canvasSize.height),
     AVVideoCompressionPropertiesKey: [
-        AVVideoAverageBitRateKey: 16_000_000,
+        AVVideoAverageBitRateKey: usesActualUI ? 8_000_000 : 16_000_000,
         AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
     ],
 ])
@@ -781,7 +877,7 @@ try await combine(videoURL: silentVideoURL, musicURL: musicURL, outputURL: outpu
 try? FileManager.default.removeItem(at: silentVideoURL)
 try? FileManager.default.removeItem(at: musicURL)
 
-let cover = render(time: 0.8)
+let cover = render(time: usesActualUI ? 15.9 : 0.8)
 guard let tiff = cover.tiffRepresentation,
       let bitmap = NSBitmapImageRep(data: tiff),
       let png = bitmap.representation(using: .png, properties: [:])

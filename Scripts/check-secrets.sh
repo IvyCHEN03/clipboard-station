@@ -21,7 +21,9 @@ tracked_files="$(mktemp)"
 matches="$(mktemp)"
 trap 'rm -f "$tracked_files" "$matches"' EXIT
 
-git ls-files -z > "$tracked_files"
+git ls-files -z | while IFS= read -r -d '' file; do
+  [[ -f "$file" ]] && printf '%s\0' "$file"
+done > "$tracked_files"
 
 if [[ ! -s "$tracked_files" ]]; then
   echo "No tracked files to scan."
