@@ -1,6 +1,6 @@
 # Demo Script
 
-Use this script to record a short GIF, video, or screenshot set for README, releases, and social posts.
+Use this guide to render a short video or screenshot set for README, releases, and social posts.
 
 For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
 
@@ -8,18 +8,18 @@ For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUN
 
 | Asset | Purpose |
 | --- | --- |
-| [`linggan-core-workflow.mp4`](assets/social/linggan-core-workflow.mp4) | 44-second HD demo covering favorites, search, composition, Polish, Calendar and Reminder actions, memory recovery, image capture, OCR, and original-image drag |
+| [`linggan-core-workflow.mp4`](assets/social/linggan-core-workflow.mp4) | 38-second HD demo rendered from the real SwiftUI interface, covering favorites, date and tag filters, search, block composition, Polish, image collection, OCR, original-image drag, and HTML page saving |
 | [`linggan-x-teaser-en-1080p.mp4`](assets/social/linggan-x-teaser-en-1080p.mp4) | 28-second English X post and README demo |
 | [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080p.mp4) | 28-second Chinese X post |
-| [`linggan-readme-demo.gif`](assets/social/linggan-readme-demo.gif) | Inline GitHub README preview |
 | [`linggan-github-social-preview.png`](assets/social/linggan-github-social-preview.png) | 1280 x 640 GitHub social preview |
 
-The video generator uses only synthetic, redacted demo content:
+The complete workflow uses privacy-safe demo data rendered through the real
+SwiftUI `StationView`. GitHub shows a lightweight PNG cover that links to the
+HD MP4, rather than embedding a large GIF:
 
 ```bash
-swift Scripts/make-x-real-style-demo.swift en teaser
-swift Scripts/make-x-real-style-demo.swift cn teaser
-swift Scripts/make-readme-gif.swift
+./Scripts/render-video-ui-states.sh
+swift Scripts/make-x-real-style-demo.swift en actual
 ```
 
 ## One-Sentence Pitch
@@ -42,21 +42,19 @@ Hook: `One bubble. The whole post.`
 
 Do not show browser tabs, account avatars, usernames, tokens, or real saved content. Use [image-collector-demo.svg](assets/image-collector-demo.svg) as the README fallback until a real recording passes the privacy checklist.
 
-## README Hero GIF
+## README Hero Video
 
-The current comprehensive README GIF is generated from the privacy-safe feature
-demo:
+Do not embed the legacy GIF in the README. Keep the page compact with a static
+cover linked to the complete MP4:
 
 ```bash
-swift Scripts/make-x-feature-demo.swift
-swift Scripts/make-readme-gif.swift \
-  docs/assets/social/linggan-core-workflow.mp4 \
-  docs/assets/social/linggan-core-workflow.gif
+./Scripts/render-video-ui-states.sh
+swift Scripts/make-x-real-style-demo.swift en actual
 ```
 
-Until the GIF is regenerated, use
 [`linggan-core-workflow-cover.png`](assets/social/linggan-core-workflow-cover.png)
-as the linked README preview instead of publishing an outdated animation.
+is the linked README preview. It is rendered from the same current App state as
+the video.
 
 Target length: 15-35 seconds.
 
@@ -74,7 +72,7 @@ Recommended sequence:
 8. Hold on the generated full paragraph long enough to read it.
 9. Click copy on the polished output.
 
-Keep the GIF focused. Do not show Settings, API keys, provider setup, or long menus in the README hero. The synthetic Polish result must use redacted demo content only.
+Keep the video focused. Do not show Settings, API keys, provider setup, or long menus in the README hero. The Polish result must use redacted demo content only.
 
 ## 60-Second Flow
 
@@ -96,7 +94,7 @@ Keep the GIF focused. Do not show Settings, API keys, provider setup, or long me
 
 Capture these still images for a polished GitHub README:
 
-- `workflow-preview.svg`: synthetic overview diagram used until a real GIF exists.
+- `workflow-preview.svg`: synthetic overview diagram used as a lightweight fallback.
 - `image-collector-demo.svg`: synthetic Demo+ preview for whole-post image capture.
 - `01-empty-onboarding.png`: first-run empty state with the quick-start steps.
 - `02-collected-snippets.png`: text, screenshot, and table snippets in one list.
@@ -108,7 +106,7 @@ Recommended screenshot width: 1200-1600 px. Redact private clipboard content bef
 
 ## Asset Acceptance Checklist
 
-Before adding a GIF or screenshot to the repository:
+Before adding a video cover or screenshot to the repository:
 
 - [ ] Uses demo snippets, synthetic text, or fully redacted content.
 - [ ] Shows the floating bubble or station UI within the first two seconds.

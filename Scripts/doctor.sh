@@ -3,6 +3,9 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_SUPPORT="$HOME/Library/Application Support/ClipboardStation"
+EXTENSION_DIR="$APP_SUPPORT/BrowserExtension"
+SOURCE_EXTENSION_MANIFEST="$ROOT_DIR/browser-extension/image-collector/manifest.json"
+INSTALLED_EXTENSION_MANIFEST="$EXTENSION_DIR/manifest.json"
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.local.clipboard-station.agent.plist"
 INSTALL_DIR="${LINGGAN_INSTALL_DIR:-$ROOT_DIR}"
 INSTALLED_APP="$INSTALL_DIR/ClipboardStation.app"
@@ -103,6 +106,29 @@ else
 fi
 
 echo
+echo "Browser extension:"
+info "Chrome should load unpacked from: $EXTENSION_DIR"
+if [[ -f "$INSTALLED_EXTENSION_MANIFEST" ]]; then
+  INSTALLED_EXTENSION_VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$INSTALLED_EXTENSION_MANIFEST" 2>/dev/null || true)"
+  if [[ -n "$INSTALLED_EXTENSION_VERSION" ]]; then
+    ok "stable extension copy exists (version $INSTALLED_EXTENSION_VERSION)"
+  else
+    warn "stable extension manifest is unreadable. Run ./Scripts/install-browser-extension.sh."
+  fi
+
+  if [[ -f "$SOURCE_EXTENSION_MANIFEST" ]]; then
+    SOURCE_EXTENSION_VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$SOURCE_EXTENSION_MANIFEST" 2>/dev/null || true)"
+    if [[ -n "$SOURCE_EXTENSION_VERSION" && "$INSTALLED_EXTENSION_VERSION" == "$SOURCE_EXTENSION_VERSION" ]]; then
+      ok "installed extension matches the source version"
+    elif [[ -n "$SOURCE_EXTENSION_VERSION" ]]; then
+      warn "installed extension is version ${INSTALLED_EXTENSION_VERSION:-unknown}; source is $SOURCE_EXTENSION_VERSION. Run ./Scripts/install-browser-extension.sh."
+    fi
+  fi
+else
+  warn "stable extension copy is missing. Run ./Scripts/install-browser-extension.sh."
+fi
+
+echo
 echo "Summary:"
 if [[ "$WARNINGS" -eq 0 ]]; then
   echo "  OK   No install problems detected."
@@ -113,6 +139,7 @@ fi
 echo
 echo "Next steps:"
 echo "  - If the floating bubble is missing, run ./Scripts/install-local.sh."
+echo "  - If Chrome cannot update the extension, remove the old unpacked card once and load $EXTENSION_DIR."
 echo "  - If paste automation fails, grant Accessibility permission to ClipboardStation in macOS Settings."
 echo "  - If macOS blocks the app, approve it in System Settings > Privacy & Security."
 echo "  - If reports are needed, paste this doctor output into a GitHub issue after checking it contains no private paths you want to hide."

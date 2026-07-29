@@ -120,11 +120,11 @@ The app is usable today, but still pre-1.0:
 
 The privacy-safe product previews show both core loops without exposing private clipboard or browser content: collect fragments into a final prompt, or collect a whole image post into a selectable PNG stack.
 
-### 44-Second Core Workflow
+### 38-Second Real-App Workflow
 
 [![Watch the Linggan Floating Ball core workflow](docs/assets/social/linggan-core-workflow-cover.png)](docs/assets/social/linggan-core-workflow.mp4)
 
-Watch the cursor protect a favorite, search, drag snippets into the block composer, and click `Polish` to generate one coherent paragraph. Then turn a copied date into a Calendar event and Reminder, recover seven-day memories as protected favorites, capture a whole image post, select individual images, run OCR, and drag originals into another document. The synthetic demo contains no private clipboard content, accounts, or API keys.
+Watch the current SwiftUI App filter by favorites, date, tags, and search; drag snippets into the block composer; add a bridge sentence; and click `Polish` to generate one coherent paragraph. The second half collects an image-heavy post, chooses individual images, saves OCR text, drags an original image into a document, and saves the page as HTML. All snippets and images are synthetic and contain no private clipboard content, accounts, or API keys.
 
 [Open the HD MP4](docs/assets/social/linggan-core-workflow.mp4)
 
@@ -234,7 +234,11 @@ The repo includes a Chrome/Edge companion extension for posts with many images a
 
 It gathers the current post into a titled temporary row, expands that row on double-click, and saves individually selected images as PNG through the browser download manager. On supported post pages such as Xiaohongshu, it reads the post's structured image list, retries alternate source URLs, and removes URL-level and visual duplicates. When the extension is installed, `Cmd` + clicking the native Linggan floating bubble starts capture; clicking the bubble again can collapse the open image panel.
 
-To try it locally, load [browser-extension/image-collector](browser-extension/image-collector/README.md) as an unpacked extension from `chrome://extensions`.
+To try it locally, run `./Scripts/install-browser-extension.sh --reveal`, then
+load the stable Application Support copy described in the
+[Browser Image Collector guide](browser-extension/image-collector/README.md).
+Keeping Chrome pointed at this stable directory prevents extension updates from
+breaking when the source checkout moves.
 
 The extension does not bypass paywalls, authentication, DRM, or platform permissions. Generic article pages use a scoped DOM fallback, while supported post pages use their structured post image list.
 

@@ -11,6 +11,7 @@ LAUNCH_AGENT="$HOME/Library/LaunchAgents/com.local.clipboard-station.agent.plist
 cd "$ROOT_DIR"
 
 ./Scripts/package-app.sh
+./Scripts/install-browser-extension.sh --copy-only
 
 mkdir -p "$INSTALL_DIR"
 rm -rf "$INSTALLED_APP"
@@ -25,4 +26,5 @@ open -na "$INSTALLED_APP"
 echo "Installed $INSTALLED_APP"
 echo "Launch at login is controlled by the app setting."
 echo "Move the repository later? Re-run this script to refresh the launch agent path."
+echo "The browser extension was refreshed in its stable Application Support directory."
 echo "The floating bubble should appear shortly."

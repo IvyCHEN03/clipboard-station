@@ -12,6 +12,10 @@ final class MarketingScreenshotTests: XCTestCase {
         }
 
         let store = SnippetStore()
+        if let state = ProcessInfo.processInfo.environment["CLIPBOARD_STATION_RENDER_SCREENSHOT_STATE"],
+           !state.isEmpty {
+            store.applyVideoDemoCommand(state)
+        }
         let view = NSHostingView(
             rootView: StationView(
                 store: store,

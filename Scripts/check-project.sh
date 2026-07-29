@@ -45,6 +45,21 @@ echo "== Secret scan =="
 
 echo
 echo "== Browser extension =="
+required_extension_files=(
+  manifest.json
+  background.js
+  content.js
+  offscreen.html
+  offscreen.js
+  styles.css
+)
+for file in "${required_extension_files[@]}"; do
+  if [[ ! -f "browser-extension/image-collector/$file" ]]; then
+    echo "Missing browser extension file: browser-extension/image-collector/$file" >&2
+    exit 1
+  fi
+  echo "ok: browser-extension/image-collector/$file"
+done
 python3 -c 'import json; json.load(open("browser-extension/image-collector/manifest.json")); print("ok: browser-extension/image-collector/manifest.json")'
 node --check browser-extension/image-collector/background.js
 echo "ok: browser-extension/image-collector/background.js"

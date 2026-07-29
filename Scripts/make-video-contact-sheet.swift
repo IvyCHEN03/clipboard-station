@@ -11,10 +11,13 @@ guard CommandLine.arguments.count >= 3 else {
 let input = URL(fileURLWithPath: CommandLine.arguments[1])
 let output = URL(fileURLWithPath: CommandLine.arguments[2])
 let isTeaser = CommandLine.arguments.dropFirst(3).contains("teaser")
+let asset = AVURLAsset(url: input)
+let durationSeconds = CMTimeGetSeconds(try await asset.load(.duration))
 let times: [Double] = isTeaser
     ? [0.6, 1.8, 3.0, 4.7, 6.5, 8.0, 9.8, 11.8, 13.6, 15.0, 16.8, 18.6, 20.5, 22.0, 23.8, 25.3]
-    : [0.8, 3.6, 5.9, 8.4, 10.8, 12.8, 15.7, 18.5, 19.8, 21.4, 22.4, 25.2, 28.0, 31.0, 35.2, 40.0]
-let asset = AVURLAsset(url: input)
+    : (0..<16).map { index in
+        0.8 + max(0, durationSeconds - 1.6) * Double(index) / 15
+    }
 let generator = AVAssetImageGenerator(asset: asset)
 generator.appliesPreferredTrackTransform = true
 generator.requestedTimeToleranceBefore = .zero

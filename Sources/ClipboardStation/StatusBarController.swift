@@ -3,6 +3,7 @@ import SwiftUI
 
 final class StationPanel: NSPanel {
     private var lockedOrigin: NSPoint?
+    private var restoresResizableOnUnlock = false
 
     override var canBecomeKey: Bool {
         true
@@ -13,6 +14,13 @@ final class StationPanel: NSPanel {
     }
 
     func setPositionLocked(_ locked: Bool) {
+        let wasLocked = lockedOrigin != nil
+        if locked, !wasLocked {
+            restoresResizableOnUnlock = styleMask.contains(.resizable)
+            styleMask.remove(.resizable)
+        } else if !locked, wasLocked, restoresResizableOnUnlock {
+            styleMask.insert(.resizable)
+        }
         lockedOrigin = locked ? frame.origin : nil
         isMovable = !locked
         level = locked ? .floating : .normal
@@ -64,6 +72,8 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     private enum DefaultsKey {
         static let stationOriginX = "station-window-origin-x"
         static let stationOriginY = "station-window-origin-y"
+        static let stationWidth = "station-window-width"
+        static let stationHeight = "station-window-height"
     }
 
     private let store = SnippetStore()
@@ -176,10 +186,11 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     private func configureStationWindow() {
         let panel = StationPanel(
             contentRect: NSRect(x: 0, y: 0, width: 440, height: 620),
-            styleMask: [.titled, .closable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
+        panel.minSize = NSSize(width: 420, height: 560)
         let rootView = StationView(
             store: store,
             quitApp: { Self.quitCompletely() },
@@ -200,7 +211,7 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         panel.isReleasedWhenClosed = false
         panel.delegate = self
         stationWindow = panel
-        restoreStationWindowPosition()
+        restoreStationWindowFrame()
     }
 
     private static func restartApplication() {
@@ -390,12 +401,16 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        saveStationWindowPosition()
+        saveStationWindowFrame()
         NSApp.deactivate()
     }
 
     func windowDidMove(_ notification: Notification) {
-        saveStationWindowPosition()
+        saveStationWindowFrame()
+    }
+
+    func windowDidResize(_ notification: Notification) {
+        saveStationWindowFrame()
     }
 
     private func hideStationWindow() {
@@ -411,13 +426,18 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         stationWindow.makeKeyAndOrderFront(nil)
     }
 
-    private func restoreStationWindowPosition() {
+    private func restoreStationWindowFrame() {
         guard let stationWindow, let screen = NSScreen.main else { return }
         let defaults = UserDefaults.standard
         let savedX = defaults.object(forKey: DefaultsKey.stationOriginX) as? Double
         let savedY = defaults.object(forKey: DefaultsKey.stationOriginY) as? Double
+        let savedWidth = defaults.object(forKey: DefaultsKey.stationWidth) as? Double
+        let savedHeight = defaults.object(forKey: DefaultsKey.stationHeight) as? Double
         let visibleFrame = screen.visibleFrame
-        let size = stationWindow.frame.size
+        let size = NSSize(
+            width: min(max(savedWidth ?? stationWindow.frame.width, stationWindow.minSize.width), visibleFrame.width),
+            height: min(max(savedHeight ?? stationWindow.frame.height, stationWindow.minSize.height), visibleFrame.height)
+        )
         let fallback = NSPoint(
             x: visibleFrame.midX - size.width / 2,
             y: visibleFrame.midY - size.height / 2
@@ -431,12 +451,15 @@ final class StatusBarController: NSObject, NSWindowDelegate {
             x: min(max(requested.x, frame.minX), frame.maxX - size.width),
             y: min(max(requested.y, frame.minY), frame.maxY - size.height)
         )
-        stationWindow.setFrameOrigin(origin)
+        stationWindow.setFrame(NSRect(origin: origin, size: size), display: false)
     }
 
-    private func saveStationWindowPosition() {
-        guard let origin = stationWindow?.frame.origin else { return }
-        UserDefaults.standard.set(origin.x, forKey: DefaultsKey.stationOriginX)
-        UserDefaults.standard.set(origin.y, forKey: DefaultsKey.stationOriginY)
+    private func saveStationWindowFrame() {
+        guard let frame = stationWindow?.frame else { return }
+        let defaults = UserDefaults.standard
+        defaults.set(frame.origin.x, forKey: DefaultsKey.stationOriginX)
+        defaults.set(frame.origin.y, forKey: DefaultsKey.stationOriginY)
+        defaults.set(frame.width, forKey: DefaultsKey.stationWidth)
+        defaults.set(frame.height, forKey: DefaultsKey.stationHeight)
     }
 }
