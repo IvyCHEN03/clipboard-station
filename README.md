@@ -120,7 +120,7 @@ The app is usable today, but still pre-1.0:
 
 The privacy-safe product previews show both core loops without exposing private clipboard or browser content: collect fragments into a final prompt, or collect a whole image post into a selectable PNG stack.
 
-### 38-Second Real-App Workflow
+### 38-Second 2K Real-App Workflow
 
 [![Watch the Linggan Floating Ball core workflow](docs/assets/social/linggan-core-workflow-cover.png)](docs/assets/social/linggan-core-workflow.mp4)
 

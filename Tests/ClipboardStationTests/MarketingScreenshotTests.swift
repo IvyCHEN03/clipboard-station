@@ -24,7 +24,7 @@ final class MarketingScreenshotTests: XCTestCase {
                 setPinned: { _ in }
             )
         )
-        view.frame = NSRect(x: 0, y: 0, width: 720, height: 920)
+        view.frame = NSRect(x: 0, y: 0, width: 650, height: 920)
         view.wantsLayer = true
         view.layer?.contentsScale = 2
         view.layoutSubtreeIfNeeded()

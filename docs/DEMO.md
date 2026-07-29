@@ -8,7 +8,7 @@ For repository launch steps and channel planning, see [LAUNCH_CHECKLIST.md](LAUN
 
 | Asset | Purpose |
 | --- | --- |
-| [`linggan-core-workflow.mp4`](assets/social/linggan-core-workflow.mp4) | 38-second HD demo rendered from the real SwiftUI interface, covering favorites, date and tag filters, search, block composition, Polish, image collection, OCR, original-image drag, and HTML page saving |
+| [`linggan-core-workflow.mp4`](assets/social/linggan-core-workflow.mp4) | 38-second 2560 x 1440 demo rendered from the real SwiftUI interface, covering favorites, date and tag filters, search, block composition, Polish, image collection, OCR, original-image drag, and HTML page saving |
 | [`linggan-x-teaser-en-1080p.mp4`](assets/social/linggan-x-teaser-en-1080p.mp4) | 28-second English X post and README demo |
 | [`linggan-x-teaser-cn-1080p.mp4`](assets/social/linggan-x-teaser-cn-1080p.mp4) | 28-second Chinese X post |
 | [`linggan-github-social-preview.png`](assets/social/linggan-github-social-preview.png) | 1280 x 640 GitHub social preview |
@@ -20,6 +20,11 @@ HD MP4, rather than embedding a large GIF:
 ```bash
 ./Scripts/render-video-ui-states.sh
 swift Scripts/make-x-real-style-demo.swift en actual
+swift Scripts/upscale-video.swift \
+  docs/assets/social/linggan-core-workflow.mp4 \
+  /tmp/linggan-core-workflow-2k.mp4
+mv /tmp/linggan-core-workflow-2k.mp4 \
+  docs/assets/social/linggan-core-workflow.mp4
 ```
 
 ## One-Sentence Pitch
@@ -50,6 +55,11 @@ cover linked to the complete MP4:
 ```bash
 ./Scripts/render-video-ui-states.sh
 swift Scripts/make-x-real-style-demo.swift en actual
+swift Scripts/upscale-video.swift \
+  docs/assets/social/linggan-core-workflow.mp4 \
+  /tmp/linggan-core-workflow-2k.mp4
+mv /tmp/linggan-core-workflow-2k.mp4 \
+  docs/assets/social/linggan-core-workflow.mp4
 ```
 
 [`linggan-core-workflow-cover.png`](assets/social/linggan-core-workflow-cover.png)

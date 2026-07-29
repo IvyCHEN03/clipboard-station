@@ -6,11 +6,11 @@ import CoreVideo
 import Foundation
 
 private let designSize = CGSize(width: 1280, height: 720)
-private let canvasSize = CGSize(width: 1920, height: 1080)
 private let fps: Int32 = 30
 private let arguments = Set(CommandLine.arguments.dropFirst())
 private let isTeaser = arguments.contains("teaser")
 private let usesActualUI = arguments.contains("actual")
+private let canvasSize = CGSize(width: 1920, height: 1080)
 private let duration: Double = usesActualUI && !isTeaser ? 38 : (isTeaser ? 28 : 32)
 private let frameCount = Int(duration * Double(fps))
 private let repo = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -158,7 +158,7 @@ private func windowShadow(_ rect: CGRect, radius: CGFloat) {
 }
 
 private let appRect = usesActualUI
-    ? CGRect(x: 44, y: 48, width: 501, height: 640)
+    ? CGRect(x: 72, y: 48, width: 454, height: 640)
     : CGRect(x: 72, y: 48, width: 454, height: 640)
 
 private let actualUIStateNames = [
@@ -349,21 +349,21 @@ private func stationIndex(at time: Double) -> Int {
 
 private func localToCanvas(_ p: CGPoint) -> CGPoint {
     if usesActualUI {
-        return CGPoint(x: appRect.minX + p.x / 720 * appRect.width, y: appRect.minY + p.y / 920 * appRect.height)
+        return CGPoint(x: appRect.minX + p.x / 650 * appRect.width, y: appRect.minY + p.y / 920 * appRect.height)
     }
     return CGPoint(x: appRect.minX + p.x / 420 * appRect.width, y: appRect.minY + p.y / 592 * appRect.height)
 }
 
 private func stationCursor(_ t: Double) -> (CGPoint, Bool) {
-    let ai = localToCanvas(usesActualUI ? CGPoint(x: 350, y: 252) : CGPoint(x: 74, y: 145))
-    let search = localToCanvas(usesActualUI ? CGPoint(x: 258, y: 355) : CGPoint(x: 105, y: 184))
-    let row1 = localToCanvas(usesActualUI ? CGPoint(x: 286, y: 560) : CGPoint(x: 155, y: 280))
-    let row2 = localToCanvas(usesActualUI ? CGPoint(x: 286, y: 700) : CGPoint(x: 155, y: 448))
-    let composerA = localToCanvas(usesActualUI ? CGPoint(x: 220, y: 836) : CGPoint(x: 86, y: 558))
-    let composerB = localToCanvas(usesActualUI ? CGPoint(x: 450, y: 836) : CGPoint(x: 220, y: 558))
-    let bridge = localToCanvas(usesActualUI ? CGPoint(x: 340, y: 836) : CGPoint(x: 142, y: 558))
-    let polish = localToCanvas(usesActualUI ? CGPoint(x: 568, y: 806) : CGPoint(x: 316, y: 414))
-    let copy = localToCanvas(usesActualUI ? CGPoint(x: 654, y: 806) : CGPoint(x: 373, y: 414))
+    let ai = localToCanvas(usesActualUI ? CGPoint(x: 316, y: 252) : CGPoint(x: 74, y: 145))
+    let search = localToCanvas(usesActualUI ? CGPoint(x: 233, y: 355) : CGPoint(x: 105, y: 184))
+    let row1 = localToCanvas(usesActualUI ? CGPoint(x: 258, y: 560) : CGPoint(x: 155, y: 280))
+    let row2 = localToCanvas(usesActualUI ? CGPoint(x: 258, y: 700) : CGPoint(x: 155, y: 448))
+    let composerA = localToCanvas(usesActualUI ? CGPoint(x: 199, y: 836) : CGPoint(x: 86, y: 558))
+    let composerB = localToCanvas(usesActualUI ? CGPoint(x: 406, y: 836) : CGPoint(x: 220, y: 558))
+    let bridge = localToCanvas(usesActualUI ? CGPoint(x: 307, y: 836) : CGPoint(x: 142, y: 558))
+    let polish = localToCanvas(usesActualUI ? CGPoint(x: 513, y: 806) : CGPoint(x: 316, y: 414))
+    let copy = localToCanvas(usesActualUI ? CGPoint(x: 590, y: 806) : CGPoint(x: 373, y: 414))
     if t < 2.25 { return (CGPoint(x: 635, y: 128), false) }
     if t < 2.85 { return (interpolate(CGPoint(x: 635, y: 128), ai, (t - 2.25) / 0.6), false) }
     if t < 3.1 { return (ai, true) }
@@ -423,15 +423,15 @@ private func drawStationScene(_ t: Double) {
     }
 
     if t >= 7.5 && t < 9.35 {
-        let start = localToCanvas(usesActualUI ? CGPoint(x: 286, y: 560) : CGPoint(x: 155, y: 280))
-        let end = localToCanvas(usesActualUI ? CGPoint(x: 220, y: 836) : CGPoint(x: 86, y: 558))
+        let start = localToCanvas(usesActualUI ? CGPoint(x: 258, y: 560) : CGPoint(x: 155, y: 280))
+        let end = localToCanvas(usesActualUI ? CGPoint(x: 199, y: 836) : CGPoint(x: 86, y: 558))
         let p = interpolate(start, end, (t - 7.5) / 1.75)
         rounded(CGRect(x: p.x - 31, y: p.y - 17, width: 62, height: 34), radius: 8, color: coral, alpha: 0.92)
         text("1", rect: CGRect(x: p.x - 31, y: p.y - 9, width: 62, height: 20), size: 14, weight: .bold, color: .white, alignment: .center)
     }
     if t >= 10.15 && t < 11.6 {
-        let start = localToCanvas(usesActualUI ? CGPoint(x: 286, y: 700) : CGPoint(x: 155, y: 448))
-        let end = localToCanvas(usesActualUI ? CGPoint(x: 450, y: 836) : CGPoint(x: 220, y: 558))
+        let start = localToCanvas(usesActualUI ? CGPoint(x: 258, y: 700) : CGPoint(x: 155, y: 448))
+        let end = localToCanvas(usesActualUI ? CGPoint(x: 406, y: 836) : CGPoint(x: 220, y: 558))
         let p = interpolate(start, end, (t - 10.15) / 1.35)
         rounded(CGRect(x: p.x - 31, y: p.y - 17, width: 62, height: 34), radius: 8, color: NSColor.systemOrange, alpha: 0.92)
         text("2", rect: CGRect(x: p.x - 31, y: p.y - 9, width: 62, height: 20), size: 14, weight: .bold, color: .white, alignment: .center)
@@ -472,7 +472,7 @@ private func browserPage() {
     rounded(CGRect(x: 164, y: 34, width: 760, height: 38), radius: 19, color: NSColor(calibratedWhite: 0.95, alpha: 1))
     text("linggan.app/web-collector", rect: CGRect(x: 192, y: 44, width: 700, height: 22), size: 14, color: muted)
     text(localized("遇到多图，\n不想把下载键敲出火星子？", "Too many images to save\none by one?"), rect: CGRect(x: 70, y: 114, width: 690, height: 78), size: 31, weight: .bold, lines: 2)
-    text(localized("⌘ 点灵感球，整篇打包带走。", "⌘-click the bubble. Take the whole post with you."), rect: CGRect(x: 72, y: 198, width: 620, height: 28), size: 16, weight: .medium, color: muted)
+    text(localized("按住 ⌘，再点击灵感球，整篇打包带走。", "Hold Cmd, then click the Linggan bubble to collect this post."), rect: CGRect(x: 72, y: 198, width: 650, height: 28), size: 16, weight: .medium, color: muted)
     photo(CGRect(x: 70, y: 228, width: 310, height: 170), variant: 0)
     photo(CGRect(x: 400, y: 228, width: 310, height: 170), variant: 1)
     photo(CGRect(x: 70, y: 418, width: 310, height: 170), variant: 2)
@@ -563,7 +563,7 @@ private func collectorPanel(mode: Int, selected: Set<Int>, toast: Int) {
 }
 
 private func collectorCursor(_ t: Double) -> (CGPoint, Bool) {
-    let collect = CGPoint(x: panel.maxX - 95, y: panel.minY + 32)
+    let bubbleTrigger = CGPoint(x: 1222, y: 360)
     let row = CGPoint(x: panel.minX + 180, y: panel.minY + 112)
     let item = CGPoint(x: panel.minX + 287, y: panel.minY + 280)
     let ocr = CGPoint(x: panel.minX + 111, y: panel.minY + 185)
@@ -572,9 +572,9 @@ private func collectorCursor(_ t: Double) -> (CGPoint, Bool) {
     let save = CGPoint(x: panel.minX + 220, y: panel.minY + 185)
     let archive = CGPoint(x: panel.maxX - 178, y: panel.minY + 32)
     if t < 18.5 { return (CGPoint(x: 760, y: 180), false) }
-    if t < 19.1 { return (interpolate(CGPoint(x: 760, y: 180), collect, (t - 18.5) / 0.6), false) }
-    if t < 19.35 { return (collect, true) }
-    if t < 20.15 { return (interpolate(collect, row, (t - 19.35) / 0.8), false) }
+    if t < 19.1 { return (interpolate(CGPoint(x: 760, y: 180), bubbleTrigger, (t - 18.5) / 0.6), false) }
+    if t < 19.4 { return (bubbleTrigger, true) }
+    if t < 20.15 { return (interpolate(bubbleTrigger, row, (t - 19.4) / 0.75), false) }
     if t < 20.55 { return (row, true) }
     if t < 21.6 { return (interpolate(row, item, (t - 20.55) / 1.05), false) }
     if t < 21.9 { return (item, true) }
@@ -624,7 +624,7 @@ private func drawCollectorScene(_ t: Double) {
     bubble(center: CGPoint(x: 1222, y: 360), radius: 31)
     if t < 19.4 {
         rounded(CGRect(x: 1000, y: 645, width: 204, height: 38), radius: 19, color: ink, alpha: 0.9)
-        text(localized("⌘ + 点击悬浮球收图", "⌘ + click the bubble to collect"), rect: CGRect(x: 988, y: 655, width: 216, height: 20), size: 12, weight: .bold, color: .white, alignment: .center)
+        text(localized("按住 ⌘ + 点击灵感球", "HOLD ⌘ + CLICK THE BUBBLE"), rect: CGRect(x: 982, y: 655, width: 228, height: 20), size: 11.5, weight: .bold, color: .white, alignment: .center)
     }
     let (p, down) = collectorCursor(t)
     cursor(at: p, down: down)
