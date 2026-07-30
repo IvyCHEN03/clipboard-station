@@ -40,7 +40,8 @@ This lets you try the workflow without using private clipboard content.
 
 Copy text from any app with `Cmd+C`.
 
-If clipboard monitoring is enabled, the snippet should appear automatically. If not, click the `+` button in the composer to import the current clipboard.
+If clipboard monitoring is enabled, the snippet should appear automatically.
+From an empty station, you can also use `导入当前剪贴板`.
 
 ## 5. Compose A Final Prompt
 

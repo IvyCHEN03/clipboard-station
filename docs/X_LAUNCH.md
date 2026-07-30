@@ -75,7 +75,9 @@ https://github.com/IvyCHEN03/clipboard-station
 Use short, concrete replies instead of feature lists:
 
 ```text
-The core workflow is local. Clipboard data is encrypted on disk. AI receives composer text only when you click Polish or enable optional tagging with your own provider settings.
+The core workflow is local. Clipboard data is encrypted on disk. AI receives
+composer context only when you explicitly run an AI action or enable optional
+tagging with your own provider settings.
 ```
 
 ```text

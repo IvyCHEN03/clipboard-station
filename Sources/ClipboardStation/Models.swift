@@ -55,6 +55,47 @@ enum SnippetKind: String, Codable {
     }
 }
 
+enum AIActionType: String, Codable, CaseIterable, Identifiable {
+    case faithfulMerge
+    case summarize
+    case compare
+    case generatePrompt
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .faithfulMerge:
+            return "忠实合并"
+        case .summarize:
+            return "总结提炼"
+        case .compare:
+            return "对比差异"
+        case .generatePrompt:
+            return "生成提示词"
+        }
+    }
+}
+
+enum DraftOutputFormat: String, CaseIterable, Identifiable {
+    case cleanBody
+    case withSources
+    case fullContext
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .cleanBody:
+            return "复制干净正文"
+        case .withSources:
+            return "复制带片段来源"
+        case .fullContext:
+            return "复制完整上下文"
+        }
+    }
+}
+
 struct Snippet: Identifiable, Codable, Equatable {
     var id: UUID
     var text: String
@@ -68,6 +109,7 @@ struct Snippet: Identifiable, Codable, Equatable {
     var attachmentFileNames: [String]
     var representation: SnippetRepresentation
     var tags: [String]
+    var customTags: [String]
     var isFavorite: Bool
     var isEnriching: Bool
     var enrichmentFailed: Bool
@@ -90,6 +132,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         case attachmentFileNames
         case representation
         case tags
+        case customTags
         case isFavorite
         case isEnriching
         case enrichmentFailed
@@ -109,6 +152,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         attachmentFileNames: [String] = [],
         representation: SnippetRepresentation = .automatic,
         tags: [String] = [],
+        customTags: [String] = [],
         isFavorite: Bool = false,
         isEnriching: Bool = false,
         enrichmentFailed: Bool = false,
@@ -126,6 +170,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         self.attachmentFileNames = attachmentFileNames
         self.representation = representation
         self.tags = tags
+        self.customTags = customTags
         self.isFavorite = isFavorite
         self.isEnriching = isEnriching
         self.enrichmentFailed = enrichmentFailed
@@ -146,6 +191,7 @@ struct Snippet: Identifiable, Codable, Equatable {
         attachmentFileNames = try container.decodeIfPresent([String].self, forKey: .attachmentFileNames) ?? []
         representation = try container.decodeIfPresent(SnippetRepresentation.self, forKey: .representation) ?? .automatic
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        customTags = try container.decodeIfPresent([String].self, forKey: .customTags) ?? []
         isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
         isEnriching = false
         enrichmentFailed = try container.decodeIfPresent(Bool.self, forKey: .enrichmentFailed) ?? false
@@ -161,10 +207,14 @@ struct Snippet: Identifiable, Codable, Equatable {
             || text.localizedCaseInsensitiveContains(value)
             || source.label.localizedCaseInsensitiveContains(value)
             || kind.label.localizedCaseInsensitiveContains(value)
-            || tags.contains { tag in
+            || allTags.contains { tag in
                 tag.localizedCaseInsensitiveContains(value)
                     || value.localizedCaseInsensitiveContains(tag)
             }
+    }
+
+    var allTags: [String] {
+        TagNormalization.mergedStable(tags, customTags)
     }
 
     var effectiveRepresentation: SnippetRepresentation {
@@ -244,6 +294,7 @@ struct StationSettings: Codable, Equatable {
     var aiEnrichment: Bool = false
     var aiBaseURL: String = "https://api.openai.com/v1/chat/completions"
     var aiModel: String = "gpt-4o-mini"
+    var aiActionType: AIActionType = .faithfulMerge
     var hotkeyKeyCode: UInt32 = UInt32(kVK_ANSI_C)
     var hotkeyModifiers: UInt32 = UInt32(cmdKey | shiftKey)
 
@@ -258,6 +309,7 @@ struct StationSettings: Codable, Equatable {
         case aiEnrichment
         case aiBaseURL
         case aiModel
+        case aiActionType
         case hotkeyKeyCode
         case hotkeyModifiers
     }
@@ -274,6 +326,7 @@ struct StationSettings: Codable, Equatable {
         aiEnrichment = try container.decodeIfPresent(Bool.self, forKey: .aiEnrichment) ?? false
         aiBaseURL = try container.decodeIfPresent(String.self, forKey: .aiBaseURL) ?? "https://api.openai.com/v1/chat/completions"
         aiModel = try container.decodeIfPresent(String.self, forKey: .aiModel) ?? "gpt-4o-mini"
+        aiActionType = try container.decodeIfPresent(AIActionType.self, forKey: .aiActionType) ?? .faithfulMerge
         hotkeyKeyCode = try container.decodeIfPresent(UInt32.self, forKey: .hotkeyKeyCode) ?? UInt32(kVK_ANSI_C)
         hotkeyModifiers = try container.decodeIfPresent(UInt32.self, forKey: .hotkeyModifiers) ?? UInt32(cmdKey | shiftKey)
     }
@@ -290,6 +343,16 @@ struct KeywordStat: Identifiable, Equatable {
 
     var id: String {
         tag
+    }
+}
+
+struct DraftAdditionResult: Equatable {
+    let addedCount: Int
+    let duplicateCount: Int
+    let unavailableCount: Int
+
+    var attemptedCount: Int {
+        addedCount + duplicateCount + unavailableCount
     }
 }
 

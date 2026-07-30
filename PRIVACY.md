@@ -34,7 +34,9 @@ Content may leave the device only when:
 
 - The user provides an AI API base URL, model, and API key.
 - The user runs AI title/tag generation, which sends only snippets that need tags.
-- The user clicks `Polish`, which sends only the current composer text.
+- The user explicitly runs an AI composer action. The request contains the
+  current instruction plus the selected blocks' titles, sources, tags, and
+  exportable text, with clear source boundaries.
 
 API keys are stored in macOS Keychain and are not committed to the repository.
 
@@ -69,7 +71,7 @@ The floating bubble and menu bar app are local UI surfaces. They do not create n
 
 ## Recommended User Practices
 
-- Do not run AI tagging or `Polish` on sensitive content.
+- Do not run AI tagging or composer actions on sensitive content.
 - Use a provider-specific API key with limited permissions.
 - Remove old snippets from the station when they are no longer useful.
 - Use Settings > `清除本地片段和附件` to remove saved snippets, composer text, and local attachments from this Mac.

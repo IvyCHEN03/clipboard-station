@@ -2,7 +2,7 @@
 
 ## Does the app upload my clipboard?
 
-Linggan Floating Ball is local-first. Clipboard content is stored locally and encrypted on disk. Text reaches your configured provider only when you run AI title/tag generation or click `Polish` for the current composer.
+Linggan Floating Ball is local-first. Clipboard content is stored locally and encrypted on disk. Text reaches your configured provider only when you run AI title/tag generation or explicitly start a composer action.
 
 ## What should I do first?
 
@@ -12,9 +12,12 @@ Follow [GETTING_STARTED.md](GETTING_STARTED.md). It walks through install, the f
 
 Only snippets that need AI-generated titles or tags are sent, and only after AI tagging is enabled with a Base URL, model, and API key. Existing tags are preserved and are not regenerated unless the app is asked to process missing tags.
 
-## What does Polish send?
+## What does an AI composer action send?
 
-Only the text currently assembled in the composer is sent to the configured OpenAI-compatible endpoint when you click `Polish`. The generated paragraph stays editable in the composer, and the original snippets are not replaced.
+The configured OpenAI-compatible endpoint receives the current instruction and
+the selected blocks' titles, source types, merged tags, and exportable text.
+Every block has an explicit numbered boundary. The generated result stays
+editable, and the original snippets are not replaced.
 
 ## Why is the floating bubble the primary entry point?
 

@@ -15,11 +15,11 @@ Linggan Floating Ball is a local-first macOS idea inbox for people working acros
 
 [Watch the complete workflow](docs/assets/social/linggan-core-workflow.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
 
-[![Linggan Floating Ball: collect, find, compose, polish, recover memories, and capture images](docs/assets/social/linggan-core-workflow-cover.png)](docs/assets/social/linggan-core-workflow.mp4)
+[![Linggan Floating Ball: collect, find, compose, organize, recover memories, and capture images](docs/assets/social/linggan-core-workflow-cover.png)](docs/assets/social/linggan-core-workflow.mp4)
 
 Copy fragments as they appear, protect the ones that matter with a star, travel back by date, and turn scattered blocks into one usable paragraph. When a post hides twenty images behind twenty save actions, `Cmd` + click the bubble to collect the post as one selectable stack.
 
-Everything stays local by default. Optional AI features run only after you configure a provider; composer text is sent only when you click `Polish`. If Linggan catches a spark for you, a GitHub star helps shape what comes next.
+Everything stays local by default. Optional AI features run only after you configure a provider and explicitly start an action. If Linggan catches a spark for you, a GitHub star helps shape what comes next.
 
 ![Latest Linggan interface with favorites, date filters, calendar actions, tags, and block composer](docs/assets/linggan-latest-ui.png)
 
@@ -31,7 +31,7 @@ Everything stays local by default. Optional AI features run only after you confi
 | “I will organize this later” becomes a pile you never revisit. | Today / 3 days / Fish 7-day memory make time visible; important blocks can be favorited and kept. |
 | You remember *when* you saw something, but not its exact words. | Filter by a custom date range, then combine it with search and tags. |
 | A date inside copied text remains passive text. | Turn detected dates into a Calendar event or Reminder without retyping them. |
-| Useful fragments never become a finished prompt or paragraph. | Drag blocks into the composer, write between them, and use optional AI `Polish` for continuity. |
+| Useful fragments never become a finished prompt or paragraph. | Drag one or many blocks into the composer, add an instruction, then merge, summarize, compare, or generate a prompt with optional AI. |
 | An image-heavy post asks you to save every picture manually. | Collect the post into one row, expand it, choose the keepers, run OCR, or drag images out. |
 
 ## 10-Second Pitch
@@ -42,7 +42,7 @@ Everything stays local by default. Optional AI features run only after you confi
 | --- | --- |
 | Keep repeated text, screenshots, table cells, and quick notes visible, searchable, favoriteable, and reorderable. | Capture the current multi-image post, select the keepers, OCR them, or drag out the original images. |
 
-Everything stays local by default. Optional AI tagging and `Polish` run only after you configure a provider.
+Everything stays local by default. Optional AI tagging and composer actions run only after you configure a provider and explicitly start them.
 
 ## Demo+: Capture A Whole Post
 
@@ -73,7 +73,7 @@ Skip it if you mainly need cross-device clipboard sync, long-term note taking, o
 3. Star anything that must survive the seven-day memory fade.
 4. Filter by search, multiple tags, recent time, favorites, or a custom date range.
 5. Drag snippets into the bottom composer and type text between the blocks.
-6. Click `Polish` to turn the blocks into a coherent paragraph, then copy it into any input box.
+6. Use the wand to faithfully merge, summarize, compare, or generate a prompt, then copy the result into any input box.
 
 ## Quick Start
 
@@ -94,7 +94,7 @@ For a guided five-minute walkthrough, read [Getting Started](docs/GETTING_STARTE
 The app is usable today, but still pre-1.0:
 
 - Local-first by default; no telemetry and no cloud sync.
-- AI tagging and `Polish` are optional and only run after you add your own OpenAI-compatible API settings.
+- AI tagging and composer actions are optional and only run after you add your own OpenAI-compatible API settings.
 - Local builds are currently unsigned and not notarized, so macOS may require manual approval.
 - The floating bubble is the recommended entry point because global shortcuts can conflict with other apps.
 
@@ -124,7 +124,7 @@ The privacy-safe product previews show both core loops without exposing private 
 
 [![Watch the Linggan Floating Ball core workflow](docs/assets/social/linggan-core-workflow-cover.png)](docs/assets/social/linggan-core-workflow.mp4)
 
-Watch the current SwiftUI App filter by favorites, date, tags, and search; drag snippets into the block composer; add a bridge sentence; and click `Polish` to generate one coherent paragraph. The second half collects an image-heavy post, chooses individual images, saves OCR text, drags an original image into a document, and saves the page as HTML. All snippets and images are synthetic and contain no private clipboard content, accounts, or API keys.
+Watch the current SwiftUI App filter by favorites, date, tags, and search; drag snippets into the block composer; add a bridge sentence; and use AI to organize the result. The second half collects an image-heavy post, chooses individual images, saves OCR text, drags an original image into a document, and saves the page as HTML. All snippets and images are synthetic and contain no private clipboard content, accounts, or API keys.
 
 [Open the HD MP4](docs/assets/social/linggan-core-workflow.mp4)
 
@@ -163,13 +163,20 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Filter with an inclusive custom start and end date; combine it with search and tags.
 - Detect dates in copied text and turn them into Calendar events or Reminders.
 - Use AI-generated titles and tags with any OpenAI-compatible chat completions API.
+- Create, rename, delete, search, and multi-apply your own tags without
+  overwriting AI-generated tags.
 - Select multiple snippets and delete them in one action.
 - Select snippets inside the current filtered view and paste them in the exact visible order.
 - Use `Rewind` to reverse only the current filtered results; double-click to restore the normal order.
 - Run batch tagging and deletion only against the active filtered scope, never hidden snippets.
 - Reorder snippets with up/down buttons or a numeric position field.
 - Compose a prompt in the bottom block editor with colored snippet blocks and custom text between blocks.
-- Polish the current block composition into one coherent paragraph with your configured OpenAI-compatible model.
+- Drag a multi-selection into the composer in its current visible order, with
+  duplicate blocks skipped automatically.
+- Faithfully merge, summarize, compare, or generate a prompt from the current
+  composition with your configured OpenAI-compatible model.
+- Copy a clean result, a result with numbered sources, or the complete
+  source-bounded context package.
 - Clear the block composer in one click without deleting the original snippets.
 - Copy or paste a snippet into the current input box.
 - Export the current filtered list as readable Markdown.
@@ -179,7 +186,8 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Expand a post stack, select images individually, de-duplicate them visually, and save real PNG files.
 - Save the current web page as a searchable static HTML file.
 - Store data locally with Keychain-backed AES-GCM encryption.
-- No cloud sync; text reaches your configured AI provider only when you run tagging or click `Polish`.
+- No cloud sync; text reaches your configured AI provider only when you
+  explicitly run tagging or a composer action.
 
 ## Product Shape
 
@@ -306,7 +314,9 @@ To enable it, open Settings and fill:
 - Model name: for example `gpt-4o-mini` or a compatible model from your provider.
 - API Key: saved in macOS Keychain.
 
-Only snippets that need tags are sent. Existing tags are preserved. Failed tagging attempts are marked per snippet and can be retried.
+Only snippets that need AI tags are sent. Existing AI and custom tags are
+preserved. The model is encouraged to reuse frequent existing tags, returns at
+most three, and failed attempts can be retried.
 
 ## Privacy
 
@@ -315,7 +325,9 @@ Linggan Floating Ball is local-first:
 - Snippets are saved under `~/Library/Application Support/ClipboardStation/state.enc`.
 - The encryption key is stored in macOS Keychain.
 - Clipboard content is not uploaded by default.
-- AI providers receive snippet text only when tagging runs, and composer text only when you click `Polish`, after you configure an API key.
+- AI providers receive snippet text only when tagging runs, or the current
+  source-bounded composition when you explicitly run a composer action, after
+  you configure an API key.
 
 Read [PRIVACY.md](PRIVACY.md) for the full data flow.
 

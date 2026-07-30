@@ -10,6 +10,7 @@ struct StationView: View {
     @State private var showSettings = false
     @State private var showMemoryShore = false
     @State private var draggingSnippetID: UUID?
+    @State private var draggingSnippetIDs: [UUID] = []
     @State private var draggingDraftID: UUID?
     @State private var selectedSnippetIDs = Set<UUID>()
     @State private var selectionAnchorID: UUID?
@@ -17,6 +18,8 @@ struct StationView: View {
     @State private var showDateRange = false
     @State private var rangeStart = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
     @State private var rangeEnd = Date()
+    @State private var showBulkTagPicker = false
+    @State private var showTagManager = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,7 +37,12 @@ struct StationView: View {
             content
             if !showSettings && !showMemoryShore {
                 Divider()
-                DraftDock(store: store, draggingSnippetID: $draggingSnippetID, draggingDraftID: $draggingDraftID)
+                DraftDock(
+                    store: store,
+                    draggingSnippetID: $draggingSnippetID,
+                    draggingSnippetIDs: $draggingSnippetIDs,
+                    draggingDraftID: $draggingDraftID
+                )
             }
         }
         .frame(minWidth: 420, minHeight: 560)
@@ -192,11 +200,26 @@ struct StationView: View {
                 .padding(.horizontal, 14)
             }
 
-            if !store.frequentTags.isEmpty {
-                filterRow(title: "分类") {
-                    ForEach(store.frequentTags) { item in
-                        tagFilterButton(item)
-                    }
+            filterRow(title: "分类") {
+                ForEach(store.frequentTags) { item in
+                    tagFilterButton(item)
+                }
+                Button {
+                    showTagManager.toggle()
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .semibold))
+                        .frame(width: 20, height: 20)
+                        .background(Color.clear, in: Circle())
+                        .overlay {
+                            Circle().strokeBorder(Color.secondary.opacity(0.45))
+                        }
+                }
+                .buttonStyle(.plain)
+                .help("管理标签")
+                .accessibilityLabel("管理标签")
+                .popover(isPresented: $showTagManager, arrowEdge: .bottom) {
+                    TagManagerPopover(store: store)
                 }
             }
         }
@@ -277,7 +300,7 @@ struct StationView: View {
             store.toggleTagFilter(item.tag)
         } label: {
             HStack(spacing: 4) {
-                if store.selectedTags.contains(item.tag) {
+                if store.isTagFilterSelected(item.tag) {
                     Image(systemName: "checkmark")
                         .font(.system(size: 10, weight: .bold))
                 }
@@ -290,14 +313,14 @@ struct StationView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
-                store.selectedTags.contains(item.tag)
+                store.isTagFilterSelected(item.tag)
                     ? Color(red: 0.38, green: 0.72, blue: 1.0).opacity(0.2)
                     : Color.secondary.opacity(0.1),
                 in: Capsule()
             )
         }
         .buttonStyle(.plain)
-        .help(store.selectedTags.contains(item.tag) ? "取消筛选“\(item.tag)”" : "筛选包含“\(item.tag)”的片段")
+        .help(store.isTagFilterSelected(item.tag) ? "取消筛选“\(item.tag)”" : "筛选包含“\(item.tag)”的片段")
     }
 
     private var searchBar: some View {
@@ -333,6 +356,11 @@ struct StationView: View {
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 Spacer(minLength: 0)
+                if !visibleSelection.isEmpty {
+                    Text("已选 \(visibleSelection.count) 条")
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
                 Button {
                     if allVisibleSelected {
                         selectedSnippetIDs.subtract(visibleIDs)
@@ -373,12 +401,21 @@ struct StationView: View {
                 .help("按当前显示顺序复制并粘贴已选的 \(visibleSelection.count) 条")
 
                 Button {
-                    store.enrichAllMissingTags(in: actionScope)
+                    showBulkTagPicker.toggle()
                 } label: {
                     Label("Tag", systemImage: "tag")
                 }
                 .buttonStyle(.borderless)
-                .help("仅处理当前范围 \(actionScope.count) 条 · 全局进行中 \(store.runningTagCount) · 失败 \(store.failedTagCount)")
+                .disabled(visibleSelection.isEmpty)
+                .help("为已选 \(visibleSelection.count) 条添加自定义标签")
+                .popover(isPresented: $showBulkTagPicker, arrowEdge: .bottom) {
+                    TagPickerPopover(
+                        store: store,
+                        targetIDs: visibleSelection,
+                        singleSnippetID: nil,
+                        aiScopeIDs: actionScope
+                    )
+                }
 
                 RewindControl(
                     isRewound: isRewound,
@@ -443,8 +480,12 @@ struct StationView: View {
                             toggleSelection(snippet.id)
                         }
                             .onDrag {
+                                let ids = dragIDs(for: snippet)
                                 draggingSnippetID = snippet.id
+                                draggingSnippetIDs = ids
                                 return snippetDragProvider(for: snippet)
+                            } preview: {
+                                MultiSnippetDragPreview(count: dragIDs(for: snippet).count)
                             }
                     }
                 }
@@ -452,6 +493,15 @@ struct StationView: View {
                 .padding(.bottom, 12)
             }
         }
+    }
+
+    private func dragIDs(for snippet: Snippet) -> [UUID] {
+        guard selectedSnippetIDs.contains(snippet.id) else {
+            return [snippet.id]
+        }
+        return displayedSnippets
+            .filter { selectedSnippetIDs.contains($0.id) }
+            .map(\.id)
     }
 
     private var emptyState: some View {
@@ -684,6 +734,7 @@ private struct SnippetRow: View {
     @State private var orderText: String
     @State private var isHovering = false
     @State private var isRangeActionHovering = false
+    @State private var showTagPicker = false
 
     init(
         snippet: Snippet,
@@ -804,37 +855,57 @@ private struct SnippetRow: View {
                     .foregroundStyle(.secondary)
                 }
 
-                if snippet.isEnriching || !snippet.tags.isEmpty || snippet.enrichmentFailed {
-                    SnippetTagFlowLayout(spacing: 6) {
-                        if snippet.isEnriching {
-                            ProgressView()
-                                .controlSize(.small)
-                            Text("生成中")
-                                .foregroundStyle(.secondary)
-                        }
-                        ForEach(snippet.tags, id: \.self) { tag in
-                            Text(tag)
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 3)
-                                .background(Color.accentColor.opacity(0.12), in: Capsule())
-                                .foregroundStyle(Color.accentColor)
-                                .lineLimit(1)
-                        }
-                        if snippet.enrichmentFailed {
-                            Label("打标失败", systemImage: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
-                                .help(snippet.enrichmentError ?? "AI 生成失败")
-                            Button {
-                                store.retryEnrichment(for: snippet)
-                            } label: {
-                                Image(systemName: "arrow.clockwise")
-                            }
-                            .buttonStyle(.borderless)
-                            .help("重试这一条")
+                SnippetTagFlowLayout(spacing: 6) {
+                    if snippet.isEnriching {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("生成中")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(snippet.allTags, id: \.self) { tag in
+                        SnippetTagChip(
+                            tag: tag,
+                            isCustom: store.isCustomTag(tag, on: snippet)
+                        ) {
+                            store.toggleTagFilter(tag)
                         }
                     }
-                    .font(.system(size: 11, weight: .medium))
+                    if snippet.enrichmentFailed {
+                        Label("打标失败", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .help(snippet.enrichmentError ?? "AI 生成失败")
+                        Button {
+                            store.retryEnrichment(for: snippet)
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("重试这一条")
+                    }
+                    Button {
+                        showTagPicker.toggle()
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 9, weight: .semibold))
+                            .frame(width: 18, height: 18)
+                            .overlay {
+                                Circle().strokeBorder(Color.accentColor.opacity(0.6))
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.accentColor)
+                    .help("添加自定义标签")
+                    .accessibilityLabel("添加自定义标签")
+                    .popover(isPresented: $showTagPicker, arrowEdge: .bottom) {
+                        TagPickerPopover(
+                            store: store,
+                            targetIDs: [snippet.id],
+                            singleSnippetID: snippet.id,
+                            aiScopeIDs: [snippet.id]
+                        )
+                    }
                 }
+                .font(.system(size: 11, weight: .medium))
 
                 HStack(spacing: 8) {
                     Text(snippet.kind.label)
@@ -903,6 +974,271 @@ private struct SnippetRow: View {
         formatter.dateFormat = "MM-dd HH:mm:ss"
         return formatter
     }()
+}
+
+private struct SnippetTagChip: View {
+    let tag: String
+    let isCustom: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(tag)
+                .lineLimit(1)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(
+                    isCustom ? Color(nsColor: .windowBackgroundColor) : Color.accentColor.opacity(0.12),
+                    in: Capsule()
+                )
+                .overlay {
+                    Capsule()
+                        .strokeBorder(isCustom ? Color.accentColor.opacity(0.65) : Color.clear)
+                }
+                .foregroundStyle(Color.accentColor)
+        }
+        .buttonStyle(.plain)
+        .help("\(isCustom ? "自定义标签" : "AI 标签")：点击筛选“\(tag)”")
+        .accessibilityLabel("筛选标签 \(tag)")
+    }
+}
+
+private struct TagPickerPopover: View {
+    @ObservedObject var store: SnippetStore
+    let targetIDs: Set<UUID>
+    let singleSnippetID: UUID?
+    let aiScopeIDs: Set<UUID>
+    @State private var query = ""
+
+    private var matchingTags: [KeywordStat] {
+        let value = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else {
+            return store.customTagStats
+        }
+        return store.customTagStats.filter {
+            $0.tag.localizedCaseInsensitiveContains(value)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "tag")
+                    .foregroundStyle(.secondary)
+                Text(targetIDs.count == 1 ? "添加标签" : "为 \(targetIDs.count) 条添加标签")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+
+            TextField("搜索或输入新标签后回车", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 11))
+                .onSubmit(createTag)
+
+            if matchingTags.isEmpty {
+                Text(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    ? "还没有自定义标签"
+                    : "回车创建并添加“\(query.trimmingCharacters(in: .whitespacesAndNewlines))”")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        ForEach(matchingTags) { item in
+                            Button {
+                                toggle(item.tag)
+                            } label: {
+                                HStack(spacing: 7) {
+                                    Image(systemName: isApplied(item.tag) ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(isApplied(item.tag) ? Color.accentColor : Color.secondary)
+                                    Text(item.tag)
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Text("\(item.count)")
+                                        .font(.system(size: 9, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .frame(maxHeight: 150)
+            }
+
+            Divider()
+            HStack {
+                Text("标签最多 10 个字符")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    store.enrichAllMissingTags(in: aiScopeIDs)
+                } label: {
+                    Image(systemName: "wand.and.stars")
+                }
+                .buttonStyle(.borderless)
+                .help("为当前范围缺少 AI 标签的内容生成标签")
+                .accessibilityLabel("生成 AI 标签")
+            }
+        }
+        .padding(12)
+        .frame(width: 270)
+    }
+
+    private func createTag() {
+        guard store.addCustomTag(query, to: targetIDs) else {
+            return
+        }
+        query = ""
+    }
+
+    private func toggle(_ tag: String) {
+        if let singleSnippetID,
+           let snippet = store.snippets.first(where: { $0.id == singleSnippetID }),
+           store.isCustomTag(tag, on: snippet) {
+            store.removeCustomTag(tag, from: singleSnippetID)
+        } else {
+            store.addCustomTag(tag, to: targetIDs)
+        }
+    }
+
+    private func isApplied(_ tag: String) -> Bool {
+        let key = TagNormalization.canonicalKey(tag)
+        let targets = store.snippets.filter { targetIDs.contains($0.id) }
+        return !targets.isEmpty && targets.allSatisfy { snippet in
+            snippet.allTags.contains { TagNormalization.canonicalKey($0) == key }
+        }
+    }
+}
+
+private struct TagManagerPopover: View {
+    @ObservedObject var store: SnippetStore
+    @State private var query = ""
+    @State private var editingTag: String?
+    @State private var editedValue = ""
+
+    private var tags: [KeywordStat] {
+        let value = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else {
+            return store.allTagStats
+        }
+        return store.allTagStats.filter {
+            $0.tag.localizedCaseInsensitiveContains(value)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("标签管理")
+                .font(.system(size: 12, weight: .semibold))
+            TextField("搜索标签", text: $query)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 11))
+
+            ScrollView {
+                LazyVStack(spacing: 5) {
+                    ForEach(tags) { item in
+                        tagRow(item)
+                    }
+                }
+            }
+            .frame(maxHeight: 230)
+
+            Text("填充为 AI 标签，描边为自定义标签")
+                .font(.system(size: 9))
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .frame(width: 290)
+    }
+
+    @ViewBuilder
+    private func tagRow(_ item: KeywordStat) -> some View {
+        let isCustom = store.customTagStats.contains {
+            TagNormalization.canonicalKey($0.tag) == TagNormalization.canonicalKey(item.tag)
+        }
+        HStack(spacing: 6) {
+            if editingTag == item.tag {
+                TextField("标签", text: $editedValue)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit {
+                        if store.renameCustomTag(item.tag, to: editedValue) {
+                            editingTag = nil
+                        }
+                    }
+            } else {
+                Button {
+                    store.toggleTagFilter(item.tag)
+                } label: {
+                    Text(item.tag)
+                        .lineLimit(1)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(
+                            isCustom ? Color(nsColor: .windowBackgroundColor) : Color.accentColor.opacity(0.12),
+                            in: Capsule()
+                        )
+                        .overlay {
+                            Capsule().strokeBorder(isCustom ? Color.accentColor.opacity(0.65) : Color.clear)
+                        }
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+            Text("\(item.count)")
+                .font(.system(size: 9))
+                .foregroundStyle(.secondary)
+            if isCustom {
+                IconButton(systemName: "pencil", help: "重命名自定义标签") {
+                    editingTag = item.tag
+                    editedValue = item.tag
+                }
+                IconButton(systemName: "trash", help: "删除自定义标签", role: .destructive) {
+                    store.deleteCustomTag(item.tag)
+                }
+            }
+        }
+        .font(.system(size: 11))
+        .padding(.vertical, 2)
+    }
+}
+
+private struct MultiSnippetDragPreview: View {
+    let count: Int
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            ForEach(0..<min(max(count, 1), 3), id: \.self) { index in
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color(nsColor: .windowBackgroundColor))
+                    .frame(width: 86, height: 46)
+                    .overlay(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Capsule().fill(Color.secondary.opacity(0.3)).frame(width: 50, height: 4)
+                            Capsule().fill(Color.secondary.opacity(0.18)).frame(width: 64, height: 4)
+                        }
+                        .padding(10)
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(Color.secondary.opacity(0.2))
+                    }
+                    .shadow(color: .black.opacity(0.12), radius: 3, y: 2)
+                    .offset(x: CGFloat(index * 5), y: CGFloat(-index * 4))
+            }
+            if count > 1 {
+                Text("\(count)")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(minWidth: 20, minHeight: 20)
+                    .background(Color.accentColor, in: Circle())
+                    .offset(x: 8, y: 4)
+            }
+        }
+        .frame(width: 104, height: 60)
+    }
 }
 
 private struct SelectToHereButton: View {
@@ -1605,104 +1941,63 @@ private struct StatusLine: View {
 private struct DraftDock: View {
     @ObservedObject var store: SnippetStore
     @Binding var draggingSnippetID: UUID?
+    @Binding var draggingSnippetIDs: [UUID]
     @Binding var draggingDraftID: UUID?
     @State private var activeDraftSlot: String?
-    @State private var showQuickNote = false
+    @State private var showInstruction = false
+    @State private var isDropTargeted = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: "bubble.left.and.text.bubble.right")
                     .foregroundStyle(.secondary)
-                Text("组合框")
+                Text("组合框 · \(store.draftSnippets.count) 条")
                     .font(.system(size: 12, weight: .semibold))
-                Button {
-                    showQuickNote.toggle()
-                } label: {
-                    Label("随笔", systemImage: "square.and.pencil")
-                }
-                .buttonStyle(.borderless)
-                .controlSize(.small)
                 Spacer()
-                Button {
-                    activeDraftSlot = nil
-                    store.polishDraft()
-                } label: {
-                    if store.isPolishingDraft {
-                        ProgressView()
-                            .controlSize(.small)
-                            .frame(width: 72)
-                    } else {
-                        Label("Polish", systemImage: "wand.and.stars")
-                            .frame(minWidth: 72)
-                    }
+                IconButton(
+                    systemName: showInstruction ? "square.and.pencil.circle.fill" : "square.and.pencil",
+                    help: showInstruction ? "收起补充要求" : "补充 AI 整理要求"
+                ) {
+                    showInstruction.toggle()
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(store.isPolishingDraft)
-                .help("使用 DeepSeek 将积木整理成连贯正文")
-                IconButton(systemName: "doc.on.doc", help: "复制组合内容") {
-                    store.copyDraftText()
-                }
+                AIActionSplitControl(store: store)
+                DraftCopySplitControl(store: store)
                 IconButton(systemName: "xmark.circle", help: "一键取消组合框全部内容") {
                     activeDraftSlot = nil
+                    showInstruction = false
                     store.clearDraft()
                 }
-                .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
+                .disabled(
+                    store.draftSnippets.isEmpty
+                        && store.draftTextSlots.values.allSatisfy(\.isEmpty)
+                        && store.draftExtraText.isEmpty
+                )
             }
 
-            if showQuickNote {
-                HStack(alignment: .bottom, spacing: 8) {
-                    TextEditor(text: $store.quickNoteText)
-                        .font(.system(size: 12))
-                        .frame(minHeight: 54, maxHeight: 86)
-                        .padding(5)
-                        .scrollContentBackground(.hidden)
-                        .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 7)
-                                .strokeBorder(Color.secondary.opacity(0.2))
+            if showInstruction {
+                HStack(spacing: 6) {
+                    Image(systemName: "square.and.pencil")
+                        .foregroundStyle(.secondary)
+                    TextField(
+                        "例如：重点保留原文数字，并比较不同来源的差异",
+                        text: $store.draftExtraText
+                    )
+                    .font(.system(size: 11))
+                    .textFieldStyle(.plain)
+                    if !store.draftExtraText.isEmpty {
+                        IconButton(systemName: "xmark.circle.fill", help: "清空补充要求") {
+                            store.draftExtraText = ""
                         }
-                    VStack(spacing: 6) {
-                        Button {
-                            store.polishQuickNote()
-                        } label: {
-                            if store.isPolishingQuickNote {
-                                ProgressView()
-                                    .controlSize(.small)
-                                    .frame(minWidth: 72)
-                            } else {
-                                Label("Polish", systemImage: "wand.and.stars")
-                                    .frame(minWidth: 72)
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .disabled(
-                            store.isPolishingQuickNote
-                                || store.quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        )
-                        .help("使用同一个 DeepSeek 配置润色随笔")
-
-                        Button {
-                            store.saveQuickNote()
-                        } label: {
-                            Label("形成一条", systemImage: "plus.circle.fill")
-                                .frame(minWidth: 72)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                        .disabled(
-                            store.isPolishingQuickNote
-                                || store.quickNoteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        )
                     }
                 }
-                IconButton(systemName: "xmark.circle", help: "一键取消组合框全部内容") {
-                    activeDraftSlot = nil
-                    store.clearDraft()
+                .padding(.horizontal, 8)
+                .frame(height: 30)
+                .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 7)
+                        .strokeBorder(Color.secondary.opacity(0.2))
                 }
-                .disabled(store.draftSnippets.isEmpty && store.draftTextSlots.values.allSatisfy(\.isEmpty))
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -1729,14 +2024,19 @@ private struct DraftDock: View {
                             .onDrag {
                                 draggingDraftID = snippet.id
                                 draggingSnippetID = snippet.id
+                                draggingSnippetIDs = [snippet.id]
                                 return snippetDragProvider(for: snippet)
+                            } preview: {
+                                MultiSnippetDragPreview(count: 1)
                             }
                             .onDrop(
                                 of: [.text],
                                 delegate: DraftDropDelegate(
                                     targetID: snippet.id,
                                     draggingSnippetID: $draggingSnippetID,
+                                    draggingSnippetIDs: $draggingSnippetIDs,
                                     draggingDraftID: $draggingDraftID,
+                                    isDropTargeted: $isDropTargeted,
                                     store: store
                                 )
                             )
@@ -1751,17 +2051,27 @@ private struct DraftDock: View {
                 .frame(minHeight: 34)
                 .padding(8)
             }
-            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+            .background(
+                isDropTargeted
+                    ? Color.accentColor.opacity(0.06)
+                    : Color(nsColor: .textBackgroundColor),
+                in: RoundedRectangle(cornerRadius: 8)
+            )
             .overlay {
                 RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color.secondary.opacity(0.18))
+                    .strokeBorder(
+                        isDropTargeted ? Color.accentColor.opacity(0.65) : Color.secondary.opacity(0.18),
+                        lineWidth: isDropTargeted ? 1.5 : 1
+                    )
             }
             .onDrop(
                 of: [.text],
                 delegate: DraftDropDelegate(
                     targetID: nil,
                     draggingSnippetID: $draggingSnippetID,
+                    draggingSnippetIDs: $draggingSnippetIDs,
                     draggingDraftID: $draggingDraftID,
+                    isDropTargeted: $isDropTargeted,
                     store: store
                 )
             )
@@ -1790,6 +2100,118 @@ private struct DraftDock: View {
 
     private func slotID(before id: UUID) -> String {
         "before-\(id.uuidString)"
+    }
+}
+
+private struct AIActionSplitControl: View {
+    @ObservedObject var store: SnippetStore
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Button {
+                store.performDraftAI()
+            } label: {
+                Group {
+                    if store.isPolishingDraft {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Image(systemName: "wand.and.stars")
+                    }
+                }
+                .frame(width: 24, height: 22)
+            }
+            .buttonStyle(.plain)
+            .disabled(store.isPolishingDraft || store.draftSnippets.isEmpty)
+            .help("AI 整理：\(store.settings.aiActionType.label)")
+            .accessibilityLabel("AI 整理：\(store.settings.aiActionType.label)")
+
+            Divider()
+                .frame(height: 14)
+
+            Menu {
+                ForEach(AIActionType.allCases) { action in
+                    Button {
+                        store.setAIAction(action)
+                    } label: {
+                        if store.settings.aiActionType == action {
+                            Label(action.label, systemImage: "checkmark")
+                        } else {
+                            Text(action.label)
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .frame(width: 16, height: 22)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .disabled(store.isPolishingDraft)
+            .help("选择 AI 整理模式")
+            .accessibilityLabel("选择 AI 整理模式")
+        }
+        .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+        .overlay {
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(Color.secondary.opacity(0.16))
+        }
+    }
+}
+
+private struct DraftCopySplitControl: View {
+    @ObservedObject var store: SnippetStore
+
+    private var copyHelp: String {
+        if store.draftSnippets.isEmpty {
+            return "组合框没有可复制内容"
+        }
+        return store.hasCurrentPolishedDraft ? "复制 AI 整理结果" : "复制组合框原文"
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Button {
+                store.copyDraftOutput()
+            } label: {
+                Image(systemName: "doc.on.doc")
+                    .frame(width: 24, height: 22)
+            }
+            .buttonStyle(.plain)
+            .disabled(store.draftSnippets.isEmpty)
+            .help(copyHelp)
+            .accessibilityLabel(copyHelp)
+
+            Divider()
+                .frame(height: 14)
+
+            Menu {
+                ForEach(DraftOutputFormat.allCases) { format in
+                    Button(format.label) {
+                        store.copyDraftOutput(format)
+                    }
+                }
+                Divider()
+                Button("粘贴到前台应用") {
+                    store.pasteDraftOutput()
+                }
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+                    .frame(width: 16, height: 22)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .disabled(store.draftSnippets.isEmpty)
+            .help("选择复制或粘贴格式")
+            .accessibilityLabel("选择复制或粘贴格式")
+        }
+        .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+        .overlay {
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(Color.secondary.opacity(0.16))
+        }
     }
 }
 
@@ -1886,28 +2308,38 @@ private struct DraftInsertionSlot: View {
 private struct DraftDropDelegate: DropDelegate {
     let targetID: UUID?
     @Binding var draggingSnippetID: UUID?
+    @Binding var draggingSnippetIDs: [UUID]
     @Binding var draggingDraftID: UUID?
+    @Binding var isDropTargeted: Bool
     @ObservedObject var store: SnippetStore
 
     func dropEntered(info: DropInfo) {
+        isDropTargeted = true
         guard let id = draggingSnippetID else {
             return
         }
         if draggingDraftID != nil {
             store.moveDraftBlock(id: id, before: targetID)
-        } else {
-            store.addToDraft(id: id, before: targetID)
         }
     }
 
+    func dropExited(info: DropInfo) {
+        isDropTargeted = false
+    }
+
     func performDrop(info: DropInfo) -> Bool {
+        if draggingDraftID == nil {
+            store.addToDraft(idsInDisplayOrder: draggingSnippetIDs, before: targetID)
+        }
+        isDropTargeted = false
         draggingSnippetID = nil
+        draggingSnippetIDs = []
         draggingDraftID = nil
         return true
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
+        DropProposal(operation: draggingDraftID == nil ? .copy : .move)
     }
 }
 
@@ -1924,6 +2356,7 @@ private struct IconButton: View {
         }
         .buttonStyle(.borderless)
         .help(help)
+        .accessibilityLabel(help)
     }
 }
 
