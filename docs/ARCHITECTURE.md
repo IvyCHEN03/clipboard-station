@@ -22,6 +22,9 @@ The app intentionally allows repeated captures. Re-copying the same content can 
 ## Data Model
 
 - `Snippet`: one captured item. It can be text, screenshot, spreadsheet-like text, or file-backed content.
+- `Snippet.tags`: provider-generated tags. `Snippet.customTags`: user-managed
+  tags. `Snippet.allTags` is the stable, case-insensitive merged view used by
+  search, filters, statistics, export, and backup.
 - `SnippetSource`: where the item came from, such as clipboard listening, manual import, hotkey selection, or screenshot capture.
 - `SnippetKind`: display and export behavior for text, screenshot, spreadsheet, or file snippets.
 - `StationSettings`: user preferences, AI provider configuration, launch behavior, and persistence settings.
@@ -36,7 +39,8 @@ The app intentionally allows repeated captures. Re-copying the same content can 
 - Snippet state is stored under `~/Library/Application Support/ClipboardStation/state.enc`.
 - Attachments are stored under `~/Library/Application Support/ClipboardStation/Attachments`.
 
-No clipboard content is uploaded by default. Network requests happen only when AI tagging is enabled and configured.
+No clipboard content is uploaded by default. Network requests happen only when
+the user runs configured AI tagging or an explicit composer action.
 
 ## AI Tagging
 
@@ -44,6 +48,12 @@ No clipboard content is uploaded by default. Network requests happen only when A
 - `SnippetStore.enrichAllMissingTags()` queues snippets that have no tags and exportable text.
 - Existing tags are preserved.
 - Failures are stored on the snippet so the UI can show retry affordances.
+- Existing frequent tags are offered to the model so the vocabulary converges
+  instead of creating near-duplicates.
+- `ContextPackageFormatter.swift` builds bounded, source-delimited context for
+  faithful merge, summary, comparison, and prompt-generation actions.
+- Composer result fingerprints include source content, order, bridge text,
+  instruction, tags, and AI mode so stale output is never silently reused.
 
 ## Permissions
 
@@ -56,6 +66,9 @@ No clipboard content is uploaded by default. Network requests happen only when A
 Current tests focus on stable core behavior:
 
 - AI enrichment JSON parsing.
+- Custom-tag normalization, migration, filtering, rename, and deletion.
+- Multi-selection composition order and duplicate skipping.
+- Context formatting, output modes, and AI-result invalidation.
 - Snippet search and tag matching.
 - Time filter boundaries.
 - Legacy snippet decoding defaults.

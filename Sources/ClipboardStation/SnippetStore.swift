@@ -23,7 +23,13 @@ final class SnippetStore: ObservableObject {
     @Published var selectedDateRange: DateRangeFilter?
     @Published var favoritesOnly = false
     @Published var toast: ToastMessage?
-    @Published var draftExtraText = ""
+    @Published var draftExtraText = "" {
+        didSet {
+            if oldValue != draftExtraText {
+                invalidatePolishedDraft()
+            }
+        }
+    }
     @Published var draftTextSlots: [String: String] = [:] {
         didSet {
             if oldValue != draftTextSlots {
@@ -103,23 +109,54 @@ final class SnippetStore: ObservableObject {
     }
 
     var frequentTags: [KeywordStat] {
-        let counts = snippets
-            .flatMap(\.tags)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .reduce(into: [String: Int]()) { result, tag in
-                result[tag, default: 0] += 1
+        Array(allTagStats.prefix(12))
+    }
+
+    var allTagStats: [KeywordStat] {
+        var counts: [String: (label: String, count: Int)] = [:]
+        for snippet in snippets {
+            for tag in snippet.allTags {
+                let key = TagNormalization.canonicalKey(tag)
+                if let current = counts[key] {
+                    counts[key] = (current.label, current.count + 1)
+                } else {
+                    counts[key] = (tag, 1)
+                }
             }
+        }
         return counts
-            .map { KeywordStat(tag: $0.key, count: $0.value) }
+            .map { KeywordStat(tag: $0.value.label, count: $0.value.count) }
             .sorted {
                 if $0.count == $1.count {
                     return $0.tag.localizedCaseInsensitiveCompare($1.tag) == .orderedAscending
                 }
                 return $0.count > $1.count
             }
-            .prefix(12)
-            .map { $0 }
+    }
+
+    var customTagStats: [KeywordStat] {
+        var counts: [String: (label: String, count: Int)] = [:]
+        for snippet in snippets {
+            for tag in TagNormalization.unique(
+                snippet.customTags,
+                maximumLength: TagNormalization.customTagMaximumLength
+            ) {
+                let key = TagNormalization.canonicalKey(tag)
+                if let current = counts[key] {
+                    counts[key] = (current.label, current.count + 1)
+                } else {
+                    counts[key] = (tag, 1)
+                }
+            }
+        }
+        return counts.values
+            .map { KeywordStat(tag: $0.label, count: $0.count) }
+            .sorted {
+                if $0.count == $1.count {
+                    return $0.tag.localizedCaseInsensitiveCompare($1.tag) == .orderedAscending
+                }
+                return $0.count > $1.count
+            }
     }
 
     var pendingTagCount: Int {
@@ -183,14 +220,168 @@ final class SnippetStore: ObservableObject {
     }
 
     func toggleTagFilter(_ tag: String) {
-        if selectedTags.contains(tag) {
-            selectedTags.remove(tag)
+        if let selected = selectedTags.first(where: {
+            TagNormalization.canonicalKey($0) == TagNormalization.canonicalKey(tag)
+        }) {
+            selectedTags.remove(selected)
         } else {
             selectedTags.insert(tag)
         }
     }
 
-    init() {
+    func isTagFilterSelected(_ tag: String) -> Bool {
+        selectedTags.contains {
+            TagNormalization.canonicalKey($0) == TagNormalization.canonicalKey(tag)
+        }
+    }
+
+    @discardableResult
+    func addCustomTag(_ rawTag: String, to ids: Set<UUID>) -> Bool {
+        guard let tag = TagNormalization.normalized(
+            rawTag,
+            maximumLength: TagNormalization.customTagMaximumLength
+        ), !ids.isEmpty else {
+            showToast("标签不能为空，且最多 10 个字符")
+            return false
+        }
+        var changedCount = 0
+        for index in snippets.indices where ids.contains(snippets[index].id) {
+            let existingKeys = Set(snippets[index].allTags.map(TagNormalization.canonicalKey))
+            guard !existingKeys.contains(TagNormalization.canonicalKey(tag)) else {
+                continue
+            }
+            snippets[index].customTags.append(tag)
+            snippets[index].customTags = TagNormalization.unique(
+                snippets[index].customTags,
+                maximumLength: TagNormalization.customTagMaximumLength
+            )
+            changedCount += 1
+        }
+        guard changedCount > 0 else {
+            showToast("所选内容已拥有这个标签")
+            return false
+        }
+        persist()
+        showToast("已为 \(changedCount) 条添加标签“\(tag)”")
+        return true
+    }
+
+    func removeCustomTag(_ tag: String, from id: UUID) {
+        guard let index = snippets.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        let key = TagNormalization.canonicalKey(tag)
+        let oldCount = snippets[index].customTags.count
+        snippets[index].customTags.removeAll { TagNormalization.canonicalKey($0) == key }
+        guard snippets[index].customTags.count != oldCount else {
+            return
+        }
+        persist()
+    }
+
+    @discardableResult
+    func renameCustomTag(_ oldTag: String, to rawNewTag: String) -> Bool {
+        guard let newTag = TagNormalization.normalized(
+            rawNewTag,
+            maximumLength: TagNormalization.customTagMaximumLength
+        ) else {
+            showToast("标签不能为空，且最多 10 个字符")
+            return false
+        }
+        let oldKey = TagNormalization.canonicalKey(oldTag)
+        var changed = false
+        for index in snippets.indices {
+            guard snippets[index].customTags.contains(where: {
+                TagNormalization.canonicalKey($0) == oldKey
+            }) else {
+                continue
+            }
+            snippets[index].customTags = snippets[index].customTags.map {
+                TagNormalization.canonicalKey($0) == oldKey ? newTag : $0
+            }
+            snippets[index].customTags = TagNormalization.unique(
+                snippets[index].customTags,
+                maximumLength: TagNormalization.customTagMaximumLength
+            )
+            changed = true
+        }
+        guard changed else {
+            return false
+        }
+        replaceSelectedTag(oldTag, with: newTag)
+        persist()
+        showToast("已将“\(oldTag)”重命名为“\(newTag)”")
+        return true
+    }
+
+    func deleteCustomTag(_ tag: String) {
+        let key = TagNormalization.canonicalKey(tag)
+        var changed = false
+        for index in snippets.indices {
+            let oldCount = snippets[index].customTags.count
+            snippets[index].customTags.removeAll { TagNormalization.canonicalKey($0) == key }
+            changed = changed || snippets[index].customTags.count != oldCount
+        }
+        guard changed else {
+            return
+        }
+        selectedTags = Set(selectedTags.filter { TagNormalization.canonicalKey($0) != key })
+        persist()
+        showToast("已删除自定义标签“\(tag)”")
+    }
+
+    func isCustomTag(_ tag: String, on snippet: Snippet) -> Bool {
+        let key = TagNormalization.canonicalKey(tag)
+        return snippet.customTags.contains { TagNormalization.canonicalKey($0) == key }
+    }
+
+    func cleanupCustomTags() {
+        let changed = normalizeCustomTagsInPlace()
+        guard changed else {
+            return
+        }
+        persist()
+    }
+
+    @discardableResult
+    private func normalizeCustomTagsInPlace() -> Bool {
+        var changed = false
+        for index in snippets.indices {
+            let normalized = TagNormalization.unique(
+                snippets[index].customTags,
+                maximumLength: TagNormalization.customTagMaximumLength
+            )
+            if normalized != snippets[index].customTags {
+                snippets[index].customTags = normalized
+                changed = true
+            }
+        }
+        return changed
+    }
+
+    private func replaceSelectedTag(_ oldTag: String, with newTag: String) {
+        let key = TagNormalization.canonicalKey(oldTag)
+        guard selectedTags.contains(where: { TagNormalization.canonicalKey($0) == key }) else {
+            return
+        }
+        selectedTags = Set(selectedTags.filter { TagNormalization.canonicalKey($0) != key })
+        selectedTags.insert(newTag)
+    }
+
+    init(testingSnippets: [Snippet]? = nil) {
+        if let testingSnippets {
+            attachmentsDirectory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("ClipboardStationTests-\(UUID().uuidString)", isDirectory: true)
+                .appendingPathComponent("Attachments", isDirectory: true)
+            try? FileManager.default.createDirectory(at: attachmentsDirectory, withIntermediateDirectories: true)
+            settings.monitorClipboard = false
+            settings.autoPaste = false
+            settings.persistSnippets = false
+            settings.aiEnrichment = false
+            snippets = testingSnippets
+            didFinishInitialLoad = true
+            return
+        }
         if isVideoDemo {
             attachmentsDirectory = FileManager.default.temporaryDirectory
                 .appendingPathComponent("ClipboardStationVideoDemo", isDirectory: true)
@@ -244,6 +435,7 @@ final class SnippetStore: ObservableObject {
 
         isApplyingInitialLoad = true
         snippets = state.snippets.sorted { $0.createdAt > $1.createdAt }
+        normalizeCustomTagsInPlace()
         deletedSnippets = state.deletedSnippets.sorted { $0.deletedAt > $1.deletedAt }
         settings = state.settings
         quickNoteText = state.quickNoteText
@@ -298,7 +490,7 @@ final class SnippetStore: ObservableObject {
         guard !isPolishingQuickNote else { return }
 
         isPolishingQuickNote = true
-        showToast("DeepSeek 正在润色随笔")
+        showToast("AI 正在整理随笔")
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -315,10 +507,10 @@ final class SnippetStore: ObservableObject {
                 }
                 quickNoteText = result
                 isPolishingQuickNote = false
-                showToast("随笔 Polish 完成")
+                showToast("随笔 AI 整理完成")
             } catch {
                 isPolishingQuickNote = false
-                handleAIError(error, prefix: "随笔 Polish 失败")
+                handleAIError(error, prefix: "随笔 AI 整理失败")
             }
         }
     }
@@ -569,6 +761,9 @@ final class SnippetStore: ObservableObject {
         if snippets[index].title.isEmpty {
             snippets[index].title = Self.makeTitle(from: snippets[index].text)
         }
+        if draftSnippetIDs.contains(snippet.id) {
+            invalidatePolishedDraft()
+        }
         persist()
     }
 
@@ -669,27 +864,87 @@ final class SnippetStore: ObservableObject {
         persist()
     }
 
-    func addToDraft(id: UUID, before targetID: UUID? = nil) {
-        guard let snippet = snippets.first(where: { $0.id == id }) else {
-            return
-        }
-        if snippet.kind == .screenshot {
-            guard screenshotText(for: snippet)?.isEmpty == false else {
-                showToast("这张图片没有识别到文字，暂时不能加入组合框")
-                return
+    @discardableResult
+    func addToDraft(id: UUID, before targetID: UUID? = nil) -> DraftAdditionResult {
+        addToDraft(idsInDisplayOrder: [id], before: targetID)
+    }
+
+    @discardableResult
+    func addToDraft(
+        idsInDisplayOrder ids: [UUID],
+        before targetID: UUID? = nil,
+        showFeedback: Bool = true
+    ) -> DraftAdditionResult {
+        let orderedIDs = ids.reduce(into: [UUID]()) { result, id in
+            if !result.contains(id) {
+                result.append(id)
             }
-            if let index = snippets.firstIndex(where: { $0.id == id }),
-               snippets[index].effectiveRepresentation != .text {
-                snippets[index].representation = .text
-                persist()
-                showToast("图片已转换为 OCR 文字并加入组合框")
-            }
         }
-        draftSnippetIDs.removeAll { $0 == id }
-        if let targetID, let targetIndex = draftSnippetIDs.firstIndex(of: targetID) {
-            draftSnippetIDs.insert(id, at: targetIndex)
-        } else {
-            draftSnippetIDs.append(id)
+        var existing = Set(draftSnippetIDs)
+        var additions: [UUID] = []
+        var duplicateCount = 0
+        var unavailableCount = 0
+        var changedRepresentation = false
+
+        for id in orderedIDs {
+            guard let index = snippets.firstIndex(where: { $0.id == id }) else {
+                unavailableCount += 1
+                continue
+            }
+            guard !existing.contains(id) else {
+                duplicateCount += 1
+                continue
+            }
+            let snippet = snippets[index]
+            if snippet.kind == .screenshot {
+                guard screenshotText(for: snippet)?.isEmpty == false else {
+                    unavailableCount += 1
+                    continue
+                }
+                if snippets[index].effectiveRepresentation != .text {
+                    snippets[index].representation = .text
+                    changedRepresentation = true
+                }
+            }
+            additions.append(id)
+            existing.insert(id)
+        }
+
+        if !additions.isEmpty {
+            let insertionIndex = targetID
+                .flatMap { draftSnippetIDs.firstIndex(of: $0) }
+                ?? draftSnippetIDs.endIndex
+            draftSnippetIDs.insert(contentsOf: additions, at: insertionIndex)
+        }
+        if changedRepresentation {
+            persist()
+        }
+
+        let result = DraftAdditionResult(
+            addedCount: additions.count,
+            duplicateCount: duplicateCount,
+            unavailableCount: unavailableCount
+        )
+        if showFeedback {
+            showDraftAdditionFeedback(result)
+        }
+        return result
+    }
+
+    private func showDraftAdditionFeedback(_ result: DraftAdditionResult) {
+        if result.addedCount > 0 {
+            var message = "已加入 \(result.addedCount) 条"
+            if result.duplicateCount > 0 {
+                message += "，跳过 \(result.duplicateCount) 条重复内容"
+            }
+            if result.unavailableCount > 0 {
+                message += "，\(result.unavailableCount) 条没有可用文字"
+            }
+            showToast(message)
+        } else if result.duplicateCount > 0, result.unavailableCount == 0 {
+            showToast("所选内容已在组合框中")
+        } else if result.unavailableCount > 0 {
+            showToast("所选图片没有可用于组合的 OCR 文字")
         }
     }
 
@@ -719,58 +974,142 @@ final class SnippetStore: ObservableObject {
     }
 
     func copyDraftText() {
-        let assembled = assembledDraftText()
-        let polished = polishedDraftText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let text = !polished.isEmpty && polishedDraftSourceText == assembled ? polished : assembled
-        guard !text.isEmpty else {
-            showToast("组合框没有可复制的文字")
+        copyDraftOutput()
+    }
+
+    func copyDraftOutput(_ format: DraftOutputFormat? = nil) {
+        let text: String?
+        if format == .fullContext {
+            do {
+                text = try currentDraftContext()
+            } catch {
+                showToast(error.localizedDescription)
+                return
+            }
+        } else {
+            text = draftOutput(format: format)
+        }
+        guard let text, !text.isEmpty else {
+            showToast("组合框没有可复制内容")
             return
         }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
         markInternalPasteboardWrite()
-        showToast(polishedDraftSourceText == assembled && !polished.isEmpty ? "已复制润色内容" : "已复制组合内容")
+        if let format {
+            showToast("已\(format.label)")
+        } else {
+            showToast(hasCurrentPolishedDraft ? "已复制 AI 整理结果" : "已复制组合框原文")
+        }
+    }
+
+    func pasteDraftOutput() {
+        guard draftOutput(format: nil)?.isEmpty == false else {
+            showToast("组合框没有可复制内容")
+            return
+        }
+        let shouldPrompt = !didPromptForPasteAccessibility
+        didPromptForPasteAccessibility = true
+        guard AccessibilityService.isTrusted(prompt: shouldPrompt) else {
+            showToast("需要开启辅助功能权限才能粘贴到前台应用")
+            return
+        }
+        copyDraftOutput()
+        NSApp.keyWindow?.orderOut(nil)
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(140))
+            AccessibilityService.sendCommandV()
+            self?.showToast("已粘贴到前台应用")
+        }
+    }
+
+    func draftOutput(format: DraftOutputFormat?) -> String? {
+        let assembled = assembledDraftText()
+        guard !assembled.isEmpty else {
+            return nil
+        }
+        let validResult = hasCurrentPolishedDraft
+            ? polishedDraftText.trimmingCharacters(in: .whitespacesAndNewlines)
+            : nil
+        switch format {
+        case .none:
+            return validResult.map(ContextPackageFormatter.cleanBody) ?? assembled
+        case .cleanBody:
+            return ContextPackageFormatter.cleanBody(validResult ?? assembled)
+        case .withSources:
+            return ContextPackageFormatter.resultWithSources(
+                validResult ?? assembled,
+                snippets: draftSnippets
+            )
+        case .fullContext:
+            return try? currentDraftContext()
+        }
+    }
+
+    func setAIAction(_ action: AIActionType) {
+        guard settings.aiActionType != action else {
+            return
+        }
+        settings.aiActionType = action
+        invalidatePolishedDraft()
     }
 
     func polishDraft() {
-        let source = assembledDraftText()
-        guard !source.isEmpty else {
-            showToast("组合框没有可润色的文字")
+        performDraftAI()
+    }
+
+    func performDraftAI() {
+        guard !draftSnippets.isEmpty else {
+            showToast("组合框没有可整理的片段")
+            return
+        }
+        let context: String
+        do {
+            context = try currentDraftContext()
+        } catch {
+            showToast(error.localizedDescription)
+            return
+        }
+        guard !context.isEmpty else {
+            showToast("组合框没有可整理的文字")
             return
         }
         guard let configuration = polishConfiguration() else { return }
         guard !isPolishingDraft else { return }
 
+        let action = settings.aiActionType
+        let fingerprint = draftFingerprint(context: context, action: action)
         isPolishingDraft = true
-        showToast("DeepSeek 正在润色组合内容")
+        showToast("AI 正在整理")
         Task { [weak self] in
             guard let self else { return }
             do {
-                let result = try await enricher.polish(
-                    text: source,
+                let result = try await enricher.perform(
+                    action: action,
+                    context: context,
+                    instruction: nil,
                     baseURL: configuration.baseURL,
                     model: configuration.model,
                     apiKey: configuration.apiKey
                 )
-                guard assembledDraftText() == source else {
+                guard currentDraftFingerprint() == fingerprint else {
                     isPolishingDraft = false
-                    showToast("组合内容已变化，未覆盖新的内容")
+                    showToast("组合内容已变化，请重新整理")
                     return
                 }
-                polishedDraftSourceText = source
-                polishedDraftText = result
+                acceptAIResult(result, fingerprint: fingerprint)
                 isPolishingDraft = false
-                showToast("Polish 完成")
+                showToast("AI 整理完成")
             } catch {
                 isPolishingDraft = false
-                handleAIError(error, prefix: "Polish 失败")
+                handleAIError(error, prefix: "AI 整理失败")
             }
         }
     }
 
     var hasCurrentPolishedDraft: Bool {
         !polishedDraftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && polishedDraftSourceText == assembledDraftText()
+            && polishedDraftSourceText == currentDraftFingerprint()
     }
 
     private func polishConfiguration() -> (baseURL: String, model: String, apiKey: String)? {
@@ -778,7 +1117,7 @@ final class SnippetStore: ObservableObject {
         let model = settings.aiModel.trimmingCharacters(in: .whitespacesAndNewlines)
         let baseURL = settings.aiBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty, !model.isEmpty, !baseURL.isEmpty else {
-            showToast("请先在设置中填写 DeepSeek API Key、模型名和 Base URL")
+            showToast("请先在设置中填写 AI API Key、模型名和 Base URL")
             return nil
         }
         return (baseURL, model, key)
@@ -798,6 +1137,47 @@ final class SnippetStore: ObservableObject {
             parts.append(after)
         }
         return parts.filter { !$0.isEmpty }.joined(separator: "\n\n")
+    }
+
+    func currentDraftContext() throws -> String {
+        let snippets = draftSnippets
+        return try ContextPackageFormatter.fullContext(
+            snippets: snippets,
+            instruction: draftExtraText
+        ) { [weak self] snippet in
+            guard let self else {
+                return nil
+            }
+            var parts: [String] = []
+            if let before = draftSlotText(before: snippet.id), !before.isEmpty {
+                parts.append(before)
+            }
+            if let text = exportText(for: snippet), !text.isEmpty {
+                parts.append(text)
+            }
+            if snippet.id == snippets.last?.id,
+               let after = draftSlotTextAfterAll(),
+               !after.isEmpty {
+                parts.append(after)
+            }
+            return parts.joined(separator: "\n\n")
+        }
+    }
+
+    private func currentDraftFingerprint() -> String {
+        guard let context = try? currentDraftContext() else {
+            return ""
+        }
+        return draftFingerprint(context: context, action: settings.aiActionType)
+    }
+
+    private func draftFingerprint(context: String, action: AIActionType) -> String {
+        "\(action.rawValue)\n\(context)"
+    }
+
+    func acceptAIResult(_ result: String, fingerprint: String? = nil) {
+        polishedDraftSourceText = fingerprint ?? currentDraftFingerprint()
+        polishedDraftText = result
     }
 
     private func invalidatePolishedDraft() {
@@ -1142,20 +1522,19 @@ final class SnippetStore: ObservableObject {
             polishedDraftText = ""
             polishedDraftSourceText = ""
             isPolishingDraft = true
-            toast = ToastMessage(text: "DeepSeek 正在润色组合内容")
+            toast = ToastMessage(text: "AI 正在整理")
         case "polished":
             guard snippets.count >= 2 else { return }
             isPolishingDraft = false
             draftSnippetIDs = [snippets[0].id, snippets[1].id]
             draftTextSlots["before-\(snippets[1].id.uuidString)"] = "结合表格证据，进一步说明"
-            polishedDraftSourceText = assembledDraftText()
-            polishedDraftText = """
+            acceptAIResult("""
             先提炼多个 AI 回答的共同结论，再保留关键差异；结合表格证据核对结构、表达与信息完整度，最终整理成一段可直接继续使用的提示词。
-            """
-            toast = ToastMessage(text: "Polish 完成")
+            """)
+            toast = ToastMessage(text: "AI 整理完成")
         case "copied":
             isPolishingDraft = false
-            showToast(hasCurrentPolishedDraft ? "已复制润色内容" : "已复制组合内容")
+            showToast(hasCurrentPolishedDraft ? "已复制 AI 整理结果" : "已复制组合框原文")
         default:
             break
         }
@@ -1543,9 +1922,16 @@ final class SnippetStore: ObservableObject {
         snippets[index].enrichmentError = nil
         persist()
 
+        let existingTags = frequentTags.map(\.tag)
         Task { [weak self] in
             do {
-                let result = try await self?.enricher.enrich(text: text, baseURL: baseURL, model: model, apiKey: key)
+                let result = try await self?.enricher.enrich(
+                    text: text,
+                    existingTags: existingTags,
+                    baseURL: baseURL,
+                    model: model,
+                    apiKey: key
+                )
                 await MainActor.run {
                     self?.applyEnrichment(result, to: id)
                 }
@@ -1558,15 +1944,16 @@ final class SnippetStore: ObservableObject {
         }
     }
 
-    private func applyEnrichment(_ enrichment: AIEnrichment?, to id: UUID) {
+    func applyEnrichment(_ enrichment: AIEnrichment?, to id: UUID) {
         guard let enrichment,
               let index = snippets.firstIndex(where: { $0.id == id }) else {
             markEnrichmentFailed(id: id, message: "AI 没有返回可用内容")
             return
         }
-        let tags = enrichment.tags
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        let tags = Array(
+            TagNormalization.unique(enrichment.tags, maximumLength: 10)
+                .prefix(3)
+        )
         guard !tags.isEmpty else {
             markEnrichmentFailed(id: id, message: "AI 没有返回标签")
             return

@@ -89,9 +89,48 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(snippet.attachmentPaths, [])
         XCTAssertEqual(snippet.attachmentFileNames, [])
         XCTAssertEqual(snippet.tags, [])
+        XCTAssertEqual(snippet.customTags, [])
         XCTAssertFalse(snippet.isFavorite)
         XCTAssertFalse(snippet.isEnriching)
         XCTAssertFalse(snippet.enrichmentFailed)
+    }
+
+    func testAllTagsMergesTrimsAndDeduplicatesWithoutChangingStableOrder() {
+        let snippet = Snippet(
+            id: UUID(),
+            text: "A note",
+            title: "Tags",
+            createdAt: Date(),
+            source: .clipboardCopy,
+            tags: [" AI ", "Research", "ai"],
+            customTags: ["research ", "重点", " 重点 "]
+        )
+
+        XCTAssertEqual(snippet.allTags, ["AI", "Research", "重点"])
+        XCTAssertTrue(snippet.matchesKeyword("重点"))
+    }
+
+    func testCustomTagsParticipateInFiltering() {
+        let matching = Snippet(
+            id: UUID(),
+            text: "First",
+            title: "First",
+            createdAt: Date(),
+            source: .clipboardCopy,
+            customTags: ["用户研究"]
+        )
+        let other = Snippet(
+            id: UUID(),
+            text: "Second",
+            title: "Second",
+            createdAt: Date(),
+            source: .clipboardCopy
+        )
+
+        XCTAssertEqual(
+            SnippetFilter.apply(to: [matching, other], selectedTags: ["用户研究"]),
+            [matching]
+        )
     }
 
     func testFavoriteAndDateRangeFiltersComposeWithSearchAndTags() {

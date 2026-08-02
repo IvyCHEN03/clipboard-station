@@ -32,7 +32,8 @@ final class ClipboardBackupTests: XCTestCase {
             fileName: "screenshot.png",
             attachmentPaths: [attachmentURL.path, secondAttachmentURL.path],
             attachmentFileNames: ["screenshot.png", "screenshot-2.png"],
-            tags: ["ocr", "demo"]
+            tags: ["ocr", "demo"],
+            customTags: ["待整理"]
         )
 
         let backup = ClipboardBackupCodec.makeBackup(
@@ -48,6 +49,7 @@ final class ClipboardBackupTests: XCTestCase {
         XCTAssertEqual(decoded.formatVersion, ClipboardBackup.currentFormatVersion)
         XCTAssertEqual(decoded.appVersion, "0.4.0")
         XCTAssertEqual(decoded.snippets, [snippet])
+        XCTAssertEqual(decoded.snippets.first?.customTags, ["待整理"])
         XCTAssertEqual(decoded.settings, settings)
         XCTAssertEqual(decoded.attachments.count, 2)
         XCTAssertEqual(decoded.attachments.first?.snippetID, snippet.id)

@@ -11,7 +11,8 @@ final class MarkdownExportTests: XCTestCase {
             createdAt: Date(timeIntervalSince1970: 1_800_000_000),
             source: .clipboardCopy,
             kind: .text,
-            tags: ["ai", "workflow"]
+            tags: ["ai", "workflow"],
+            customTags: ["重点"]
         )
 
         let markdown = MarkdownExport.render(
@@ -24,7 +25,7 @@ final class MarkdownExportTests: XCTestCase {
         XCTAssertTrue(markdown.contains("## 1. Research note"))
         XCTAssertTrue(markdown.contains("- Kind: 文字"))
         XCTAssertTrue(markdown.contains("- Source: 复制监听"))
-        XCTAssertTrue(markdown.contains("- Tags: ai, workflow"))
+        XCTAssertTrue(markdown.contains("- Tags: ai, workflow, 重点"))
         XCTAssertTrue(markdown.contains("Prompt fragment\nwith two lines"))
     }
 

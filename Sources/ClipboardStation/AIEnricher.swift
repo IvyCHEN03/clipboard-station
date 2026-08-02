@@ -44,6 +44,7 @@ enum AIEnrichmentError: LocalizedError {
     case httpStatus(Int, String)
     case emptyResponse
     case invalidJSON(String)
+    case inputTooLong(Int)
 
     var errorDescription: String? {
         switch self {
@@ -58,6 +59,8 @@ enum AIEnrichmentError: LocalizedError {
             return "接口没有返回内容"
         case let .invalidJSON(content):
             return "返回不是预期 JSON：\(content)"
+        case let .inputTooLong(limit):
+            return "发送给 AI 的内容超过 \(limit) 字，请减少片段"
         }
     }
 }
@@ -84,12 +87,18 @@ struct AIEnricher {
         let choices: [Choice]
     }
 
-    func enrich(text: String, baseURL: String, model: String, apiKey: String) async throws -> AIEnrichment {
+    func enrich(
+        text: String,
+        existingTags: [String] = [],
+        baseURL: String,
+        model: String,
+        apiKey: String
+    ) async throws -> AIEnrichment {
         let content = try await complete(
             messages: [
                 [
                     "role": "system",
-                    "content": "你只返回严格 JSON，不要 markdown，不要解释。格式：{\"title\":\"不超过18个中文字符的标题\",\"tags\":[\"3到5个中文短标签\"]}"
+                    "content": Self.taggingSystemPrompt(existingTags: existingTags)
                 ],
                 [
                     "role": "user",
@@ -102,24 +111,38 @@ struct AIEnricher {
             temperature: 0.1,
             maxTokens: 300
         )
-        return parse(content: content)
+        let result = parse(content: content)
+        return AIEnrichment(
+            title: result.title,
+            tags: Self.normalizedAITags(result.tags, existingTags: existingTags)
+        )
     }
 
-    func polish(text: String, baseURL: String, model: String, apiKey: String) async throws -> String {
+    func perform(
+        action: AIActionType,
+        context: String,
+        instruction: String?,
+        baseURL: String,
+        model: String,
+        apiKey: String
+    ) async throws -> String {
+        let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedContext.count <= ContextPackageFormatter.maximumContextLength else {
+            throw AIEnrichmentError.inputTooLong(ContextPackageFormatter.maximumContextLength)
+        }
+        let cleanInstruction = instruction?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let userContent = cleanInstruction.isEmpty
+            ? trimmedContext
+            : "用户补充要求：\n\(cleanInstruction)\n\n\(trimmedContext)"
         let content = try await complete(
             messages: [
                 [
                     "role": "system",
-                    "content": """
-                    你是严谨的文字编辑。把用户提供的多个内容块整理成一段逻辑连贯、自然流畅的正文。
-                    忠实保留原意和关键细节，不新增事实；去掉重复，补充必要的过渡和指代。
-                    如果原文主要是英文，就保持英文；否则使用中文。
-                    只返回润色后的正文，不要标题、说明、列表标记或 Markdown 代码块。
-                    """
+                    "content": Self.systemPrompt(for: action)
                 ],
                 [
                     "role": "user",
-                    "content": String(text.prefix(12_000))
+                    "content": userContent
                 ]
             ],
             baseURL: baseURL,
@@ -128,11 +151,83 @@ struct AIEnricher {
             temperature: 0.25,
             maxTokens: 1_800
         )
-        let polished = Self.cleanPolishedContent(content)
-        guard !polished.isEmpty else {
+        let result = Self.cleanPolishedContent(content)
+        guard !result.isEmpty else {
             throw AIEnrichmentError.emptyResponse
         }
-        return polished
+        return result
+    }
+
+    func polish(text: String, baseURL: String, model: String, apiKey: String) async throws -> String {
+        try await perform(
+            action: .faithfulMerge,
+            context: text,
+            instruction: nil,
+            baseURL: baseURL,
+            model: model,
+            apiKey: apiKey
+        )
+    }
+
+    static func taggingSystemPrompt(existingTags: [String]) -> String {
+        let tags = TagNormalization.unique(existingTags)
+        let existing = tags.isEmpty ? "无" : tags.joined(separator: "、")
+        return """
+        你只返回严格 JSON，不要 Markdown，不要解释。
+        格式：{"title":"不超过18个中文字符的标题","tags":["最多3个标签"]}
+        已有标签：\(existing)
+        优先从已有标签中选择最多 3 个标签。
+        只有确实没有适用标签时才创建新标签。
+        不要创建与已有标签近义或仅表达形式不同的标签。
+        标签使用 2–6 个中文字符或简短英文词组。
+        """
+    }
+
+    static func normalizedAITags(_ tags: [String], existingTags: [String]) -> [String] {
+        let existingByKey = Dictionary(
+            TagNormalization.unique(existingTags).map {
+                (TagNormalization.canonicalKey($0), $0)
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let normalized = TagNormalization.unique(tags, maximumLength: 10).map { tag in
+            existingByKey[TagNormalization.canonicalKey(tag)] ?? tag
+        }
+        return Array(TagNormalization.unique(normalized).prefix(3))
+    }
+
+    static func systemPrompt(for action: AIActionType) -> String {
+        let common = """
+        输入按 [片段 N] 保留了来源边界。不得虚构事实；必要时可以保留 [片段 N] 引用。
+        如果原文主要是英文，就保持英文；否则使用中文。只返回结果正文。
+        """
+        switch action {
+        case .faithfulMerge:
+            return """
+            你是严谨的内容编辑。忠实合并多个片段，保留数字、日期、名称和限定条件。
+            去除重复，调整顺序和衔接，不新增上下文不存在的事实。
+            不要把不同来源的观点错误合并成一个确定结论。
+            \(common)
+            """
+        case .summarize:
+            return """
+            你是严谨的摘要编辑。提炼核心观点，同时保留重要事实、数字、日期、名称、限定条件和结论。
+            删除重复与次要措辞，但不要牺牲影响判断的信息。
+            \(common)
+            """
+        case .compare:
+            return """
+            你是研究分析编辑。明确区分不同片段的共同点、差异、冲突和信息缺口。
+            不虚构比较维度；没有依据时明确说明未提供，而不是推断。
+            \(common)
+            """
+        case .generatePrompt:
+            return """
+            你是提示词设计师。基于全部片段生成可直接使用的提示词。
+            输出必须包含角色、任务、上下文、约束和输出格式，并保留关键事实与限定条件。
+            \(common)
+            """
+        }
     }
 
     static func cleanPolishedContent(_ content: String) -> String {
@@ -237,14 +332,16 @@ struct AIEnricher {
     private func clean(_ tags: [String]) -> [String] {
         var seen = Set<String>()
         let cleaned = tags.compactMap { tag -> String? in
-            let value = tag.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !value.isEmpty, !seen.contains(value) else {
+            guard let value = TagNormalization.normalized(tag, maximumLength: 10) else {
                 return nil
             }
-            seen.insert(value)
-            return String(value.prefix(10))
+            let key = TagNormalization.canonicalKey(value)
+            guard seen.insert(key).inserted else {
+                return nil
+            }
+            return value
         }
-        return Array(cleaned.prefix(5))
+        return Array(cleaned.prefix(3))
     }
 
     private func fallbackEnrichment(from content: String) -> AIEnrichment {

@@ -33,7 +33,8 @@ If the bubble does not appear, run:
 - Text: use normal `Cmd+C`.
 - Screenshot: copy or import the screenshot; image snippets stay visible in the list.
 - Spreadsheet cells: tab-delimited copied cells from Excel, Numbers, or Google Sheets are stored as table-like snippets.
-- Manual import: click the `+` button in the composition box to import the current clipboard.
+- Manual import: use `导入当前剪贴板` in the empty state, or enable clipboard
+  monitoring for ongoing capture.
 
 The app intentionally allows repeated captures. If you copy the same content three times, it can become three separate snippets.
 
@@ -52,10 +53,16 @@ If copied text contains a recognizable date and time, the snippet shows Calendar
 
 ## Compose With Blocks
 
-1. Drag snippets into the bottom composition box.
+1. Drag one snippet, or select several snippets and drag the selection, into
+   the bottom composition box.
 2. Reorder blocks with drag, up/down controls, or numeric positions.
 3. Click between blocks to add custom text.
-4. Copy the composed result.
+4. Use the pencil icon to add an optional instruction.
+5. Copy the composed result.
+
+Selected snippets are added in their current visible order. Snippets already in
+the composer are skipped, and screenshots without OCR stay available as
+draggable images without producing an empty text block.
 
 When copying composed text:
 
@@ -63,7 +70,7 @@ When copying composed text:
 - Table snippets output their tabular text.
 - Screenshot snippets output OCR text when OCR exists; otherwise they are skipped in text output but remain draggable as images.
 
-## AI Tags
+## Tags
 
 AI tagging is optional and off by default.
 
@@ -74,15 +81,35 @@ AI tagging is optional and off by default.
 
 Existing tags are preserved. Failed snippets show a failure state and can be retried individually.
 
-## AI Polish
+Use the outlined plus beside the category row or a snippet to create and manage
+your own tags. Custom tags and AI tags are stored separately, but search,
+filtering, statistics, Markdown export, and backups use their merged display.
+Custom tags have an outlined style so their origin remains visible.
 
-After arranging blocks and bridge text in the composer, click `Polish` to ask the configured model for one coherent paragraph. Only the current composer text is sent. The original snippets and block order remain unchanged, and the generated paragraph can be edited before copying.
+## AI Composer
+
+After arranging blocks and bridge text, use the wand menu to choose:
+
+- Faithful merge: connect the blocks without inventing new claims.
+- Summarize: condense the source material.
+- Compare: organize similarities, differences, and open questions.
+- Generate prompt: turn the material into a reusable prompt.
+
+The model receives the optional instruction and a bounded context package. Each
+source includes its title, source type, tags, and exportable body under an
+explicit `[片段 N]` boundary. The original snippets and block order remain
+unchanged. Editing a source, its tags, block order, bridge text, instruction, or
+AI mode invalidates the previous result.
+
+The copy menu can output a clean body, a body with numbered sources, the full
+context package, or paste the clean body into the active app.
 
 ## Privacy
 
 - Clipboard data is stored locally.
 - Persistent data is encrypted with a Keychain-backed key.
-- Nothing is uploaded by default. Snippet text is sent only when AI tagging runs, and composer text is sent only when you click `Polish`.
+- Nothing is uploaded by default. Snippet text is sent only when AI tagging
+  runs or when you explicitly run an AI composer action.
 - API keys are stored in macOS Keychain.
 
 ## Local Backup

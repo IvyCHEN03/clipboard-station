@@ -17,8 +17,8 @@ enum MarkdownExport {
             lines.append("- Kind: \(snippet.kind.label)")
             lines.append("- Source: \(snippet.source.label)")
             lines.append("- Created: \(isoString(snippet.createdAt))")
-            if !snippet.tags.isEmpty {
-                lines.append("- Tags: \(snippet.tags.joined(separator: ", "))")
+            if !snippet.allTags.isEmpty {
+                lines.append("- Tags: \(snippet.allTags.joined(separator: ", "))")
             }
             let attachmentNames = snippet.allAttachmentFileNames.filter { !$0.isEmpty }
             if !attachmentNames.isEmpty {
