@@ -81,6 +81,12 @@ AI tagging is optional and off by default.
 
 Existing tags are preserved. Failed snippets show a failure state and can be retried individually.
 
+When AI generation is enabled, newly collected text, tables, files, screenshots
+with OCR, and web-image groups are tagged automatically. In the selection
+toolbar, select the current range and click the main `Tag` control to fill only
+missing AI tags, including retrying previous failures. Existing AI tags are
+never regenerated. Use the small arrow beside `Tag` for custom tags.
+
 Use the outlined plus beside the category row or a snippet to create and manage
 your own tags. Custom tags and AI tags are stored separately, but search,
 filtering, statistics, Markdown export, and backups use their merged display.

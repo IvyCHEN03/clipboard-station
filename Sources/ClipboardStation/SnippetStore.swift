@@ -631,6 +631,7 @@ final class SnippetStore: ObservableObject {
         snippets.insert(snippet, at: 0)
         persist()
         showToast(kind == .screenshot ? "已保存截图" : "已保存文件")
+        enrichSnippetIfNeeded(snippet.id)
     }
 
     func addImageFromPasteboard(_ pasteboard: NSPasteboard, source: SnippetSource) -> Bool {
@@ -657,6 +658,7 @@ final class SnippetStore: ObservableObject {
             snippets.insert(snippet, at: 0)
             persist()
             showToast("已保存截图")
+            enrichSnippetIfNeeded(snippet.id)
             return true
         } catch {
             showToast("截图保存失败")
@@ -1313,25 +1315,28 @@ final class SnippetStore: ObservableObject {
             return
         }
 
-        let ids = snippets
-            .filter { snippet in
-                (scopeIDs?.contains(snippet.id) ?? true)
-                    && snippet.tags.isEmpty
-                    && !snippet.isEnriching
-                    && !snippet.enrichmentFailed
-                    && hasPotentialEnrichmentText(snippet)
-            }
-            .map(\.id)
+        let ids = snippetIDsMissingAITags(in: scopeIDs)
 
         guard !ids.isEmpty else {
             showToast("没有需要生成标签的内容")
             return
         }
 
-        showToast("开始生成 \(ids.count) 条标签")
+        showToast("开始补全 \(ids.count) 条 AI 标签")
         for id in ids {
-            enrichSnippetIfNeeded(id, force: true)
+            enrichSnippetIfNeeded(id, force: true, retryFailed: true)
         }
+    }
+
+    func snippetIDsMissingAITags(in scopeIDs: Set<UUID>? = nil) -> [UUID] {
+        snippets
+            .filter { snippet in
+                (scopeIDs?.contains(snippet.id) ?? true)
+                    && snippet.tags.isEmpty
+                    && !snippet.isEnriching
+                    && hasPotentialEnrichmentText(snippet)
+            }
+            .map(\.id)
     }
 
     func retryEnrichment(for snippet: Snippet) {
@@ -1905,7 +1910,9 @@ final class SnippetStore: ObservableObject {
         guard let index = snippets.firstIndex(where: { $0.id == id }) else {
             return
         }
-        guard snippets[index].tags.isEmpty || force else {
+        // `force` bypasses the automatic-enrichment setting; it must never
+        // replace AI tags that already exist.
+        guard snippets[index].tags.isEmpty else {
             return
         }
         guard retryFailed || !snippets[index].enrichmentFailed else {
@@ -1948,6 +1955,13 @@ final class SnippetStore: ObservableObject {
         guard let enrichment,
               let index = snippets.firstIndex(where: { $0.id == id }) else {
             markEnrichmentFailed(id: id, message: "AI 没有返回可用内容")
+            return
+        }
+        guard snippets[index].tags.isEmpty else {
+            snippets[index].isEnriching = false
+            snippets[index].enrichmentFailed = false
+            snippets[index].enrichmentError = nil
+            persist()
             return
         }
         let tags = Array(

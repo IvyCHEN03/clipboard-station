@@ -163,6 +163,9 @@ Linggan Floating Ball keeps that work local and gives it a small, always-availab
 - Filter with an inclusive custom start and end date; combine it with search and tags.
 - Detect dates in copied text and turn them into Calendar events or Reminders.
 - Use AI-generated titles and tags with any OpenAI-compatible chat completions API.
+- Automatically tag newly collected content when AI enrichment is enabled;
+  select a filtered range and click `Tag` to retry only items still missing AI
+  tags without changing existing ones.
 - Create, rename, delete, search, and multi-apply your own tags without
   overwriting AI-generated tags.
 - Select multiple snippets and delete them in one action.

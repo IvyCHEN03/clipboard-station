@@ -48,6 +48,33 @@ final class CustomTagStoreTests: XCTestCase {
         XCTAssertEqual(store.snippets[0].customTags, ["手动重点"])
     }
 
+    func testBulkAITagScopeIncludesOnlyMissingAITagsAndRetriesFailures() {
+        let missing = makeSnippet(title: "Missing")
+        let existing = makeSnippet(title: "Existing", tags: ["保留"])
+        var failed = makeSnippet(title: "Failed")
+        failed.enrichmentFailed = true
+        let customOnly = makeSnippet(title: "Custom", customTags: ["手动"])
+        let store = SnippetStore(testingSnippets: [missing, existing, failed, customOnly])
+
+        XCTAssertEqual(
+            Set(store.snippetIDsMissingAITags(in: [missing.id, existing.id, failed.id, customOnly.id])),
+            Set([missing.id, failed.id, customOnly.id])
+        )
+    }
+
+    func testLateAIResponseNeverReplacesExistingAITags() {
+        let snippet = makeSnippet(title: "Original", tags: ["原标签"])
+        let store = SnippetStore(testingSnippets: [snippet])
+
+        store.applyEnrichment(
+            AIEnrichment(title: "新标题", tags: ["新标签"]),
+            to: snippet.id
+        )
+
+        XCTAssertEqual(store.snippets[0].title, "Original")
+        XCTAssertEqual(store.snippets[0].tags, ["原标签"])
+    }
+
     func testFrequentTagStatsIncludeCustomTagsCaseInsensitively() {
         let first = makeSnippet(title: "First", customTags: ["重点"])
         let second = makeSnippet(title: "Second", customTags: [" 重点 "])

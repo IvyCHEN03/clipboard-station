@@ -351,8 +351,6 @@ struct StationView: View {
         let visibleIDs = Set(store.filteredSnippets.map(\.id))
         let visibleSelection = selectedSnippetIDs.intersection(visibleIDs)
         let allVisibleSelected = !visibleIDs.isEmpty && visibleSelection == visibleIDs
-        let actionScope = visibleSelection.isEmpty ? visibleIDs : visibleSelection
-
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 Spacer(minLength: 0)
@@ -400,20 +398,35 @@ struct StationView: View {
                 .disabled(visibleSelection.isEmpty)
                 .help("按当前显示顺序复制并粘贴已选的 \(visibleSelection.count) 条")
 
-                Button {
-                    showBulkTagPicker.toggle()
-                } label: {
-                    Label("Tag", systemImage: "tag")
+                HStack(spacing: 0) {
+                    Button {
+                        store.enrichAllMissingTags(in: visibleSelection)
+                    } label: {
+                        Label("Tag", systemImage: "tag")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("只补全已选内容中缺少的 AI 标签；已有标签保持不变")
+                    .accessibilityLabel("补全缺少的 AI 标签")
+
+                    Button {
+                        showBulkTagPicker.toggle()
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .semibold))
+                            .frame(width: 16, height: 18)
+                    }
+                    .buttonStyle(.borderless)
+                    .help("为已选内容添加自定义标签")
+                    .accessibilityLabel("打开自定义标签选择器")
                 }
-                .buttonStyle(.borderless)
                 .disabled(visibleSelection.isEmpty)
-                .help("为已选 \(visibleSelection.count) 条添加自定义标签")
+                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 5))
                 .popover(isPresented: $showBulkTagPicker, arrowEdge: .bottom) {
                     TagPickerPopover(
                         store: store,
                         targetIDs: visibleSelection,
                         singleSnippetID: nil,
-                        aiScopeIDs: actionScope
+                        aiScopeIDs: visibleSelection
                     )
                 }
 
