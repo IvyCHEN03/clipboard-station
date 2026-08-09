@@ -13,9 +13,9 @@
 
 Linggan Floating Ball is a local-first macOS idea inbox for people working across AI chats, browsers, notes, and spreadsheets. It catches text, screenshots, tables, post images, quick notes, and web pages before they disappear into clipboard history, Downloads, or another forgotten tab.
 
-[Watch the complete workflow](docs/assets/social/linggan-core-workflow.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
+[Watch the complete HD workflow](docs/assets/social/linggan-core-workflow.mp4) · [Quick Start](#quick-start) · [Privacy](PRIVACY.md)
 
-[![Linggan Floating Ball: collect, find, compose, organize, recover memories, and capture images](docs/assets/social/linggan-core-workflow-cover.png)](docs/assets/social/linggan-core-workflow.mp4)
+![Linggan Floating Ball: intentionally collect, recall by meaning, compose with AI, capture image posts, and switch to OCR](docs/assets/social/linggan-github-hero-v0.7.3.gif)
 
 Copy fragments as they appear, protect the ones that matter with a star, travel back by date, and turn scattered blocks into one usable paragraph. When a post hides twenty images behind twenty save actions, `Cmd` + click the bubble to collect the post as one selectable stack.
 
