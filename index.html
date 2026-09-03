@@ -1,0 +1,1279 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="灵感悬浮球：面向多 AI 工作流的本地优先灵感收集、语义召回与积木式写作工具。">
+  <meta name="theme-color" content="#f3f7fa">
+  <meta property="og:title" content="灵感悬浮球 · 交互式产品 Demo">
+  <meta property="og:description" content="主动收集散落的信息，用语义找回，再像积木一样组合成下一次输出。">
+  <meta property="og:type" content="website">
+  <title>灵感悬浮球 · 交互式产品 Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17243a;
+      --muted: #758196;
+      --line: #e3e8ee;
+      --surface: #ffffff;
+      --canvas: #f3f7fa;
+      --blue: #1598eb;
+      --blue-soft: #e8f5fe;
+      --green: #25a96c;
+      --green-soft: #e7f6ee;
+      --orange: #ef8a33;
+      --orange-soft: #fff0e5;
+      --violet: #7168d9;
+      --shadow: 0 22px 54px rgba(37, 55, 78, .14), 0 2px 8px rgba(37, 55, 78, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input { font: inherit; }
+
+    button { cursor: pointer; }
+
+    .page {
+      width: min(1260px, calc(100% - 40px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 34px 0;
+      display: grid;
+      grid-template-columns: minmax(560px, 660px) minmax(320px, 1fr);
+      gap: 64px;
+      align-items: center;
+    }
+
+    .app-window {
+      width: 100%;
+      height: min(820px, calc(100vh - 68px));
+      min-height: 680px;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid rgba(116, 130, 151, .18);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+    }
+
+    .titlebar {
+      min-height: 92px;
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .traffic {
+      position: absolute;
+      display: flex;
+      gap: 8px;
+      transform: translateY(-27px);
+    }
+
+    .traffic i {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: block;
+      background: #d8dce1;
+    }
+
+    .traffic i:first-child { background: #ff655f; }
+    .traffic i:nth-child(2) { background: #ffc04a; }
+    .traffic i:nth-child(3) { background: #35c76f; }
+
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(30, 158, 239, .2);
+    }
+
+    .brand-copy { min-width: 0; }
+
+    .brand-copy h2 {
+      margin: 0;
+      font-size: 23px;
+      line-height: 1.15;
+      font-weight: 720;
+    }
+
+    .brand-copy p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .title-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-button {
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #7b8491;
+      display: grid;
+      place-items: center;
+      font-size: 17px;
+    }
+
+    .icon-button:hover { background: #f0f3f6; color: var(--ink); }
+
+    .filter-area {
+      padding: 14px 20px 10px;
+      display: grid;
+      gap: 9px;
+      border-bottom: 1px solid #f0f2f5;
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: 50px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .filter-label {
+      color: #858d99;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .segments, .chips {
+      display: flex;
+      gap: 7px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .segment {
+      min-width: 0;
+      height: 34px;
+      padding: 0 11px;
+      flex: 1 1 0;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .segment.blue { color: var(--blue); background: var(--blue-soft); border-color: #addcff; }
+    .segment.green { color: var(--green); background: var(--green-soft); border-color: #bfe8d2; }
+    .segment.orange { color: var(--orange); background: var(--orange-soft); border-color: #ffd0ac; }
+
+    .chip {
+      border: 1px solid transparent;
+      border-radius: 18px;
+      background: #f1f3f5;
+      color: #424b58;
+      padding: 7px 11px;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .chip strong { color: #7f8894; font-size: 11px; }
+    .chip.active { color: #087fc8; background: #e4f3ff; border-color: #a9dafb; }
+
+    .search-wrap {
+      margin: 0 20px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .search-mark {
+      width: 17px;
+      height: 17px;
+      border: 2px solid #89939f;
+      border-radius: 50%;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .search-mark::after {
+      content: "";
+      width: 7px;
+      height: 2px;
+      background: #89939f;
+      position: absolute;
+      right: -5px;
+      bottom: -2px;
+      transform: rotate(45deg);
+      transform-origin: left center;
+    }
+
+    #search {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      color: var(--ink);
+      background: transparent;
+      font-size: 15px;
+    }
+
+    #search::placeholder { color: #9ba3ae; }
+
+    .bulk-bar {
+      min-height: 44px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      color: #9098a2;
+      border-bottom: 1px solid #f0f2f5;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .bulk-action {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      padding: 4px 0;
+    }
+
+    .bulk-action.enabled { color: #4f5965; }
+    .bulk-action.enabled:hover { color: var(--blue); }
+    .selection-copy { color: var(--blue); font-weight: 650; }
+
+    .snippet-list {
+      overflow: auto;
+      padding: 0 20px 30px;
+      scroll-behavior: smooth;
+    }
+
+    .empty-state {
+      height: 100%;
+      display: grid;
+      place-content: center;
+      text-align: center;
+      color: var(--muted);
+      gap: 8px;
+    }
+
+    .empty-state strong { color: var(--ink); font-size: 18px; }
+
+    .snippet {
+      position: relative;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 12px;
+      padding: 17px 2px 16px;
+      border-bottom: 1px solid #edf0f3;
+      transition: background .2s ease, transform .2s ease, opacity .2s ease;
+      cursor: default;
+    }
+
+    .snippet:hover { background: #fbfcfd; }
+    .snippet.dragging { opacity: .45; transform: scale(.985); }
+    .snippet.just-added { animation: captureFlash 1.2s ease; }
+
+    @keyframes captureFlash {
+      0% { background: #dff3ff; transform: translateY(-8px); opacity: 0; }
+      40% { opacity: 1; }
+      100% { background: transparent; transform: translateY(0); }
+    }
+
+    .select-dot {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #a2aab4;
+      border-radius: 50%;
+      margin-top: 2px;
+      background: #fff;
+    }
+
+    .snippet.selected .select-dot {
+      border-color: var(--blue);
+      background: var(--blue);
+      box-shadow: inset 0 0 0 5px #fff;
+    }
+
+    .snippet-main { min-width: 0; }
+
+    .snippet-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .snippet-title {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .snippet-tools {
+      margin-left: auto;
+      display: flex;
+      gap: 4px;
+      color: #939ba5;
+      font-size: 15px;
+    }
+
+    .snippet-tools span { padding: 2px 3px; }
+    .favorite { color: #f28b31; }
+
+    .snippet-body {
+      margin: 7px 0 8px;
+      color: #3e4753;
+      font-size: 13px;
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      white-space: pre-line;
+    }
+
+    .snippet-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 7px;
+    }
+
+    .tag {
+      border: 0;
+      background: #e9f4ff;
+      color: #1388d1;
+      border-radius: 14px;
+      padding: 5px 8px;
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 650;
+    }
+
+    .tag.custom { background: #fff; border: 1px solid #8dcff7; }
+    .tag.active { background: var(--blue); color: #fff; }
+
+    .snippet-meta {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #969ea8;
+      font-size: 11px;
+    }
+
+    .kind {
+      padding: 4px 7px;
+      border-radius: 12px;
+      background: #f2f3f4;
+      color: #7a838d;
+    }
+
+    .image-strip {
+      margin: 10px 0;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+      padding-bottom: 3px;
+    }
+
+    .demo-image {
+      width: 116px;
+      height: 76px;
+      flex: 0 0 auto;
+      border-radius: 7px;
+      border: 1px solid #dde3e8;
+      position: relative;
+      overflow: hidden;
+      background: #dceef7;
+    }
+
+    .demo-image::before {
+      content: "";
+      position: absolute;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: #fff3b8;
+      top: 8px;
+      right: 9px;
+    }
+
+    .demo-image::after {
+      content: "";
+      position: absolute;
+      left: -8px;
+      right: -8px;
+      height: 36px;
+      bottom: -11px;
+      background: #5ca883;
+      transform: rotate(-7deg);
+    }
+
+    .demo-image:nth-child(2) { background: #e9dff8; }
+    .demo-image:nth-child(2)::before { background: #f5bdd8; left: 11px; right: auto; }
+    .demo-image:nth-child(2)::after { background: #7c72b6; transform: rotate(6deg); }
+    .demo-image:nth-child(3) { background: #fee7d3; }
+    .demo-image:nth-child(3)::before { background: #fff; }
+    .demo-image:nth-child(3)::after { background: #e79461; }
+
+    .composer {
+      border-top: 1px solid var(--line);
+      background: rgba(255, 255, 255, .98);
+      padding: 11px 20px 16px;
+    }
+
+    .composer-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+    }
+
+    .composer-head strong { font-size: 14px; }
+    .composer-count { color: var(--muted); font-size: 12px; }
+    .composer-actions { margin-left: auto; display: flex; align-items: center; gap: 5px; }
+
+    .mode-select {
+      height: 30px;
+      border: 1px solid #dfe4e9;
+      border-radius: 7px;
+      background: #f4f5f6;
+      color: #4c5662;
+      padding: 0 8px;
+      font-size: 12px;
+      outline: 0;
+    }
+
+    .composer-box {
+      min-height: 94px;
+      max-height: 160px;
+      overflow: auto;
+      border: 1px solid #dfe4e9;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 7px;
+      transition: border .2s ease, background .2s ease;
+    }
+
+    .composer-box.drag-over { border-color: var(--blue); background: #f2faff; }
+
+    .composer-empty {
+      color: #9aa3ae;
+      font-size: 13px;
+      align-self: center;
+      margin: auto;
+    }
+
+    .draft-block {
+      min-height: 30px;
+      max-width: 210px;
+      padding: 7px 10px;
+      border-radius: 7px;
+      color: #33404f;
+      font-size: 12px;
+      font-weight: 650;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      border: 1px solid currentColor;
+      background: #eef7ff;
+    }
+
+    .draft-block:nth-of-type(3n+2) { color: #438d67; background: #edf8f1; }
+    .draft-block:nth-of-type(3n+3) { color: #d47a2b; background: #fff5ec; }
+
+    .slot {
+      min-width: 28px;
+      min-height: 30px;
+      padding: 6px 3px;
+      outline: 0;
+      color: #3e4753;
+      font-size: 12px;
+      border-bottom: 1px dashed #b9c3cd;
+    }
+
+    .polished-output {
+      display: none;
+      width: 100%;
+      color: #303b49;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      animation: reveal .45s ease;
+    }
+
+    .polished-output.visible { display: block; }
+
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .story {
+      align-self: center;
+      max-width: 470px;
+    }
+
+    .eyebrow {
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .story h1 {
+      margin: 16px 0 16px;
+      max-width: 450px;
+      font-size: clamp(34px, 4vw, 54px);
+      line-height: 1.08;
+      font-weight: 780;
+      letter-spacing: 0;
+    }
+
+    .story-intro {
+      margin: 0;
+      color: #66748a;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .tour-actions {
+      display: flex;
+      gap: 10px;
+      margin: 24px 0 22px;
+    }
+
+    .primary, .secondary {
+      min-height: 42px;
+      border-radius: 7px;
+      padding: 0 16px;
+      font-weight: 680;
+      border: 1px solid transparent;
+    }
+
+    .primary { background: var(--ink); color: white; }
+    .primary:hover { background: #263b58; }
+    .secondary { background: transparent; color: #526176; border-color: #cfd7df; }
+    .secondary:hover { border-color: #9fb1c2; color: var(--ink); }
+
+    .tour-steps {
+      display: grid;
+      gap: 2px;
+      border-top: 1px solid #dce3e9;
+      border-bottom: 1px solid #dce3e9;
+    }
+
+    .tour-step {
+      width: 100%;
+      min-height: 58px;
+      border: 0;
+      border-bottom: 1px solid #e4e9ee;
+      background: transparent;
+      text-align: left;
+      padding: 10px 4px;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) 20px;
+      gap: 10px;
+      align-items: center;
+      color: #556276;
+    }
+
+    .tour-step:last-child { border-bottom: 0; }
+    .tour-step:hover, .tour-step.active { color: var(--ink); }
+    .tour-step.active .step-number { background: var(--blue); color: #fff; }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #e5ebf0;
+      color: #728096;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .tour-step strong { display: block; font-size: 14px; }
+    .tour-step small { display: block; color: #8a95a4; margin-top: 3px; font-size: 11px; }
+    .arrow { color: #99a5b4; }
+
+    .case-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 22px;
+    }
+
+    .case-item { border-left: 2px solid #cdd8e1; padding-left: 11px; }
+    .case-item:first-child { border-color: var(--blue); }
+    .case-item strong { display: block; font-size: 12px; margin-bottom: 4px; }
+    .case-item span { color: #7d8999; font-size: 11px; line-height: 1.5; }
+
+    .ownership {
+      margin-top: 18px;
+      padding-top: 15px;
+      border-top: 1px solid #dce3e9;
+      color: #6d7a8d;
+      font-size: 11px;
+      line-height: 1.65;
+    }
+
+    .ownership strong { color: var(--ink); }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      transform: translate(-50%, 18px);
+      background: #162238;
+      color: #fff;
+      padding: 11px 16px;
+      border-radius: 7px;
+      font-size: 13px;
+      box-shadow: 0 10px 28px rgba(15, 28, 48, .24);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index: 20;
+    }
+
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 15;
+      display: none;
+      place-items: center;
+      background: rgba(26, 35, 47, .45);
+      padding: 24px;
+    }
+
+    .modal.open { display: grid; }
+
+    .modal-panel {
+      width: min(720px, 100%);
+      min-height: 460px;
+      max-height: calc(100vh - 48px);
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, .22);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .modal-head, .modal-foot {
+      min-height: 58px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .modal-head button { margin-left: auto; }
+    .modal-foot { border-top: 1px solid var(--line); border-bottom: 0; color: var(--muted); font-size: 12px; }
+    .modal-foot button { margin-left: auto; }
+
+    .modal-stage {
+      min-height: 340px;
+      overflow: auto;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      background: #f7f9fb;
+    }
+
+    .preview-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .preview-grid .demo-image { width: 100%; height: 230px; }
+
+    .ocr-text {
+      display: none;
+      width: 100%;
+      max-width: 580px;
+      padding: 22px;
+      background: #fff;
+      border: 1px solid #dfe5eb;
+      border-radius: 8px;
+      color: #354252;
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+
+    .modal.ocr .preview-grid { display: none; }
+    .modal.ocr .ocr-text { display: block; }
+
+    @media (max-width: 1000px) {
+      .page {
+        grid-template-columns: 1fr;
+        gap: 42px;
+        width: min(700px, calc(100% - 28px));
+        padding: 24px 0 60px;
+      }
+      .app-window { height: 760px; }
+      .story { max-width: none; }
+    }
+
+    @media (max-width: 620px) {
+      .page { width: 100%; padding-top: 0; }
+      .app-window { height: 720px; min-height: 640px; border-radius: 0; border-left: 0; border-right: 0; }
+      .titlebar { padding-left: 18px; padding-right: 14px; gap: 10px; }
+      .brand-icon { width: 42px; height: 42px; }
+      .brand-copy h2 { font-size: 20px; white-space: nowrap; }
+      .brand-copy p { font-size: 11px; white-space: nowrap; }
+      .title-actions { gap: 2px; }
+      .title-actions .icon-button:nth-child(-n + 2) { display: none; }
+      .story { padding: 0 22px; }
+      .filter-area { padding-left: 14px; padding-right: 14px; }
+      .search-wrap, .bulk-bar { margin-left: 14px; margin-right: 14px; padding-left: 0; padding-right: 0; }
+      .snippet-list, .composer { padding-left: 14px; padding-right: 14px; }
+      .segment { padding: 0 7px; font-size: 12px; }
+      .bulk-bar { gap: 10px; overflow-x: auto; }
+      .preview-grid { grid-template-columns: 1fr; }
+      .preview-grid .demo-image { height: 180px; }
+      .case-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="app-window" aria-label="灵感悬浮球交互式演示">
+      <header class="titlebar">
+        <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
+        <img class="brand-icon" src="./logo.png" alt="灵感悬浮球">
+        <div class="brand-copy">
+          <h2>灵感悬浮球</h2>
+          <p>v0.7.4 · 本地优先 · <span id="snippetCount">4</span> 个片段</p>
+        </div>
+        <div class="title-actions">
+          <button class="icon-button" title="回忆浅滩" aria-label="回忆浅滩">▱</button>
+          <button class="icon-button" title="固定窗口" aria-label="固定窗口">⌖</button>
+          <button class="icon-button" title="设置" aria-label="设置">⚙</button>
+          <button class="icon-button" title="帮助" aria-label="帮助">?</button>
+        </div>
+      </header>
+
+      <div class="filter-area">
+        <div class="filter-row">
+          <span class="filter-label">时间</span>
+          <div class="segments">
+            <button class="segment blue time-filter" data-time="今天"><span>今天</span><b>25%</b></button>
+            <button class="segment green time-filter" data-time="3天"><span>3天</span><b>50%</b></button>
+            <button class="segment orange time-filter" data-time="7天"><span>鱼的 7 天</span><b>25%</b></button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label">筛选</span>
+          <div class="chips">
+            <button class="chip" id="favoriteFilter">☆ 收藏</button>
+            <button class="chip">▦ 日期</button>
+          </div>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label">分类</span>
+          <div class="chips" id="topTags"></div>
+        </div>
+      </div>
+
+      <label class="search-wrap">
+        <span class="search-mark" aria-hidden="true"></span>
+        <input id="search" autocomplete="off" placeholder="搜索，或描述你记得的内容" aria-label="搜索片段">
+      </label>
+
+      <div class="bulk-bar">
+        <button class="bulk-action enabled" id="selectAll">☑ 全选</button>
+        <button class="bulk-action" id="cancelSelection">☒ 取消</button>
+        <button class="bulk-action" id="copySelected">▣ 复制</button>
+        <button class="bulk-action enabled" id="tagSelected">◇ Tag</button>
+        <button class="bulk-action enabled" id="rewind">◁ 倒带</button>
+        <button class="bulk-action" id="deleteSelected">♲ 删除</button>
+        <span class="selection-copy" id="selectionLabel"></span>
+      </div>
+
+      <div class="snippet-list" id="snippetList"></div>
+
+      <section class="composer">
+        <div class="composer-head">
+          <strong>组合框</strong>
+          <span class="composer-count" id="composerCount">· 0 条</span>
+          <div class="composer-actions">
+            <select class="mode-select" id="aiMode" aria-label="AI 处理方式">
+              <option>整理</option>
+              <option>比较</option>
+              <option>提取</option>
+              <option>成稿</option>
+            </select>
+            <button class="icon-button" id="polish" title="AI 整理" aria-label="AI 整理">✦</button>
+            <button class="icon-button" id="copyDraft" title="复制组合内容" aria-label="复制组合内容">▣</button>
+            <button class="icon-button" id="clearDraft" title="清空组合框" aria-label="清空组合框">×</button>
+          </div>
+        </div>
+        <div class="composer-box" id="composerBox">
+          <span class="composer-empty">拖入片段，在积木之间直接补字</span>
+        </div>
+      </section>
+    </section>
+
+    <aside class="story">
+      <div class="eyebrow">Interactive product demo · macOS</div>
+      <h1>把散落的信息，变成下一次输出。</h1>
+      <p class="story-intro" id="storyIntro">保留原生复制，只在你主动时收集。文本、图片、表格和网页，不再躺在不同窗口里失去下文。</p>
+      <div class="tour-actions">
+        <button class="primary" id="autoTour">▶ 自动演示</button>
+        <button class="secondary" id="captureButton">模拟 ⌃⇧C</button>
+      </div>
+
+      <div class="tour-steps">
+        <button class="tour-step active" data-step="capture">
+          <span class="step-number">01</span>
+          <span><strong>主动收集，不污染系统剪贴板</strong><small>原生 ⌘C / ⌘V 保持不变</small></span>
+          <span class="arrow">›</span>
+        </button>
+        <button class="tour-step" data-step="recall">
+          <span class="step-number">02</span>
+          <span><strong>记得意思，就能找回来</strong><small>关键词 + Tag + Hidden Source + 语义召回</small></span>
+          <span class="arrow">›</span>
+        </button>
+        <button class="tour-step" data-step="compose">
+          <span class="step-number">03</span>
+          <span><strong>把片段拖成一句完整的话</strong><small>积木排序，任意位置补充文字</small></span>
+          <span class="arrow">›</span>
+        </button>
+        <button class="tour-step" data-step="create">
+          <span class="step-number">04</span>
+          <span><strong>整理、比较、提取、成稿</strong><small>AI 接手结构，不替你丢掉来源</small></span>
+          <span class="arrow">›</span>
+        </button>
+      </div>
+
+      <div class="case-grid">
+        <div class="case-item">
+          <strong>用户痛点</strong>
+          <span>并行使用多个 AI 后，真正有价值的内容散落、难找、难复用。</span>
+        </div>
+        <div class="case-item">
+          <strong>产品判断</strong>
+          <span>不是再做一个笔记 App，而是补上“复制之后、输出之前”的工作流。</span>
+        </div>
+      </div>
+
+      <p class="ownership"><strong>我的工作：</strong>从 0 到 1 完成产品定义、交互设计与原生实现，覆盖 SwiftUI / AppKit、全局快捷键、加密持久化、OCR、浏览器扩展、AI Tag 与 Semantic Recall。</p>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <div class="modal" id="imageModal" aria-hidden="true">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <strong>网页图片组 · 3 张</strong>
+        <button class="icon-button" id="closeModal" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-stage">
+        <div class="preview-grid"><div class="demo-image"></div><div class="demo-image"></div><div class="demo-image"></div></div>
+        <div class="ocr-text">访谈记录摘录
+
+用户不会缺少信息，而是缺少把信息重新组织成输出的最后一步。
+
+产品机会：在复制与写作之间，提供一个足够轻、随时可见、可以重新组合的本地工作台。</div>
+      </div>
+      <div class="modal-foot">
+        <span>双击图片查看大图 · 可拖入组合框</span>
+        <button class="secondary" id="toggleOCR">切换为 OCR 文字</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      snippets: [
+        {
+          id: 1,
+          title: "2030 年人形机器人市场规模",
+          body: "上周在 Claude 研究中记录：产业拐点并不只来自硬件降本，更来自模型泛化、数据闭环与真实场景部署速度。",
+          tags: ["Claude", "市场研究", "2030"],
+          source: "Claude", time: "上周", kind: "文字", favorite: true
+        },
+        {
+          id: 2,
+          title: "面试表达：先讲判断，再讲功能",
+          body: "功能列表只能证明做了什么；真正有说服力的是用户痛点、关键判断、取舍过程，以及最终形成的完整闭环。",
+          tags: ["产品", "面试", "方法论"],
+          source: "备忘录", time: "今天", kind: "文字", favorite: false
+        },
+        {
+          id: 3,
+          title: "灵感图片组",
+          body: "三张网页图片保存在同一个片段中，可左右浏览、双击放大，也可切换为本地 OCR 文字。",
+          tags: ["图片", "OCR", "网页"],
+          source: "Linggan Web", time: "今天", kind: "图片", favorite: false, images: true
+        },
+        {
+          id: 4,
+          title: "竞品访谈表格摘录",
+          body: "需求\t频次\t现有阻力\n快速找回\t高\t信息散落\n重新组合\t高\t复制链路断裂",
+          tags: ["表格", "研究", "OCR"],
+          source: "Numbers", time: "3天", kind: "表格", favorite: false
+        }
+      ],
+      selected: new Set(),
+      activeTags: new Set(),
+      favoriteOnly: false,
+      reversed: false,
+      draft: [],
+      activeStep: "capture",
+      tourTimers: []
+    };
+
+    const list = document.querySelector("#snippetList");
+    const search = document.querySelector("#search");
+    const topTags = document.querySelector("#topTags");
+    const composer = document.querySelector("#composerBox");
+    const toast = document.querySelector("#toast");
+    const modal = document.querySelector("#imageModal");
+    const copyText = (text) => navigator.clipboard?.writeText(text).catch(() => {});
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function allTagCounts() {
+      const counts = new Map();
+      state.snippets.forEach(item => item.tags.forEach(tag => counts.set(tag, (counts.get(tag) || 0) + 1)));
+      return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7);
+    }
+
+    function renderTopTags() {
+      topTags.innerHTML = allTagCounts().map(([tag, count]) =>
+        `<button class="chip ${state.activeTags.has(tag) ? "active" : ""}" data-tag="${tag}">${tag} <strong>${count}</strong></button>`
+      ).join("");
+      topTags.querySelectorAll("[data-tag]").forEach(button => button.addEventListener("click", () => toggleTag(button.dataset.tag)));
+    }
+
+    function filteredSnippets() {
+      const query = search.value.trim().toLowerCase();
+      let items = state.snippets.filter(item => {
+        const searchable = [item.title, item.body, item.source, ...item.tags].join(" ").toLowerCase();
+        const queryMatch = !query || searchable.includes(query) || semanticMatch(query, item);
+        const tagMatch = [...state.activeTags].every(tag => item.tags.includes(tag));
+        const favoriteMatch = !state.favoriteOnly || item.favorite;
+        return queryMatch && tagMatch && favoriteMatch;
+      });
+      if (state.reversed) items = [...items].reverse();
+      return items;
+    }
+
+    function semanticMatch(query, item) {
+      if (!query) return true;
+      const asksForClaude = query.includes("claude");
+      const asksFor2030 = query.includes("2030");
+      const asksForMarket = query.includes("市场") || query.includes("规模") || query.includes("机器人");
+      return item.id === 1 && (asksForClaude || asksFor2030 || asksForMarket);
+    }
+
+    function renderSnippets() {
+      const items = filteredSnippets();
+      document.querySelector("#snippetCount").textContent = state.snippets.length;
+      if (!items.length) {
+        list.innerHTML = `<div class="empty-state"><strong>没有丢，只是暂时没命中</strong><span>换一种描述，或取消一个筛选标签。</span></div>`;
+        updateSelectionControls();
+        return;
+      }
+
+      list.innerHTML = items.map(item => `
+        <article class="snippet ${state.selected.has(item.id) ? "selected" : ""} ${item.justAdded ? "just-added" : ""}" draggable="true" data-id="${item.id}">
+          <button class="select-dot" aria-label="选择 ${item.title}"></button>
+          <div class="snippet-main">
+            <div class="snippet-head">
+              <h3 class="snippet-title">${item.title}</h3>
+              <div class="snippet-tools"><span>⌁</span><span class="${item.favorite ? "favorite" : ""}">${item.favorite ? "★" : "☆"}</span><span>▣</span><span>♲</span></div>
+            </div>
+            ${item.images ? `<div class="image-strip" title="双击展开图片组"><div class="demo-image"></div><div class="demo-image"></div><div class="demo-image"></div></div>` : `<p class="snippet-body">${item.body}</p>`}
+            <div class="snippet-tags">${item.tags.map(tag => `<button class="tag ${state.activeTags.has(tag) ? "active" : ""}" data-tag="${tag}">${tag}</button>`).join("")}</div>
+            <div class="snippet-meta"><span class="kind">${item.kind}</span><span>${item.source}</span><span>${item.time}</span><span>${item.body.length} 字</span></div>
+          </div>
+        </article>`).join("");
+
+      list.querySelectorAll(".snippet").forEach(row => {
+        const id = Number(row.dataset.id);
+        row.querySelector(".select-dot").addEventListener("click", event => { event.stopPropagation(); toggleSelection(id); });
+        row.addEventListener("click", event => {
+          if (event.target.closest("button")) return;
+          toggleSelection(id);
+        });
+        row.addEventListener("dragstart", event => {
+          row.classList.add("dragging");
+          event.dataTransfer.setData("text/plain", String(id));
+          event.dataTransfer.effectAllowed = "copy";
+        });
+        row.addEventListener("dragend", () => row.classList.remove("dragging"));
+        if (row.querySelector(".image-strip")) row.querySelector(".image-strip").addEventListener("dblclick", openImages);
+      });
+      list.querySelectorAll(".tag").forEach(button => button.addEventListener("click", event => {
+        event.stopPropagation();
+        toggleTag(button.dataset.tag);
+      }));
+      state.snippets.forEach(item => item.justAdded = false);
+      updateSelectionControls();
+    }
+
+    function toggleSelection(id) {
+      state.selected.has(id) ? state.selected.delete(id) : state.selected.add(id);
+      renderSnippets();
+    }
+
+    function updateSelectionControls() {
+      const selectedVisible = filteredSnippets().filter(item => state.selected.has(item.id));
+      document.querySelector("#selectionLabel").textContent = selectedVisible.length ? `已选 ${selectedVisible.length}` : "";
+      ["cancelSelection", "copySelected", "deleteSelected"].forEach(id => {
+        document.querySelector(`#${id}`).classList.toggle("enabled", selectedVisible.length > 0);
+      });
+    }
+
+    function toggleTag(tag) {
+      state.activeTags.has(tag) ? state.activeTags.delete(tag) : state.activeTags.add(tag);
+      renderTopTags();
+      renderSnippets();
+      showToast(state.activeTags.size ? `精确筛选：${[...state.activeTags].join(" + ")}` : "已取消标签筛选");
+    }
+
+    function captureDemo() {
+      const item = {
+        id: Date.now(),
+        title: "刚刚收下的一点灵光",
+        body: "用户不是缺少信息，而是缺少把零散信息重新组织成下一次输出的最后一步。",
+        tags: ["灵感", "产品判断", "本地优先"],
+        source: "当前 App", time: "刚刚", kind: "文字", favorite: false, justAdded: true
+      };
+      state.snippets.unshift(item);
+      search.value = "";
+      state.activeTags.clear();
+      renderTopTags();
+      renderSnippets();
+      list.scrollTop = 0;
+      showToast("已收进灵感球 · 系统剪贴板保持不变");
+      setActiveStep("capture");
+    }
+
+    function addToDraft(id) {
+      const item = state.snippets.find(snippet => snippet.id === id);
+      if (!item || state.draft.includes(id)) return;
+      state.draft.push(id);
+      renderComposer();
+      showToast(`已加入组合框：${item.title}`);
+      setActiveStep("compose");
+    }
+
+    function renderComposer() {
+      document.querySelector("#composerCount").textContent = `· ${state.draft.length} 条`;
+      if (!state.draft.length) {
+        composer.innerHTML = `<span class="composer-empty">拖入片段，在积木之间直接补字</span>`;
+        return;
+      }
+      const parts = [`<span class="slot" contenteditable="true" aria-label="前置文字">先说结论：</span>`];
+      state.draft.forEach((id, index) => {
+        const item = state.snippets.find(snippet => snippet.id === id);
+        parts.push(`<span class="draft-block" draggable="true" data-id="${id}" title="${item.title}">${index + 1}. ${item.title}</span>`);
+        if (index < state.draft.length - 1) parts.push(`<span class="slot" contenteditable="true" aria-label="积木间文字">同时，</span>`);
+      });
+      parts.push(`<span class="slot" contenteditable="true" aria-label="尾部文字">这就是产品机会。</span>`);
+      composer.innerHTML = parts.join("");
+    }
+
+    function polishDraft() {
+      if (!state.draft.length) {
+        showToast("先拖入至少一个片段");
+        return;
+      }
+      const mode = document.querySelector("#aiMode").value;
+      const texts = state.draft.map(id => state.snippets.find(item => item.id === id));
+      const variants = {
+        "整理": `用户真正缺少的不是更多信息，而是把零散内容重新组织成下一次输出的最后一步。灵感悬浮球因此选择保留原生复制，仅在用户主动时收集，并用可检索、可组合的本地工作流把内容重新接回上下文。`,
+        "比较": `两类需求看似不同：一类是“以后还能找到”，另一类是“现在就能写出来”。前者需要语义召回与来源信息，后者需要积木组合与可编辑文字；灵感悬浮球把两者放进同一条轻量链路。`,
+        "提取": `核心洞察\n1. 信息过载的瓶颈不在收集，而在复用。\n2. 搜索需要同时理解关键词、Tag、来源和语义。\n3. AI 最有价值的位置，是把已经选好的上下文整理成稿。`,
+        "成稿": `我们每天在多个 AI、网页和文档之间来回，真正有用的那句话却常常在下一次需要时消失。灵感悬浮球补上了复制之后、输出之前的空白：主动收集，按记忆找回，像积木一样组合，最后交给 AI 整理成可继续使用的全文。`
+      };
+      composer.innerHTML = `<div class="polished-output visible"><strong>${mode}结果</strong>\n${variants[mode]}\n\n来源片段：${texts.map((item, index) => `[片段 ${index + 1}] ${item.title}`).join(" · ")}</div>`;
+      showToast(`AI ${mode}完成`);
+      setActiveStep("create");
+    }
+
+    function setActiveStep(step) {
+      state.activeStep = step;
+      document.querySelectorAll(".tour-step").forEach(button => button.classList.toggle("active", button.dataset.step === step));
+    }
+
+    function runStep(step) {
+      state.tourTimers.forEach(clearTimeout);
+      state.tourTimers = [];
+      setActiveStep(step);
+      if (step === "capture") captureDemo();
+      if (step === "recall") typeRecallQuery();
+      if (step === "compose") {
+        search.value = "";
+        state.activeTags.clear();
+        addToDraft(1);
+        addToDraft(2);
+        renderTopTags();
+        renderSnippets();
+      }
+      if (step === "create") {
+        if (!state.draft.length) { addToDraft(1); addToDraft(2); }
+        document.querySelector("#aiMode").value = "成稿";
+        polishDraft();
+      }
+    }
+
+    function typeRecallQuery() {
+      search.value = "";
+      state.activeTags.clear();
+      renderTopTags();
+      const query = "上周 Claude 里那个 2030 年机器人市场的数据";
+      let index = 0;
+      const tick = () => {
+        search.value = query.slice(0, index++);
+        renderSnippets();
+        if (index <= query.length) state.tourTimers.push(setTimeout(tick, 38));
+        else showToast("Hidden Source + 时间 + 数字 + 语义共同召回");
+      };
+      tick();
+    }
+
+    function autoTour() {
+      state.tourTimers.forEach(clearTimeout);
+      state.tourTimers = [];
+      state.draft = [];
+      state.selected.clear();
+      state.activeTags.clear();
+      search.value = "";
+      renderTopTags(); renderSnippets(); renderComposer();
+      captureDemo();
+      state.tourTimers.push(setTimeout(typeRecallQuery, 2300));
+      state.tourTimers.push(setTimeout(() => {
+        search.value = "";
+        renderSnippets();
+        addToDraft(1);
+        state.tourTimers.push(setTimeout(() => addToDraft(2), 900));
+      }, 5600));
+      state.tourTimers.push(setTimeout(() => {
+        document.querySelector("#aiMode").value = "成稿";
+        polishDraft();
+      }, 8500));
+      state.tourTimers.push(setTimeout(openImages, 11600));
+    }
+
+    function openImages() {
+      modal.classList.remove("ocr");
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      showToast("图片组已展开 · 可切换 OCR 文字");
+    }
+
+    function closeImages() {
+      modal.classList.remove("open", "ocr");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    composer.addEventListener("dragover", event => { event.preventDefault(); composer.classList.add("drag-over"); });
+    composer.addEventListener("dragleave", () => composer.classList.remove("drag-over"));
+    composer.addEventListener("drop", event => {
+      event.preventDefault();
+      composer.classList.remove("drag-over");
+      addToDraft(Number(event.dataTransfer.getData("text/plain")));
+    });
+
+    search.addEventListener("input", () => { renderSnippets(); if (search.value) setActiveStep("recall"); });
+    document.querySelector("#favoriteFilter").addEventListener("click", event => {
+      state.favoriteOnly = !state.favoriteOnly;
+      event.currentTarget.classList.toggle("active", state.favoriteOnly);
+      renderSnippets();
+    });
+    document.querySelector("#selectAll").addEventListener("click", () => { filteredSnippets().forEach(item => state.selected.add(item.id)); renderSnippets(); });
+    document.querySelector("#cancelSelection").addEventListener("click", () => { state.selected.clear(); renderSnippets(); });
+    document.querySelector("#copySelected").addEventListener("click", () => {
+      const items = filteredSnippets().filter(item => state.selected.has(item.id));
+      if (!items.length) return showToast("请先选择片段");
+      copyText(items.map(item => item.body).join("\n\n"));
+      showToast(`已复制当前筛选中的 ${items.length} 条，不自动粘贴`);
+    });
+    document.querySelector("#tagSelected").addEventListener("click", () => showToast("只补全未打标片段，已有 Tag 保持不变"));
+    document.querySelector("#rewind").addEventListener("click", () => { state.reversed = !state.reversed; renderSnippets(); showToast(state.reversed ? "已倒带当前结果" : "已恢复原顺序"); });
+    document.querySelector("#deleteSelected").addEventListener("click", () => {
+      const visibleIds = new Set(filteredSnippets().filter(item => state.selected.has(item.id)).map(item => item.id));
+      if (!visibleIds.size) return showToast("请先选择片段");
+      state.snippets = state.snippets.filter(item => !visibleIds.has(item.id));
+      visibleIds.forEach(id => state.selected.delete(id));
+      renderTopTags(); renderSnippets();
+      showToast("只删除了当前筛选中选中的内容");
+    });
+    document.querySelector("#polish").addEventListener("click", polishDraft);
+    document.querySelector("#copyDraft").addEventListener("click", () => { copyText(composer.innerText); showToast("组合内容已复制"); });
+    document.querySelector("#clearDraft").addEventListener("click", () => { state.draft = []; renderComposer(); showToast("组合框已清空"); });
+    document.querySelector("#captureButton").addEventListener("click", captureDemo);
+    document.querySelector("#autoTour").addEventListener("click", autoTour);
+    document.querySelectorAll(".tour-step").forEach(button => button.addEventListener("click", () => runStep(button.dataset.step)));
+    document.querySelector("#closeModal").addEventListener("click", closeImages);
+    document.querySelector("#toggleOCR").addEventListener("click", event => {
+      modal.classList.toggle("ocr");
+      event.currentTarget.textContent = modal.classList.contains("ocr") ? "切换为图片" : "切换为 OCR 文字";
+    });
+    modal.addEventListener("click", event => { if (event.target === modal) closeImages(); });
+    document.addEventListener("keydown", event => {
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "c") { event.preventDefault(); captureDemo(); }
+      if (event.key === "Escape") closeImages();
+    });
+
+    renderTopTags();
+    renderSnippets();
+    renderComposer();
+  </script>
+</body>
+</html>
